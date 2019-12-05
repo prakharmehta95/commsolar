@@ -14,13 +14,13 @@ def ranking_combos(NPV_combos, df_demand, combos_consider):
     NPV_combos_temp = NPV_combos#.drop(columns = 'Installation_Year')
     npv_max_temp = NPV_combos_temp#.transpose()
     npv_max_temp =npv_max_temp.sort_values(by = ['npv'], ascending = False)
-    npvs_max = npv_max_temp.head(3) #top 3 combinations
+    npvs_max = npv_max_temp.head(3).copy() #top 3 combinations
     #print(npv_max)
     print("npvs max dataframe = ",npvs_max)
     bldgs_comm_bestnpv = str.split(npvs_max.index[0],'_') #split string to get name of the buildings in the community
     while '' in bldgs_comm_bestnpv:
         bldgs_comm_bestnpv.remove('') #get the buildings of community in a list
-    
+    en_champ_agent = bldgs_comm_bestnpv[0]
     '''
     now try to compare npv shares for all buildings in the community
     '''
@@ -33,7 +33,7 @@ def ranking_combos(NPV_combos, df_demand, combos_consider):
     npvs_max['all_agree'] = ""
     for i in npvs_max.index:
         print(i)
-        bldgs_comm_bestnpv = str.split(i,'_') #split string to get name of the buildings in the community
+        bldgs_comm_bestnpv = str.split(i,'_') #split string to get name of the buildings in the community - this will fuck everything up!!!
         while '' in bldgs_comm_bestnpv:
             bldgs_comm_bestnpv.remove('') #get the buildings of community in a list
         print("bldgs_comm_best_npv = ",bldgs_comm_bestnpv)
@@ -137,5 +137,6 @@ def ranking_combos(NPV_combos, df_demand, combos_consider):
     #combos_info['combos_pv_subsidy'] = 
     combos_info['combos_demand_yearly_kWh'] = temp_dem
     combos_info['combos_demand_areas_m2'] = temp_dem_area
+    combos_info['npv_share_en_champ'] = df_npv_shares.loc[en_champ_agent]['npv_share_mag']
     
     return combos_info

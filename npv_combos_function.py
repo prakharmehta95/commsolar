@@ -10,7 +10,8 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     
     import pandas as pd
     import numpy as np
-    
+    print("################################################")
+    print('agent_list_final taken from df_solar_AC, which comes from df_solar_combo columns:')
     agent_list_final = df_solar_AC.columns
     print(agent_list_final)
            
@@ -113,7 +114,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     '''
     
     #import next line from main...    ALLOWED HERE FOR TEST
-    PV_price_baseline = pd.read_excel(r'C:\Users\iA\OneDrive - ETHZ\Thesis\PM\Data\Solar PV Cost Projections\PV_Prices.xlsx')
+    PV_price_baseline = pd.read_excel(r'C:\Users\prakh\OneDrive - ETHZ\Thesis\PM\Data\Solar PV Cost Projections\PV_Prices.xlsx')
     
     #this stores projected PV prices for all sizes of PV systems
     PV_price_projection = pd.DataFrame(data = None)
@@ -334,7 +335,10 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     temp_payback_list = []
     smart_meter_inv_cost_list = []
     pv_inv_cost_list = []
-    
+    invest_rate = 0
+    invest_meter_rate = 0
+    temp_pv_subsidy = 0
+    coop_cost = 0
     for i in agent_list_final:
         #inv_cost_list = []
         ##temp_npv_list = []
@@ -435,7 +439,9 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
                 join_new_comm = 0
             else:
                 join_new_comm = 1
-
+                
+        #NEEDS TO BE EDITED HERE!!
+        #READ THE NAME OF THE COMBO TO FIGURE OUT IF JOINING A NEW COMM? OR MAKE ANOTHER TEMPORARY DATAFRAME?
         join_new_comm = 1 #temporarily set to 1 so that always considered like a new community. Ideally read in from some dataframe 
         if join_new_comm == 1:
             coop_cost               = admin_costs + (df_num_members.loc['Num_Members'][i]*rate_cooperation)

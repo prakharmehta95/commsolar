@@ -587,15 +587,22 @@ def stage2_decision(self,uid,idea):
         df_demand_combos= df_demand_combos_possible[comm_name]
 
         if len(Combos_Info.index) != 0: #meaning that some community is formed
-            #set the adoption as 1 for all the constituent  buildings
-            #set some variable which indicates whether it is a community or an individual PV system
-            pass
-            
+            #here compare with individual NPVs
+            if Agents_Ind_NPVs.loc[self.unique_id]['npv'] < Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] > 0:
+                #form a community
+                #set the adoption as 1 for all the constituent  buildings
+                #set some variable which indicates whether it is a community or an individual PV system
+                pass
+            elif Agents_Ind_NPVs.loc[self.unique_id]['npv'] >= Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[self.unique_id]['npv'] > 0:
+                #adopt individual
+                pass
         elif len(Combos_Info.index) != 0: #meaning that NO community is formed, hence go for individual PV adoption
-            #set adoption as 1 for an individual PV formation
+            if Agents_Ind_NPVs.loc[self.unique_id]['npv'] >=0:
+                #adopt individual
+                #set adoption as 1 for an individual PV formation
             pass
         
-        #consider for joining new comms...
+        
     
     
     
