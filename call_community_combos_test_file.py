@@ -11,16 +11,16 @@ from community_combos import community_combinations
 import pandas as pd
 import numpy as np
 
-df_solar = pd.read_pickle(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
+df_solar = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
 df_solar = df_solar*0.97
-df_demand = pd.read_pickle(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
-data = pd.read_excel(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
+df_demand = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
+data = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
 
 data['intention'] = ""
 
 data['intention'] = [ 1 if i%2 == 1 else 1 for i in range(len(data.index))] # temporarily setting intention so that I can replicate what happens in the ABM
 
-distances = pd.read_csv(r'C:\Users\prakh\Dropbox\Com_Paper\07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
+distances = pd.read_csv(r'C:\Users\iA\Dropbox\Com_Paper\07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
 
 '''
 lets say that the filtering is already done and I have the building which is being considered at the moment 

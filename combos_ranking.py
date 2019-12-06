@@ -7,14 +7,18 @@ Created on Fri Nov 29 14:06:29 2019
 #%%
 
 
-def ranking_combos(NPV_combos, df_demand, combos_consider):
+def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, df_join_community, df_bldgs_names):
     print("ranking entered")
     import pandas as pd
-    #NPV_combos_temp = pd.DataFrame(data = None, index = ['npvs'])
-    NPV_combos_temp = NPV_combos#.drop(columns = 'Installation_Year')
-    npv_max_temp = NPV_combos_temp#.transpose()
+    npv_max_temp = NPV_combos.copy()#.transpose()
     npv_max_temp =npv_max_temp.sort_values(by = ['npv'], ascending = False)
     npvs_max = npv_max_temp.head(3).copy() #top 3 combinations
+    
+    #add the constituent building info to the npvs_max dataframe
+    npvs_max['Bldg_Names'] = ""
+    for i in npvs_max.index:
+        npvs_max.at[i,'Bldg_Names'] = df_bldgs_names.loc['Bldg_Names'][i]
+    
     #print(npv_max)
     print("npvs max dataframe = ",npvs_max)
     bldgs_comm_bestnpv = str.split(npvs_max.index[0],'_') #split string to get name of the buildings in the community
@@ -69,14 +73,14 @@ def ranking_combos(NPV_combos, df_demand, combos_consider):
     #again sort in descending order
     npvs_max = npvs_max.sort_values(by = ['npv'], ascending = False)
     
-    #maybe need a for loop here - avoided it by using if-else
+    #
     if npvs_max.loc[npvs_max.index[0]]['all_agree'] == 'Y':
         print('condition 1')
         community = npvs_max.index[0]
-    elif (npvs_max.loc[npvs_max.index[0]]['all_agree'] != 'Y') and (npvs_max.loc[npvs_max.index[1]]['all_agree'] == 'Y'):
+    elif (npvs_max.loc[npvs_max.index[0]]['all_agree'] != 'N') and (npvs_max.loc[npvs_max.index[1]]['all_agree'] == 'Y'):
         print('condition 2')
         community = npvs_max.index[1]
-    elif (npvs_max.loc[npvs_max.index[0]]['all_agree'] != 'Y') and (npvs_max.loc[npvs_max.index[1]]['all_agree'] != 'Y') and (npvs_max.loc[npvs_max.index[2]]['all_agree'] == 'Y'):
+    elif (npvs_max.loc[npvs_max.index[0]]['all_agree'] != 'N') and (npvs_max.loc[npvs_max.index[1]]['all_agree'] != 'Y') and (npvs_max.loc[npvs_max.index[2]]['all_agree'] == 'Y'):
         print('condition 3')
         community = npvs_max.index[2]
     #elif for more than 3 conditions...
@@ -87,25 +91,27 @@ def ranking_combos(NPV_combos, df_demand, combos_consider):
     comm_bldgs = str.split(community,'_') #split string to get name of the buildings in the community
     comm_bldgs.remove('')
     
-    temp_egids = ""
-    temp_types = ""
-    temp_owners = ""
-    temp_zone_ids = ""
-    temp_plot_ids = ""
-    temp_total_persons = 0
-    temp_num_sm_meters = 0
-    temp_roof_area = 0
-    temp_pv_yearly = 0
-    temp_pv_size = 0
-    temp_pv_category = ""
-    temp_pv_sub = 0
-    temp_dem = 0
-    temp_dem_area = 0
+    temp_bldg_names     = ""
+    temp_egids          = ""
+    temp_types          = ""
+    temp_owners         = ""
+    temp_zone_ids       = ""
+    temp_plot_ids       = ""
+    temp_total_persons  = 0
+    temp_num_sm_meters  = 0
+    temp_roof_area      = 0
+    temp_pv_yearly      = 0
+    temp_pv_size        = 0
+    temp_pv_category    = ""
+    temp_pv_sub         = 0
+    temp_dem            = 0
+    temp_dem_area       = 0
     
     combos_info = pd.DataFrame(data = None, index = [community])
     
     for i in comm_bldgs:
         #maybe here add a field so that the building names are also saved
+        temp_bldg_names = temp_bldg_names + i + '_'
         temp_egids = temp_egids + str(combos_consider.loc[i]['bldg_EGID']) + '_'
         temp_types = temp_types + combos_consider.loc[i]['bldg_type'] + '_'
         temp_owners = temp_owners + combos_consider.loc[i]['bldg_owner'] + '_'
@@ -122,7 +128,7 @@ def ranking_combos(NPV_combos, df_demand, combos_consider):
         print("temp_dem at comm_bldg = ",i,temp_dem)
         temp_dem_area = temp_dem_area + combos_consider.loc[i]['demand_areas_nutzflache_m2']
     
-    
+    combos_info['combos_bldg_names'] = temp_bldg_names
     combos_info['combos_EGIDs'] = temp_egids
     combos_info['combos_types'] = temp_types
     combos_info['combos_owners'] = temp_owners

@@ -78,7 +78,7 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
     
     #add new code to find if exisitng individual PV - because then the PV size of the community is reduced and the cash flows happen separately
     combos_consider['Comm_formed'] = ""
-    combos_consider.at['B147891','Comm_formed'] = "C_B147891_B147893_"
+    combos_consider.at['B147890','Comm_formed'] = "C_B147890_B147889_"
     #combos_consider.at['B147893','Comm_formed'] = "C_B147891_B147893_"
     #in case there are communities already formed, consider them for an agent to join a community later    
     #temp_combos_list_temp = list(combos_consider.index)
@@ -118,13 +118,14 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
             del temp_combos_list[i] 
     
     #% make the solar and demand info for all the combinations to calculate the NPVs
-    df_solar_combo = pd.DataFrame(data = None)
-    df_demand_combo = pd.DataFrame(data = None)
-    df_pvsize_combo = pd.DataFrame(data = None, index = ['Size'])
-    df_join_individual = pd.DataFrame(data = None, index = ['Join_Ind'])
-    df_join_community = pd.DataFrame(data = None, index = ['Join_Comm'])
+    df_solar_combo      = pd.DataFrame(data = None)
+    df_demand_combo     = pd.DataFrame(data = None)
+    df_pvsize_combo     = pd.DataFrame(data = None, index = ['Size'])
+    df_bldgs_names      = pd.DataFrame(data = None, index = ['Bldg_Names'])
+    df_join_individual  = pd.DataFrame(data = None, index = ['Join_Ind'])
+    df_join_community   = pd.DataFrame(data = None, index = ['Join_Comm'])
     df_num_smart_meters = pd.DataFrame(data = None, index = ['Num'])
-    df_num_members = pd.DataFrame(data = None, index = ['Num_Members'])
+    df_num_members      = pd.DataFrame(data = None, index = ['Num_Members'])
     print("temp_combos_list =========",temp_combos_list)
     
     temp_variable = 1 #to make 2 cases - consumer (= 1) and prosumer (= 0)
@@ -138,6 +139,9 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
         temp_name = ""
         temp_pv_list = []
         temp_pv_size = 0
+        temp_bldg_og_name_list_df = []
+        temp_bldg_og_name_list = [] #make these similar to temp_pv_list for the names of the builddings
+        #temp_bldg_og_name = ""
         temp_join_individual_list = []
         temp_join_individual = 0
         temp_join_community_list = []
@@ -156,6 +160,9 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
         temp_name_2 = ""
         temp_pv_list_2 = []
         temp_pv_size_2 = 0
+        temp_bldg_og_name_list_df_2 = []
+        temp_bldg_og_name_list_2 = [] 
+        #temp_bldg_og_name_2 = ""
         temp_join_individual_list_2 = []
         temp_join_individual_2 = 0
         temp_join_community_list_2 = []
@@ -174,6 +181,9 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
         temp_name_3 = ""
         temp_pv_list_3 = []
         temp_pv_size_3 = 0
+        temp_bldg_og_name_list_df_3 = []
+        temp_bldg_og_name_list_3 = [] 
+        #temp_bldg_og_name_3 = ""
         temp_join_individual_list_3 = []
         temp_join_individual_3 = 0
         temp_join_community_list_3 = []
@@ -188,11 +198,13 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
             #print("******j******* = ", j)
             try:
                 temp_bldg               = temp_combos_list[i][j] 
+                
                 #print(temp_bldg)
                 #print("temp_bldg = ", temp_bldg)
                 temp_solar              = temp_solar + df_solar[temp_bldg]
                 temp_demand             = temp_demand + df_demand[temp_bldg]
                 temp_pv_size            = temp_pv_size + combos_consider.loc[temp_bldg]['pv_size_kw']
+                temp_bldg_og_name_list.append(temp_bldg)
                 #temp_join_individual    = 0
                 #temp_join_community     = 0
                 temp_num_smart_meters   = temp_num_smart_meters + combos_consider.loc[temp_bldg]['num_smart_meters']
@@ -213,10 +225,15 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
                     if len(temp_combos_list[i]) != 2:
                   #      print("case everyone")
                         temp_bldg               = temp_combos_list[i][j] 
+                        temp_bldg_comm_contain  = temp_combos_list[i][j] 
+                        temp_bldg_comm          = temp_bldg_comm_contain.split(sep = '_')
+                        temp_bldg_comm.remove('C')
+                        temp_bldg_og_name_list.extend(temp_bldg_comm)
                    #     print("temp_bldg in k = 1 = ", temp_bldg)
                         temp_solar              = temp_solar + df_solar_combos_main[temp_bldg]
                         temp_demand             = temp_demand + df_demand_combos_main[temp_bldg]
                         temp_pv_size            = temp_pv_size + Combos_formed_Info.loc[temp_bldg]['combos_pv_size_kw']
+                        
                         #temp_join_individual    = 0
                         temp_join_community     = 1
                         temp_num_smart_meters   = temp_num_smart_meters + Combos_formed_Info.loc[temp_bldg]['combos_num_smart_meters']
@@ -235,10 +252,15 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
                       #  print("k = ",k)
                         #agent will also install solar on his own roof - PROSUMER
                         temp_bldg               = temp_combos_list[i][j] 
-                       # print("temp_bldg in k = 1 = ", temp_bldg)
+                        temp_bldg_comm_contain  = temp_combos_list[i][j] 
+                        temp_bldg_comm          = temp_bldg_comm_contain.split(sep = '_')
+                        temp_bldg_comm.remove('C')
+                        temp_bldg_og_name_list.extend(temp_bldg_comm)
+                        # print("temp_bldg in k = 1 = ", temp_bldg)
                         temp_solar              = temp_solar + df_solar_combos_main[temp_bldg]
                         temp_demand             = temp_demand + df_demand_combos_main[temp_bldg]
                         temp_pv_size            = temp_pv_size + Combos_formed_Info.loc[temp_bldg]['combos_pv_size_kw']
+                        
                         #temp_join_individual    = 0
                         temp_join_community     = 1
                         temp_num_smart_meters   = temp_num_smart_meters + Combos_formed_Info.loc[temp_bldg]['combos_num_smart_meters']
@@ -254,6 +276,11 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
                         #print("k = ",k)
                         #agent will not install solar on own roof, only join as a CONSUMER
                         temp_bldg_2             = temp_combos_list[i][j] #CHECK IF TEMP_BLDG OR TEMP_BLDG_2!!
+                        temp_bldg_comm_contain_2= temp_combos_list[i][j] 
+                        temp_bldg_comm_2        = temp_bldg_comm_contain_2.split(sep = '_')
+                        temp_bldg_comm_2.remove('C')
+                        temp_bldg_og_name_list_2.append(temp_combos_list[i][j-1]) #to add the name of the first agent (active agent)
+                        temp_bldg_og_name_list_2.extend(temp_bldg_comm_2)
                         #print("temp_bldg in k = 2 = ", temp_bldg)
                         temp_solar_2            = df_solar_combos_main[temp_bldg]
                         temp_demand_2           = temp_demand           #only temp_demand must be considered as the KeyError only happens with the second agent; I have hardcoded it this way. Anyway calculated in the previous lines of code!
@@ -278,6 +305,10 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
                     if len(temp_combos_list[i]) != 2:
                      #   print("case everyone")
                         temp_bldg               = temp_combos_list[i][j] 
+                        temp_bldg_comm_contain  = temp_combos_list[i][j] 
+                        temp_bldg_comm          = temp_bldg_comm_contain.split(sep = '_')
+                        temp_bldg_comm.remove('PV')
+                        temp_bldg_og_name_list.extend(temp_bldg_comm)
                         print("temp_bldg in k = 1 = ", temp_bldg)
                         temp_bldg_name_edited   = str.strip(temp_bldg, 'PV_')
                         temp_solar              = temp_solar + df_solar[temp_bldg_name_edited]
@@ -299,11 +330,15 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
                         #print("k = ",k)
                         #agent will also install solar on his own roof - PROSUMER
                         temp_bldg               = temp_combos_list[i][j] 
+                        temp_bldg_comm_contain  = temp_combos_list[i][j] 
+                        temp_bldg_comm          = temp_bldg_comm_contain.split(sep = '_')
+                        temp_bldg_comm.remove('PV')
+                        temp_bldg_og_name_list.extend(temp_bldg_comm)
                         temp_bldg_name_edited = str.strip(temp_bldg, 'PV_')
                         #print("temp_bldg in k = 1 = ", temp_bldg)
                         temp_solar              = temp_solar + df_solar[temp_bldg_name_edited]
                         temp_demand             = temp_demand + df_demand[temp_bldg_name_edited]
-                        temp_pv_size            = temp_pv_size + combos_consider.loc[temp_bldg_name_edited]['pv_size_kw']
+                        temp_pv_size            = temp_pv_size + combos_consider.loc[temp_bldg_name_edited]['pv_size_kw'] #CHECK!!
                         temp_join_individual    = 1
                         #temp_join_community     = 0
                         temp_num_smart_meters   = temp_num_smart_meters + combos_consider.loc[temp_bldg_name_edited]['num_smart_meters']
@@ -319,11 +354,16 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
                         #print("k = ",k)
                         #agent will not install solar on own roof, only join as a CONSUMER
                         temp_bldg               = temp_combos_list[i][j] #CHECK IF TEMP_BLDG OR TEMP_BLDG_2!!
+                        temp_bldg_comm_contain_3= temp_combos_list[i][j] 
+                        temp_bldg_comm_3        = temp_bldg_comm_contain_3.split(sep = '_')
+                        temp_bldg_comm_3.remove('PV')
+                        temp_bldg_og_name_list_3.append(temp_combos_list[i][j-1]) #to add the name of the first agent (active agent)
+                        temp_bldg_og_name_list_3.extend(temp_bldg_comm_3)
                         temp_bldg_name_edited   = str.strip(temp_bldg, 'PV_')
                         #print("temp_bldg in k = 2 = ", temp_bldg)
-                        temp_solar_3            = df_solar[temp_bldg_name_edited]
+                        temp_solar_3            = df_solar[temp_bldg_name_edited] #only the existing agent with the PV
                         temp_demand_3           = temp_demand               #Calculated in the previous lines of code!
-                        temp_pv_size_3          = temp_pv_size              #Calculated in the previous lines of code!
+                        temp_pv_size_3          = combos_consider.loc[temp_bldg_name_edited]['pv_size_kw']#Calculated in the previous lines of code! - CHECK!!
                         temp_join_individual_3  = 1
                         #temp_join_community_3   = 0
                         temp_num_smart_meters_3 = temp_num_smart_meters     #Calculated in the previous lines of code!
@@ -343,12 +383,15 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
         df_demand_combo[temp_name]      = temp_demand
         #print(temp_name)    
         temp_pv_list.append(temp_pv_size)
+        temp_bldg_og_name_list_df.append(temp_bldg_og_name_list)
         temp_join_individual_list.append(temp_join_individual)
         temp_join_community_list.append(temp_join_community)
         temp_num_smartmeters_list.append(temp_num_smart_meters)
         temp_num_members_list.append(temp_num_members)
         df_pvsize_combo[temp_name]      = ""
         df_pvsize_combo[temp_name]      = temp_pv_list
+        df_bldgs_names[temp_name]       = ""
+        df_bldgs_names[temp_name]       = temp_bldg_og_name_list_df  
         df_join_individual[temp_name]   = ""
         df_join_community[temp_name]    = ""
         df_join_individual[temp_name]   = temp_join_individual_list
@@ -367,12 +410,15 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
             df_demand_combo[temp_name_2]        = temp_demand_2
             #print(temp_name)    
             temp_pv_list_2.append(temp_pv_size_2)
+            temp_bldg_og_name_list_df_2.append(temp_bldg_og_name_list_2)
             temp_join_individual_list_2.append(temp_join_individual_2)
             temp_join_community_list_2.append(temp_join_community_2)
             temp_num_smartmeters_list_2.append(temp_num_smart_meters_2)
             temp_num_members_list_2.append(temp_num_members_2)
             df_pvsize_combo[temp_name_2]        = ""
             df_pvsize_combo[temp_name_2]        = temp_pv_list_2
+            df_bldgs_names[temp_name_2]         = ""
+            df_bldgs_names[temp_name_2]         = temp_bldg_og_name_list_df_2
             df_join_individual[temp_name_2]     = ""
             df_join_community[temp_name_2]      = ""
             df_join_individual[temp_name_2]     = temp_join_individual_list_2
@@ -393,12 +439,15 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
             df_demand_combo[temp_name_3]        = temp_demand_3
             #print(temp_name)    
             temp_pv_list_3.append(temp_pv_size_3)
+            temp_bldg_og_name_list_df_3.append(temp_bldg_og_name_list_3)
             temp_join_individual_list_3.append(temp_join_individual_3)
             temp_join_community_list_3.append(temp_join_community_3)
             temp_num_smartmeters_list_3.append(temp_num_smart_meters_3)
             temp_num_members_list_3.append(temp_num_members_3)
             df_pvsize_combo[temp_name_3]        = ""
             df_pvsize_combo[temp_name_3]        = temp_pv_list_3
+            df_bldgs_names[temp_name_3]         = ""
+            df_bldgs_names[temp_name_3]         = temp_bldg_og_name_list_df_3
             df_join_individual[temp_name_3]     = ""
             df_join_community[temp_name_3]      = ""
             df_join_individual[temp_name_3]     = temp_join_individual_list_3
@@ -422,7 +471,8 @@ def community_combinations(data, distances, df_solar, df_demand, df_solar_combos
     #this ranks the NPVs and then returns the best NPV. If no combination is possible then an empty dataframe is returned.
     from combos_ranking import ranking_combos
     print("ranking called here")
-    Combos_Info = ranking_combos(NPV_combos, df_demand, combos_consider)
+    Combos_Info = ranking_combos(NPV_combos, df_demand, combos_consider,
+                                 df_join_individual, df_join_community, df_bldgs_names)
     
     temp_name = Combos_Info.index[0] #eg = 'B147891_B147892_'
     x = temp_name.split('_')
