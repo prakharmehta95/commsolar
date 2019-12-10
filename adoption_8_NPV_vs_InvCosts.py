@@ -40,13 +40,13 @@ AGENT INFORMATION
 
 #INFORMATION on agents and all combinations
 agents_info = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
-df_demand = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_Demand_TOTAL_FINAL_30Nov.pickle')
-df_solar = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_30Nov.pickle')
+df_demand = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_Demand_TOTAL_FINAL_3Dec.pickle')
+df_solar = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
 df_solar = df_solar*0.97 #converting solar PV DC output to AC 
 
-df_solar_combos = pd.DataFrame(data = None)
-df_demand_combos= pd.DataFrame(data = None)
-        
+df_solar_combos     = pd.DataFrame(data = None)     #holds PV potential of the communities formed
+df_demand_combos    = pd.DataFrame(data = None)     #holds demands      of the communities formed
+Combos_formed_Info  = pd.DataFrame(data = None)     #holds information  of the  communities formed
 
 #NPV information of individual agents
 from __main__ import Agents_NPVs as Agents_Ind_NPVs
@@ -61,23 +61,24 @@ from __main__ import Agents_PPs_Norm as Agents_Ind_PPs_Norm
 
 list_agents = list(agents_info.bldg_name)
 
-PV_already_installed = agents_info[agents_info['pv_already_installed_size_kW']>0]
+PV_already_installed = agents_info.loc[agents_info['pv_already_installed_size_kW']>0]
 list_installed_solar_bldgs = PV_already_installed.bldg_name
 
 #creating new columns to hold information on the agents
-agents_info['intention'] = 0
-agents_info['Comm_NPV'] = 0
-agents_info['Ind_NPV'] = 0
-agents_info['Reason'] = ""
-agents_info['Ind_SCR'] = 0
-agents_info['Comm_SCR'] = 0
-agents_info['Adopt_IND'] = 0        #saves 1 if INDIVIDUAL adoption occurs, else stays 0
-agents_info['Adopt_COMM'] = 0       #saves 1 if COMMUNITY  adoption occurs, else stays 0
-agents_info['En_Champ'] = 0         #saves who is the energy champion of that community
-agents_info['Adopt_Year'] = 0             #saves year of adoption
+agents_info['intention']    = 0
+agents_info['Comm_NPV']     = 0
+agents_info['Ind_NPV']      = 0
+agents_info['Reason']       = ""
+agents_info['Ind_SCR']      = 0
+agents_info['Comm_SCR']     = 0
+agents_info['Adopt_IND']    = 0        #saves 1 if INDIVIDUAL adoption occurs, else stays 0
+agents_info['Adopt_COMM']   = 0       #saves 1 if COMMUNITY  adoption occurs, else stays 0
+agents_info['En_Champ']     = 0         #saves who is the energy champion of that community
+agents_info['Adopt_Year']   = 0             #saves year of adoption
 agents_info['Community_ID'] = ""    #community ID of the community formed
-agents_info['bldg_names'] = ""
-agents_info['bldg_names'] = agents_info['bldg_name']
+agents_info['Individual_ID'] = ""    #individual ID of the individual PV formed. Eg = PV_B123456 etc...
+agents_info['bldg_names']   = ""
+agents_info['bldg_names']   = agents_info['bldg_name']
 agents_info = agents_info.set_index('bldg_names')
 
 #agents_subplots = subplots_final
@@ -86,8 +87,6 @@ agents_info = agents_info.set_index('bldg_names')
 
 c = 0
 step_ctr = 0
-#agents_info['intention'] = ""
-#agents_info.set_index('bldg_id')
 
 class tpb_agent(Agent):
     """Class for the agents. Agents are initialised in init, and the step_idea
@@ -118,37 +117,32 @@ class tpb_agent(Agent):
         '''
         super().__init__(unique_id,model) 
         
-        self.bldg_type = bldg_type
-        self.bldg_own = bldg_own
-        self.bldg_zone = bldg_zone
-        self.bldg_plot = bldg_plot
-        
-        self.attitude = attitude                        #environmental attitude
-        self.pp = pp                                    #perceived profitability
-        self.peer_effect = peer_effect                  #peer effect - calculated in the step_idea later so just add a placeholder here for agent initialization?
+        self.bldg_type          = bldg_type
+        self.bldg_own           = bldg_own
+        self.bldg_zone          = bldg_zone
+        self.bldg_plot          = bldg_plot
+        self.attitude           = attitude              #environmental attitude
+        self.pp                 = pp                    #perceived profitability
+        self.peer_effect        = peer_effect           #peer effect - calculated in the step_idea later so just add a placeholder here for agent initialization?
         self.neighbor_influence = neighbor_influence    #stores the neighbor_influence, called with the 'check_neighbours_subplots' function in step_idea(self)
-        
-        self.total = total                      #sum of the intention function
-        self.counter = counter
-        self.intention = intention              #stores the intention of the agent (whether or not it passed idea stage)
-        self.intention_yr = intention_yr        #stores the intention of the agent every year of the simulation
-        self.adopt_ind = adopt_ind
-        self.adopt_comm = adopt_comm
-        self.adopt_year = adopt_year
-        self.en_champ = en_champ
-        self.pv_size = pv_size
-        self.dem_total = dem_total
+        self.total              = total                 #sum of the intention function
+        self.counter            = counter
+        self.intention          = intention             #stores the intention of the agent (whether or not it passed idea stage)
+        self.intention_yr       = intention_yr          #stores the intention of the agent every year of the simulation
+        self.adopt_ind          = adopt_ind
+        self.adopt_comm         = adopt_comm
+        self.adopt_year         = adopt_year
+        self.en_champ           = en_champ
+        self.pv_size            = pv_size
+        self.dem_total          = dem_total
         #self.egids = egids
         
-          
-               
     def step_idea(self):
         '''
         defines what the agent does in his step.
-        StagedActivation is used now, this is the first stage.
-        IDEA/INTENTION developments happens in this case
+        Since StagedActivation is used this is the first stage.
+        IDEA/INTENTION developments happens in this stage
         '''
-        
         # only run the step_idea if agent has not already adopted!- NEED TO CHANGE THIS TYPE OF REASONING - NOW DEPENDS ON STATE OF THE AGENT
         if self.adopt_comm == 1 or self.adopt_ind == 1:
             self.intention = 0                          #do it again to be safe - so that an agent which adopted is out of the simulation
@@ -573,34 +567,72 @@ def stage2_decision(self,uid,idea):
         same_plot_agents_positive_intention = same_plot_agents[same_plot_agents['intention'] == 1 or same_plot_agents['adoption'] == 1] #available to form community
         #only agents without solar will have the intention variable as '1'. If an agent has individual/community PV then intention is always '0', but adoption will be '1'
         
-        #even read the agents which have already formed a community or installed PV - how? take all agents with positive intention AND those which have formed PV...
-        #2 types of agents already formed PV - individual and community
-        
-        
         #check for community formation 
         from community_combos import community_combinations
-        Combos_Info, NPV_Combos, df_solar_combos_possible, df_demand_combos_possible, comm_name = community_combinations(data, distances, df_solar, df_demand, df_solar_combos, df_demand_combos)
+        Combos_Info, NPV_Combos, df_solar_combos_possible, df_demand_combos_possible, comm_name = community_combinations(agents_info, same_plot_agents_positive_intention, distances, df_solar, df_demand, df_solar_combos, df_demand_combos, Combos_formed_Info, self.unique_id)
         
         #keeping info of the community formed as it is needed later in case an agent wants to join a particular community
-        temp_comm_name = 'C_' + comm_name
-        df_solar_combos[temp_comm_name] = df_solar_combos_possible[comm_name] 
-        df_demand_combos= df_demand_combos_possible[comm_name]
-
+        temp_comm_name                                  = comm_name                                 #'C_' + comm_name - CHECK if this needs to be done. comm_name itself sends back a name like: 'C_B123456_B789101112'
+        df_solar_combos[temp_comm_name]                 = df_solar_combos_possible[comm_name]       #add a new column  
+        df_demand_combos[temp_comm_name]                = df_demand_combos_possible[comm_name]      #add a new column  
+        Combos_formed_Info.loc[Combos_Info.index[0]]    = Combos_Info.iloc[0]                       #copying the only row in Combos_Info to Combos_formed_Info
+        
+        
         if len(Combos_Info.index) != 0: #meaning that some community is formed
             #here compare with individual NPVs
+            
             if Agents_Ind_NPVs.loc[self.unique_id]['npv'] < Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] > 0:
                 #form a community
                 #set the adoption as 1 for all the constituent  buildings
                 #set some variable which indicates whether it is a community or an individual PV system
-                pass
+                agents_adopting_comm = Combos_Info.combos_bldg_names
+                for g in agents_adopting_comm:
+                    if g == self.unique_id:
+                        self.en_champ = 1                                                                               #setting the agent which is the energy champion - the first agent
+                        agents_info.update(pd.Series([self.en_champ], name  = 'En_Champ', index = [self.unique_id]))
+                    for h in range(len(agents_objects_list)):
+                        if g == agents_objects_list[h].unique_id:
+                            agents_objects_list[h].adopt_comm = 1                                                       #setting community adoption as 1 for all agents involved
+                            self.adopt_year = 2018 + step_ctr
+                            agents_objects_list[h].intention = 0                                                        #setting intention as 0 for all agents involved
+                            agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
+                            agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
+                            agents_info.update(pd.Series([temp_comm_name],         name  = 'Community_ID', index = [g]))
+                            agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
+                            #agents_info.update(pd.Series([share_npv],       name  = 'Comm_NPV',     index = [g])) #npv share of each building to be saved here, NOT COMPLETE AS ON 10 DEC
+                            #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [g])) #npv share of each building to be saved here, NOT COMPLETE AS ON 10 DEC
+                            agents_info.update(pd.Series(["Comm>Ind"],      name  = 'Reason',       index = [g]))
+                            #agents_info.update(pd.Series([ind_scr],         name  = 'Ind_SCR',      index = [g])) #scr of each building to be saved here, NOT COMPLETE AS ON 10 DEC
+                            #agents_info.update(pd.Series([comm_scr],        name  = 'Comm_SCR',     index = [g]))
+            
             elif Agents_Ind_NPVs.loc[self.unique_id]['npv'] >= Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[self.unique_id]['npv'] > 0:
                 #adopt individual
-                pass
-        elif len(Combos_Info.index) != 0: #meaning that NO community is formed, hence go for individual PV adoption
+                self.adopt_ind  = 1
+                self.adopt_year = 2018 + step_ctr
+                ind_npv = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                self.intention  = 0
+                self.adopt_comm = 0
+            
+        elif len(Combos_Info.index) == 0: #meaning that NO community is formed, hence go for individual PV adoption
             if Agents_Ind_NPVs.loc[self.unique_id]['npv'] >=0:
                 #adopt individual
                 #set adoption as 1 for an individual PV formation
-            pass
+                self.adopt_ind  = 1
+                self.adopt_year = 2018 + step_ctr
+                ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                self.intention  = 0
+                self.adopt_comm = 0
+            
         
         
     

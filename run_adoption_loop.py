@@ -83,46 +83,11 @@ from NPV_Calculation import Agents_PPs_Norm
 
 
 #%% =============================================================================
-# SMALL WORLD NETWORK
-#SHIFT THIS TO THE MAIN FILE AS WELL!!
-def make_swn():
-    '''
-    to make random groups of small world networks 
-    https://networkx.github.io/documentation/networkx-1.9/reference/generated/networkx.generators.random_graphs.watts_strogatz_graph.html
-    
-    watts_strogatz_graph(n, k, p, seed=None)
-    
-    n = 716 for ZEV/no_ZEV scenario; 1437 for TOP4...
-    k = each node is connected to 10 closest peers
-    p = The probability of rewiring each edge, set at 0.5 (in between regular (p = 0.0) and random (p = 1))
-    seed = seed for random number generator. Always fixed at 2!
-    '''
-    
-    temp_df = pd.DataFrame(data = None, index = range(20),columns = range(1437))
-    print("make swn called")
-    
-    
-    if scenario == "ZEV" or scenario == "no_ZEV":
-        G = nx.watts_strogatz_graph(716,10,0.5,2)       
-        for i in range(716):
-            l = list(G.adj[i])
-            if len(l) < 10:
-                for j in range(10-len(l)):
-                    l.append(np.nan)
-            temp_df[i] = pd.Series(list(G.adj[i]))
-        
-        '''ÇHECK HERE!'''
-        swn_ref_Z0003 = pd.read_csv(r'C:\Users\iA\OneDrive - ETHZ\Thesis\PM\Codes\ABM\MasterThesis_PM\masterthesis\TPB\SWN_List_less_100MWh.csv') #key of changing numbers to building names/IDs
-        di = swn_ref_Z0003.Circular_List.to_dict()              #dictionary to replace numbers of the watts-stratogatz function with actual building names
-        temp_df = temp_df.rename(columns = di)
-        swn = pd.DataFrame(data = None)                         #holds all swns for all agents
-        swn = temp_df
-    
-    for i in swn.columns:
-        swn[i] = temp_df[i].map(di)
-    return swn
 
-Agents_Peer_Network = make_swn()                                       #calls swn function
+distances = pd.read_csv(r'C:\Users\iA\Dropbox\Com_Paper\07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
+
+from small_world_network import  make_swn
+Agents_Peer_Network = make_swn(distances, agents_info) #calls swn function
 
 #%%
 number = 1437   #number of agents
