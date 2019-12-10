@@ -31,7 +31,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     import numpy as np
     agent_list_final = df_solar_AC.columns
     
-    install_year = year_model
+    install_year = year_model #this is read in from the main ABM, equal to the step_ctr which keeps track of the year of the simulation.
     
     #==========================================================================
     #temporarily writing these here, use from the model in the main ABM run

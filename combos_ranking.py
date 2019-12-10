@@ -40,7 +40,6 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
     npvs_max['all_same_zones']  = ""
     for i in npvs_max.index:
         print("i = ",i)
-        #first create the npv shares in an accessible dataframe...
         df_npv_shares = pd.DataFrame(data = None, index = npvs_max.loc[i]['Bldg_Names'], columns = ['yearly_demand','npv_share','npv_share_mag'])
         for j in npvs_max.loc[i]['Bldg_Names']:
             df_npv_shares.at[j,'yearly_demand'] = sum(df_demand[j]) #original individual demand
@@ -50,11 +49,21 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
         
         
         #need to store these NPV shares so that they can be used later to compare in case an agent wants to join an existing community
+        #@Alejandro - I have not stored the NPV shares for all agents when they form a community.
+        #so when an agent wishes to join an exisiting community, the agents within the existing
+        #community again compare with their individual  NPVs.
+        #this may lead to a worse community combination. The only way this is 
+        #avoided in the current script is that the energy champion's NPV is 
+        #actually saved, so at least the energy champion agent can compare 
+        #new community npv share with old community npv share. 
+        #This will still need to be added in the following lines here as an 
+        #alternative if-else statement!
         
         #actual loop for comparison with individual NPVs
         ctr = 0
-        dummy_for_actual_npv = -2020202 #will be read from Agents_Ind_NPVs.loc[year][i]!!!****
-        #ccc = []
+        dummy_for_actual_npv = -2020202     #will be read from Agents_Ind_NPVs.loc[year][i]!!!****
+        #@Alejandro - send the Agents_Ind_NPVs from the main ABM to here so that it is available for comparison
+        
         for j in npvs_max.loc[i]['Bldg_Names']:
             if dummy_for_actual_npv < df_npv_shares.loc[j]['npv_share_mag']: #IT MUST BE THIS WAY - if Agents_Ind_NPVs.loc[year][i] > df_npv_shares.loc[i]['npv_share_mag']:
                 ctr = ctr + 1
@@ -73,9 +82,9 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
                 
     #finding the best community combination; best = highest positive NPV and all have said yes and all buildings in the same zone
     npvs_max_best_temp  = npvs_max.loc[npvs_max.all_agree == 'Y']
-    npvs_max_best_temp  = npvs_max_best_temp.sort_values(by = ['npv'], ascending = False)
+    npvs_max_best_temp  = npvs_max_best_temp.sort_values(by = ['npv'], ascending = False) #holds combinations in which all community members agree AND all are in different zones
     npvs_max_best       = npvs_max_best_temp.loc[npvs_max_best_temp.all_same_zones == 'Y']
-    npvs_max_best       = npvs_max_best.sort_values(by = ['npv'], ascending = False)
+    npvs_max_best       = npvs_max_best.sort_values(by = ['npv'], ascending = False) #holds combinations in which all community members agree AND all are in the same zone
     if len(npvs_max_best.index) > 0:
         community = npvs_max_best.index[0]      #best npv, all agree, same zones
     elif len(npvs_max_best_temp.index) > 0:
@@ -85,8 +94,8 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
     
     #storing information on the community formed
     if community != "":
-        comm_bldgs      = npvs_max_best.loc[community]['Bldg_Names']#str.split(community,'_') #split string to get name of the buildings in the community
-        en_champ_agent  = comm_bldgs[0] #the first building in the community is the energy champion
+        comm_bldgs      = npvs_max_best.loc[community]['Bldg_Names']    #get names of the buildings in the community
+        en_champ_agent  = comm_bldgs[0]                                 #the first building in the community is the energy champion
     
         if len(comm_bldgs) > 0: #meaning that there is indeed a community formed. Else comm_bldgs = 0
             temp_bldg_names         = []
@@ -112,7 +121,6 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
             combos_info = pd.DataFrame(data = None, index = [community])
             
             for i in comm_bldgs:
-                #maybe here add a field so that the building names are also saved
                 temp_bldg_names.append(i)
                 temp_egids.append(combos_consider.loc[i]['bldg_EGID']) 
                 temp_types.append(combos_consider.loc[i]['bldg_type'])

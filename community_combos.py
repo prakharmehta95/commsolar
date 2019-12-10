@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Dec 10 17:59:31 2019
-
-@author: iA
-"""
-
-# -*- coding: utf-8 -*-
-"""
 Created on Mon Nov 25 14:13:01 2019
 
 @author: iA
@@ -14,7 +7,7 @@ Created on Mon Nov 25 14:13:01 2019
 
 #%%
 import pandas as pd
-def community_combinations(data_og, same_plot_agents_positive_intention, distances, df_solar, df_demand, df_solar_combos_main , df_demand_combos_main, Combos_formed_Info, uid):
+def community_combinations(data_og, same_plot_agents_positive_intention, distances, df_solar, df_demand, df_solar_combos_main , df_demand_combos_main, Combos_formed_Info, uid, year):
     
     '''
     data                                = agents_info - Info dataframe on all agents. Contains who passed the intention stage, who has individal/community PV, IDs of the adopted PV systems  
@@ -26,6 +19,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     df_demand_combos_main               = Demands of all possible combinations
     Combos_formed_Info                  = Info on already formed combinations
     uid                                 = ID of the activated agent. Eg = B123456
+    year                                = Year of the simulation. 0 = 2018, 1 = 2019 and so on.
     '''
     
     data = data_og.copy()
@@ -110,8 +104,10 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     
     
     #READ FROM THE MAIN ABM A FILE WHICH CONTAINS INFO ON ALREADY FORMED COMMUNITIES, THEN FILTER FOR THE BUILDINGS IN THIS CASE AND ASSIGN TO THE COLUMNS IN combos_consider
-    combos_consider['Comm_formed'] = ""
-    combos_consider['Ind_formed'] = ""
+    combos_consider['Comm_formed']  = ""
+    combos_consider['Ind_formed']   = ""
+    combos_consider['Community']  = ""
+    combos_consider['Individual']  = ""
     for i in combos_consider.index:
         combos_consider.at[i,'Community']   = data.loc[i]['Adopt_COMM']
         combos_consider.at[i,'Individual']  = data.loc[i]['Adopt_IND']
@@ -121,7 +117,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
 
 #     
 # =============================================================================
-#     
+#     FOR TESTING THIS FUNCTION SEPARATELY
+        
 #     combos_consider.at['B147890','Comm_formed'] = "C_B147890_B147889_"
 #     combos_consider.at['B147889','Comm_formed'] = "C_B147890_B147889_"
 #     #combos_consider.at['B147893','Comm_formed'] = "C_B147891_B147893_"
@@ -141,7 +138,10 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     
     temp_combos_list_temp = list(combos_consider.index)
     temp_combos_list_filter = [combos_consider.loc[i]['Comm_formed'] if combos_consider.loc[i]['community'] == 1 else combos_consider.loc[i]['Ind_formed'] if combos_consider.loc[i]['individual'] == 1  else i for i in temp_combos_list_temp]
+    #temp_combos_list_filter has the names of the agents who are available to form a community. 
+    #Includes existing communitities (= C_B12345_B6789) and individual PVs (= PV_B456789)
     
+    #make combinations in the following lines of code--------------------------
     import itertools
     temp_combos_list = []
     constant =  uid                              #read this from the self.uid
@@ -150,7 +150,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     if '' in temp_combos_list_filter:
         temp_combos_list_filter.remove('')
     
-    combos_consider_calc = temp_combos_list_filter
+    combos_consider_calc = temp_combos_list_filter.copy()
     combos_consider_calc = list(set(combos_consider_calc)) #remove repitition in the combos_consider_calc - will happen in case communities are already existing
     
     #create combinations without the activated agent, and then add the activated agent to all combos formed
@@ -160,12 +160,21 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             temp_combos[0:0]    = [constant]        #adding the active agent to all combos made without it
             temp_combos_list.append(temp_combos)
     
-    #since we add the active agent to the list of combos, the last element in the list is just the building. Since that is not a combo, it is removed in the next loop
+    #since we add the active agent to the list of combos, the last element in the list is just the active agent alone.
+    #Since that is not a combo, it is removed in the next loop.
+    #individual adoption case is taken care of in the main ABM
     for i in range(len(temp_combos_list)):
         if len(temp_combos_list[i]) == 1:
             del temp_combos_list[i] 
     
-    #% make the solar and demand info for all the combinations to calculate the NPVs
+    #temp_combos_list - THIS CONTAINS ALL THE  POSSIBLE COMBINATIONS
+    #combinations made!-------------------------------------------------------- 
+    
+    #%% COLLECTING AND STORING ALL INFO ON COMBINATIONS
+    # IT IS NEEDED TO CALCULATE THE NPVs FOR THE COMBINATIONS
+    
+    
+    #make the solar and demand info for all the combinations to calculate the NPVs
     df_solar_combo      = pd.DataFrame(data = None)
     df_demand_combo     = pd.DataFrame(data = None)
     df_pvsize_combo     = pd.DataFrame(data = None, index = ['Size'])
@@ -175,11 +184,10 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     df_join_community   = pd.DataFrame(data = None, index = ['Join_Comm'])
     df_num_smart_meters = pd.DataFrame(data = None, index = ['Num'])
     df_num_members      = pd.DataFrame(data = None, index = ['Num_Members'])
-    print("temp_combos_list =========",temp_combos_list)
-    
-    temp_variable = 1 #to make 2 cases - consumer (= 1) and prosumer (= 0)
-    set_flag_pros_cons = 0
+    #print("temp_combos_list =========",temp_combos_list)
+    set_flag_pros_cons = 0              #to make 2 cases - consumer (= 1) and prosumer (= 0)
     set_flag_pros_cons_individual = 0
+    
     for i in range(len(temp_combos_list)):
         temp_solar = 0
         temp_demand = 0
@@ -297,7 +305,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         temp_join_community     = 1
                         temp_num_smart_meters   = temp_num_smart_meters + Combos_formed_Info.loc[temp_bldg]['combos_num_smart_meters']
                         temp_num_members        = temp_num_members + Combos_formed_Info.loc[temp_bldg]['Num_Members']#len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
-                        temp_name               = 'Pros_' + temp_name + temp_combos_list[i][j]+ '_'
+                        temp_name               = temp_name + temp_combos_list[i][j]+ '_' #removed Pros from the start of the name
                         #make something to save this community name so that later it is known who is forming with community so the coop costs can be accounted for properly
                         temp_name_comms         = temp_name
                         
@@ -363,7 +371,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         temp_join_individual    = 1
                         temp_num_smart_meters   = temp_num_smart_meters + combos_consider.loc[temp_bldg_name_edited]['num_smart_meters']
                         temp_num_members        = len(temp_combos_list[i])      
-                        temp_name               = 'Pros_' + temp_name + temp_combos_list[i][j]+ '_'
+                        temp_name               = temp_name + temp_combos_list[i][j]+ '_' #removed Pros from the start of the name
                         temp_name_comms         = temp_name
                         
 # =============================================================================
@@ -390,6 +398,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
 #                         set_flag_pros_cons_individual = 1                                                       #indicates that one agent + one exisitng individual combine to form a community
 #         
 # =============================================================================
+                        
         #populating the dataframes in the usual case - no previously installed PV systems           
         #also populating the dataframes in the existing PV case - with many other agents so all all PROSUMERS
         df_solar_combo[temp_name]       = ""
@@ -421,6 +430,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
        
 # =============================================================================
 #         SAVING DATA FOR THE CONSUMER CASES - NEGLECTED FOR BASELINE ABM SCENARIOS
+#         PLEASE KEEP A COPY OF THIS SOMEWHERE BEFORE TAKING IT OUT OF THIS SCRIPT.
+#         WILL BE USEFUL 
 
 #         #populating the dataframes in the 1 agent + 1 existing COMMUNITY case - join as CONSUMER
 #         if set_flag_pros_cons == 1:
@@ -486,18 +497,19 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
 # =============================================================================
     NPV_combos = pd.DataFrame(data = None)
     
-    year = 5 #get this from the ABM!!!***
+    year = year     #step_ctr from the ABM gives the current year of simulation in the model. 0 = 2018, 1 = 2019 and so on...
     
     #this calculates NPVs for all possible combinations
     from npv_combos_function import npv_calc_combos
     NPV_combos = npv_calc_combos(df_solar_combo, df_demand_combo, year, data.loc[i]["bldg_owner"],
-                                 df_pvsize_combo, df_num_smart_meters,df_num_members): #admin_costs, rate_cooperation, temp_names_comms_list) #year should be the current year in the model! 2018, 2019... so that the correct PV price is taken
+                                 df_pvsize_combo, df_num_smart_meters,df_num_members) #admin_costs, rate_cooperation, temp_names_comms_list) #year should be the current year in the model! 2018, 2019... so that the correct PV price is taken
     
     #this ranks the NPVs and then returns the best NPV. If no combination is possible then an empty dataframe is returned.
     from combos_ranking import ranking_combos
     print("ranking called here")
     Combos_Info = ranking_combos(NPV_combos, df_demand, combos_consider,df_join_individual, df_join_community, df_bldgs_names, df_zones_names)
     
+    #so that index of the Combos_Info dataframe is renamed 
     if len(Combos_Info.index) > 0:
         temp_name = Combos_Info.index[0] #eg = 'C_B147891_B147892_'
         x = temp_name.split('_')

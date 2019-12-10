@@ -70,12 +70,11 @@ OM_Cost_rate        = 0.06      #CHF per kWh of solar PV production
 disc_rate_homeown   = 0.05      #discount rate for NPV Calculation
 disc_rate_firm      = 0.05      #discount rate for NPV Calculation
 disc_rate_instn     = 0.05      #discount rate for NPV Calculation
-disc_rate_landown   = 0.05      #discount rate for NPV Calculation
+disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
 pp_rate             = 0         #discount rate for payback period calculation is always zero    
 
 import NPV_Calculation #runs the NPV calculation code and calculates individual NPVs for the agents involved
 
-from NPV_Calculation import PV_lifetime_double
 from NPV_Calculation import Agents_NPVs 
 from NPV_Calculation import Agents_SCRs 
 from NPV_Calculation import Agents_Investment_Costs 
