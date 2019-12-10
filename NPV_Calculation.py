@@ -422,7 +422,7 @@ for i in ['B140995']:#agent_list_final:
         
         #depending on the number of smart meters to be installed, the meter_investment cost per meter changes
         '''
-        check these prices again before running!
+        check these prices again before running! solarsplit EWZ
         '''
         if temp_num_meters <= 8:
             invest_meter_rate = 375 #CHF per smart meter
@@ -466,6 +466,7 @@ for i in ['B140995']:#agent_list_final:
         temp_npv = np.npv(disc_rate_npv,cash_flows)
         temp_npv_list.append(temp_npv) #only npv is stored 
         
+        #payback period
         cf_df = pd.DataFrame(cash_flows, columns=['UndiscountedCashFlows'])
         cf_df.index.name = 'Year'
         cf_df['DiscountedCashFlows'] = np.pv(rate=pp_rate, pmt=0, nper=cf_df.index, fv=-cf_df['UndiscountedCashFlows'])

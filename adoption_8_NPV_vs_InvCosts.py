@@ -206,7 +206,7 @@ class tpb(Model):
         
         
         global norm_dist_env_attitude_list
-        global step_ctr
+        global step_ctr #year of the simulation
         step_ctr = 0
         global i
         for i in list_agents:
@@ -522,6 +522,9 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
     total = w_att*attitude + w_econ*pp + w_swn*ratio + w_subplot*neighbor_influence
     self.total = total
     
+    # GOAL OF THIS PART -> include buildings with existing solar in model outputs
+    # TO DO -> MOVE TO INITIALIZATION DURING AGENT CREATION
+    # --> BUILDINGS WITH PV IN REALITY, CREATE AS ALREADY ADOPTED
     #checking for buildings with already installed solar and initializing their intention to 1 regardless of the total
     if scenario == "ZEV" or scenario == "no_ZEV":
         if self.unique_id in list_installed_solar_bldgs_100MWh:
@@ -547,6 +550,8 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
         self.intention = intention
         self.intention_yr = intention
         
+        # TO DO -> MAKE SURE DATA COLLECTION WORKS REGARDLESS OF AGENT GETTING
+        # INTO STAGE 2 OR NOT
         #since in the last year if the intention is 0, stage 2 will not be entered. Results won't be written, hence write them here.
         if step_ctr == 17:
             agents_info.update(pd.Series([0], name  = 'Adopt_IND', index = [self.unique_id]))
@@ -588,6 +593,7 @@ def stage2_decision(self,uid,idea):
                 agents_adopting_comm = Combos_Info.combos_bldg_names
                 for g in agents_adopting_comm:
                     if g == self.unique_id:
+                        # ACTIVATED AGENT : ENERGY CHAMPION 
                         self.en_champ = 1                                                                               #setting the agent which is the energy champion - the first agent
                         agents_info.update(pd.Series([self.en_champ], name  = 'En_Champ', index = [self.unique_id]))
                     for h in range(len(agents_objects_list)):
@@ -630,6 +636,10 @@ def stage2_decision(self,uid,idea):
                 agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
                 agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
                 agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                # TO DO - CHANGE IN ORDER TO ALLOW THEM TO CHANGE AFTER INDIVIDUAL
+                # ADOPTION
+                # WHY? BECAUSE .INTENTION IS USED TO LET IN/OUT AGENTS INTO 
+                # INTENTION STAGE
                 self.intention  = 0
                 self.adopt_comm = 0
             

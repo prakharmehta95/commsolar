@@ -90,7 +90,7 @@ from small_world_network import  make_swn
 Agents_Peer_Network = make_swn(distances, agents_info) #calls swn function
 
 #%%
-number = 1437   #number of agents
+number = 4919   #number of agents
 years = 1    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
 
 #empty dictionaries to store results
