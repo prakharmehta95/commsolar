@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Tue Dec 10 17:59:31 2019
+
+@author: iA
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Nov 25 14:13:01 2019
 
 @author: iA
@@ -106,10 +113,10 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     combos_consider['Comm_formed'] = ""
     combos_consider['Ind_formed'] = ""
     for i in combos_consider.index:
-        combos_consider.at[i,'Community']   = data_og.loc[i]['Adopt_COMM']
-        combos_consider.at[i,'Individual']  = data_og.loc[i]['Adopt_IND']
-        combos_consider.at[i,'Comm_formed'] = data_og.loc[i]['Community_ID']
-        combos_consider.at[i,'Ind_formed']  = data_og.loc[i]['Individual_ID']
+        combos_consider.at[i,'Community']   = data.loc[i]['Adopt_COMM']
+        combos_consider.at[i,'Individual']  = data.loc[i]['Adopt_IND']
+        combos_consider.at[i,'Comm_formed'] = data.loc[i]['Community_ID']
+        combos_consider.at[i,'Ind_formed']  = data.loc[i]['Individual_ID']
 
 
 #     
@@ -294,24 +301,28 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         #make something to save this community name so that later it is known who is forming with community so the coop costs can be accounted for properly
                         temp_name_comms         = temp_name
                         
-                        #***agent will not install solar on own roof, only join as a CONSUMER***
-                        temp_bldg               = temp_combos_list[i][j] 
-                        temp_bldg_comm_contain_2= temp_combos_list[i][j] 
-                        temp_bldg_comm_2        = temp_bldg_comm_contain_2.split(sep = '_')
-                        temp_bldg_comm_2.remove('C')
-                        temp_bldg_og_name_list_2.append(temp_combos_list[i][j-1]) #to add the name of the first agent (active agent)
-                        temp_bldg_og_name_list_2.extend(temp_bldg_comm_2)
-                        temp_bldg_zones_list_2 = temp_bldg_zones_list
-                        temp_solar_2            = df_solar_combos_main[temp_bldg]
-                        temp_demand_2           = temp_demand           #only temp_demand must be considered as the KeyError only happens with the second agent; I have hardcoded it this way. Anyway calculated in the previous lines of code!
-                        temp_pv_size_2          = temp_pv_size          #Calculated in the previous lines of code!
-                        temp_join_community_2   = 1
-                        temp_num_smart_meters_2 = temp_num_smart_meters #Calculated in the previous lines of code! 
-                        temp_num_members_2      = temp_num_members      #Calculated in the previous lines of code!
-                        temp_name_2             = 'Cons_' + temp_combos_list[i][j-1] + '_' + temp_combos_list[i][j]+ '_'
-                        temp_name_comms_2       = temp_name_2
-                        set_flag_pros_cons      = 1                     #indicates that one agent combines with one existing community
-                
+# =============================================================================
+#                         CONSUMER CASE - NEGLECTED FOR BASELINE ABM SCENARIOS
+                        
+#                         #***agent will not install solar on own roof, only join as a CONSUMER***
+#                         temp_bldg               = temp_combos_list[i][j] 
+#                         temp_bldg_comm_contain_2= temp_combos_list[i][j] 
+#                         temp_bldg_comm_2        = temp_bldg_comm_contain_2.split(sep = '_')
+#                         temp_bldg_comm_2.remove('C')
+#                         temp_bldg_og_name_list_2.append(temp_combos_list[i][j-1]) #to add the name of the first agent (active agent)
+#                         temp_bldg_og_name_list_2.extend(temp_bldg_comm_2)
+#                         temp_bldg_zones_list_2 = temp_bldg_zones_list
+#                         temp_solar_2            = df_solar_combos_main[temp_bldg]
+#                         temp_demand_2           = temp_demand           #only temp_demand must be considered as the KeyError only happens with the second agent; I have hardcoded it this way. Anyway calculated in the previous lines of code!
+#                         temp_pv_size_2          = temp_pv_size          #Calculated in the previous lines of code!
+#                         temp_join_community_2   = 1
+#                         temp_num_smart_meters_2 = temp_num_smart_meters #Calculated in the previous lines of code! 
+#                         temp_num_members_2      = temp_num_members      #Calculated in the previous lines of code!
+#                         temp_name_2             = 'Cons_' + temp_combos_list[i][j-1] + '_' + temp_combos_list[i][j]+ '_'
+#                         temp_name_comms_2       = temp_name_2
+#                         set_flag_pros_cons      = 1                     #indicates that one agent combines with one existing community
+#                 
+# =============================================================================
                 
                 #*existing individually installed PV is an option*
                 if temp_bldg[0] == 'P': 
@@ -331,7 +342,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         temp_pv_size            = temp_pv_size + combos_consider.loc[temp_bldg_name_edited]['pv_size_kw']
                         temp_join_individual    = 1
                         temp_num_smart_meters   = temp_num_smart_meters + combos_consider.loc[temp_bldg_name_edited]['num_smart_meters']
-                        temp_num_members        = temp_num_members + 1 #just add 1 coz only 1 agent will be considered here. len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
+                        temp_num_members        = temp_num_members + 1 #just add 1 coz only 1 agent will be considered here. 
                         temp_name               = temp_name + temp_combos_list[i][j]+ '_'
                         temp_name_comms         = temp_name
                         
@@ -345,36 +356,40 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         temp_bldg_comm.remove('PV')
                         temp_bldg_og_name_list.extend(temp_bldg_comm)
                         temp_bldg_zones_list.extend(combos_consider.loc[temp_bldg_comm]['zone_id'])
-                        temp_bldg_name_edited = str.strip(temp_bldg, 'PV_')
+                        temp_bldg_name_edited   = str.strip(temp_bldg, 'PV_')
                         temp_solar              = temp_solar + df_solar[temp_bldg_name_edited]
                         temp_demand             = temp_demand + df_demand[temp_bldg_name_edited]
                         temp_pv_size            = temp_pv_size + combos_consider.loc[temp_bldg_name_edited]['pv_size_kw'] #CHECK!!
                         temp_join_individual    = 1
                         temp_num_smart_meters   = temp_num_smart_meters + combos_consider.loc[temp_bldg_name_edited]['num_smart_meters']
-                        temp_num_members        = len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
+                        temp_num_members        = len(temp_combos_list[i])      
                         temp_name               = 'Pros_' + temp_name + temp_combos_list[i][j]+ '_'
                         temp_name_comms         = temp_name
                         
-                        #***agent will not install solar on own roof, only join as a CONSUMER***
-                        temp_bldg               = temp_combos_list[i][j] 
-                        temp_bldg_comm_contain_3= temp_combos_list[i][j] 
-                        temp_bldg_comm_3        = temp_bldg_comm_contain_3.split(sep = '_')
-                        temp_bldg_comm_3.remove('PV')
-                        temp_bldg_og_name_list_3.append(temp_combos_list[i][j-1])                               #to add the name of the first agent (active agent)
-                        temp_bldg_og_name_list_3.extend(temp_bldg_comm_3)
-                        temp_bldg_zones_list_3.append(combos_consider.loc[temp_combos_list[i][j-1]]['zone_id']) #to add the zone of the first agent (active agent)
-                        temp_bldg_zones_list_3.extend(combos_consider.loc[temp_bldg_comm_3]['zone_id'])
-                        temp_bldg_name_edited   = str.strip(temp_bldg, 'PV_')
-                        temp_solar_3            = df_solar[temp_bldg_name_edited]                               #only the existing agent with the PV
-                        temp_demand_3           = temp_demand                                                   #Calculated in the previous lines of code!
-                        temp_pv_size_3          = combos_consider.loc[temp_bldg_name_edited]['pv_size_kw']      #Calculated in the previous lines of code! - CHECK!!
-                        temp_join_individual_3  = 1
-                        temp_num_smart_meters_3 = temp_num_smart_meters                                         #Calculated in the previous lines of code!
-                        temp_num_members_3      = len(temp_combos_list[i])                                      #temp_num_members + combos_consider.loc[temp_bldg][''] if this is wromg, hardcode to 2
-                        temp_name_3             = 'Cons_' + temp_combos_list[i][j-1] + '_' + temp_combos_list[i][j]+ '_'
-                        temp_name_comms_3       = temp_name_3
-                        set_flag_pros_cons_individual = 1                                                       #indicates that one agent + one exisitng individual combine to form a community
-        
+# =============================================================================
+#                         CONSUMER CASE - NEGLECTED FOR BASELINE ABM SCENARIOS
+                        
+#                         #***agent will not install solar on own roof, only join as a CONSUMER***
+#                         temp_bldg               = temp_combos_list[i][j] 
+#                         temp_bldg_comm_contain_3= temp_combos_list[i][j] 
+#                         temp_bldg_comm_3        = temp_bldg_comm_contain_3.split(sep = '_')
+#                         temp_bldg_comm_3.remove('PV')
+#                         temp_bldg_og_name_list_3.append(temp_combos_list[i][j-1])                               #to add the name of the first agent (active agent)
+#                         temp_bldg_og_name_list_3.extend(temp_bldg_comm_3)
+#                         temp_bldg_zones_list_3.append(combos_consider.loc[temp_combos_list[i][j-1]]['zone_id']) #to add the zone of the first agent (active agent)
+#                         temp_bldg_zones_list_3.extend(combos_consider.loc[temp_bldg_comm_3]['zone_id'])
+#                         temp_bldg_name_edited   = str.strip(temp_bldg, 'PV_')
+#                         temp_solar_3            = df_solar[temp_bldg_name_edited]                               #only the existing agent with the PV
+#                         temp_demand_3           = temp_demand                                                   #Calculated in the previous lines of code!
+#                         temp_pv_size_3          = combos_consider.loc[temp_bldg_name_edited]['pv_size_kw']      #Calculated in the previous lines of code! - CHECK!!
+#                         temp_join_individual_3  = 1
+#                         temp_num_smart_meters_3 = temp_num_smart_meters                                         #Calculated in the previous lines of code!
+#                         temp_num_members_3      = len(temp_combos_list[i])                                      #temp_num_members + combos_consider.loc[temp_bldg][''] if this is wromg, hardcode to 2
+#                         temp_name_3             = 'Cons_' + temp_combos_list[i][j-1] + '_' + temp_combos_list[i][j]+ '_'
+#                         temp_name_comms_3       = temp_name_3
+#                         set_flag_pros_cons_individual = 1                                                       #indicates that one agent + one exisitng individual combine to form a community
+#         
+# =============================================================================
         #populating the dataframes in the usual case - no previously installed PV systems           
         #also populating the dataframes in the existing PV case - with many other agents so all all PROSUMERS
         df_solar_combo[temp_name]       = ""
@@ -403,77 +418,80 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         df_num_members[temp_name]       = ""
         df_num_members[temp_name]       = temp_num_members_list
         temp_names_comms_list.append(temp_name_comms)
-        
-        #populating the dataframes in the 1 agent + 1 existing COMMUNITY case - join as CONSUMER
-        if set_flag_pros_cons == 1:
-            df_solar_combo[temp_name_2]         = ""
-            df_solar_combo[temp_name_2]         = temp_solar_2
-            df_demand_combo[temp_name_2]        = ""
-            df_demand_combo[temp_name_2]        = temp_demand_2
-            temp_pv_list_2.append(temp_pv_size_2)
-            temp_bldg_og_name_list_df_2.append(temp_bldg_og_name_list_2)
-            temp_bldg_zones_list_df_2.append(temp_bldg_zones_list_2)
-            temp_join_individual_list_2.append(temp_join_individual_2)
-            temp_join_community_list_2.append(temp_join_community_2)
-            temp_num_smartmeters_list_2.append(temp_num_smart_meters_2)
-            temp_num_members_list_2.append(temp_num_members_2)
-            df_pvsize_combo[temp_name_2]        = ""
-            df_pvsize_combo[temp_name_2]        = temp_pv_list_2
-            df_bldgs_names[temp_name_2]         = ""
-            df_bldgs_names[temp_name_2]         = temp_bldg_og_name_list_df_2
-            df_zones_names[temp_name_2]         = ""
-            df_zones_names[temp_name_2]         = temp_bldg_zones_list_df_2
-            df_join_individual[temp_name_2]     = ""
-            df_join_community[temp_name_2]      = ""
-            df_join_individual[temp_name_2]     = temp_join_individual_list_2
-            df_join_community[temp_name_2]      = temp_join_community_list_2
-            df_num_smart_meters[temp_name_2]    = ""
-            df_num_smart_meters[temp_name_2]    = temp_num_smartmeters_list_2
-            df_num_members[temp_name_2]         = ""
-            df_num_members[temp_name_2]         = temp_num_members_list_2
-            temp_names_comms_list_2.append(temp_name_comms_2)
-            set_flag_pros_cons = 0 #reset flag so that erroneous columns in the dataframe are not created
-        
-        #populating the dataframes in the 1 agent + 1 existing INDIVIDUAL case - join as CONSUMER
-        if set_flag_pros_cons_individual == 1:
-            print('temp_name_3 case entered', temp_name_3)
-            df_solar_combo[temp_name_3]         = ""
-            df_solar_combo[temp_name_3]         = temp_solar_3
-            df_demand_combo[temp_name_3]        = ""
-            df_demand_combo[temp_name_3]        = temp_demand_3
-            temp_pv_list_3.append(temp_pv_size_3)
-            temp_bldg_og_name_list_df_3.append(temp_bldg_og_name_list_3)
-            temp_bldg_zones_list_df_3.append(temp_bldg_zones_list_3)
-            temp_join_individual_list_3.append(temp_join_individual_3)
-            temp_join_community_list_3.append(temp_join_community_3)
-            temp_num_smartmeters_list_3.append(temp_num_smart_meters_3)
-            temp_num_members_list_3.append(temp_num_members_3)
-            df_pvsize_combo[temp_name_3]        = ""
-            df_pvsize_combo[temp_name_3]        = temp_pv_list_3
-            df_bldgs_names[temp_name_3]         = ""
-            df_bldgs_names[temp_name_3]         = temp_bldg_og_name_list_df_3
-            df_zones_names[temp_name_3]         = ""
-            df_zones_names[temp_name_3]         = temp_bldg_zones_list_df_3
-            df_join_individual[temp_name_3]     = ""
-            df_join_community[temp_name_3]      = ""
-            df_join_individual[temp_name_3]     = temp_join_individual_list_3
-            df_join_community[temp_name_3]      = temp_join_community_list_3
-            df_num_smart_meters[temp_name_3]    = ""
-            df_num_smart_meters[temp_name_3]    = temp_num_smartmeters_list_3
-            df_num_members[temp_name_3]         = ""
-            df_num_members[temp_name_3]         = temp_num_members_list_3
-            temp_names_comms_list_3.append(temp_name_comms_3)
-            set_flag_pros_cons_individual = 0 #reset flag so that erroneous columns in the dataframe are not created
-        
+       
+# =============================================================================
+#         SAVING DATA FOR THE CONSUMER CASES - NEGLECTED FOR BASELINE ABM SCENARIOS
+
+#         #populating the dataframes in the 1 agent + 1 existing COMMUNITY case - join as CONSUMER
+#         if set_flag_pros_cons == 1:
+#             df_solar_combo[temp_name_2]         = ""
+#             df_solar_combo[temp_name_2]         = temp_solar_2
+#             df_demand_combo[temp_name_2]        = ""
+#             df_demand_combo[temp_name_2]        = temp_demand_2
+#             temp_pv_list_2.append(temp_pv_size_2)
+#             temp_bldg_og_name_list_df_2.append(temp_bldg_og_name_list_2)
+#             temp_bldg_zones_list_df_2.append(temp_bldg_zones_list_2)
+#             temp_join_individual_list_2.append(temp_join_individual_2)
+#             temp_join_community_list_2.append(temp_join_community_2)
+#             temp_num_smartmeters_list_2.append(temp_num_smart_meters_2)
+#             temp_num_members_list_2.append(temp_num_members_2)
+#             df_pvsize_combo[temp_name_2]        = ""
+#             df_pvsize_combo[temp_name_2]        = temp_pv_list_2
+#             df_bldgs_names[temp_name_2]         = ""
+#             df_bldgs_names[temp_name_2]         = temp_bldg_og_name_list_df_2
+#             df_zones_names[temp_name_2]         = ""
+#             df_zones_names[temp_name_2]         = temp_bldg_zones_list_df_2
+#             df_join_individual[temp_name_2]     = ""
+#             df_join_community[temp_name_2]      = ""
+#             df_join_individual[temp_name_2]     = temp_join_individual_list_2
+#             df_join_community[temp_name_2]      = temp_join_community_list_2
+#             df_num_smart_meters[temp_name_2]    = ""
+#             df_num_smart_meters[temp_name_2]    = temp_num_smartmeters_list_2
+#             df_num_members[temp_name_2]         = ""
+#             df_num_members[temp_name_2]         = temp_num_members_list_2
+#             temp_names_comms_list_2.append(temp_name_comms_2)
+#             set_flag_pros_cons = 0 #reset flag so that erroneous columns in the dataframe are not created
+#         
+#         #populating the dataframes in the 1 agent + 1 existing INDIVIDUAL case - join as CONSUMER
+#         if set_flag_pros_cons_individual == 1:
+#             print('temp_name_3 case entered', temp_name_3)
+#             df_solar_combo[temp_name_3]         = ""
+#             df_solar_combo[temp_name_3]         = temp_solar_3
+#             df_demand_combo[temp_name_3]        = ""
+#             df_demand_combo[temp_name_3]        = temp_demand_3
+#             temp_pv_list_3.append(temp_pv_size_3)
+#             temp_bldg_og_name_list_df_3.append(temp_bldg_og_name_list_3)
+#             temp_bldg_zones_list_df_3.append(temp_bldg_zones_list_3)
+#             temp_join_individual_list_3.append(temp_join_individual_3)
+#             temp_join_community_list_3.append(temp_join_community_3)
+#             temp_num_smartmeters_list_3.append(temp_num_smart_meters_3)
+#             temp_num_members_list_3.append(temp_num_members_3)
+#             df_pvsize_combo[temp_name_3]        = ""
+#             df_pvsize_combo[temp_name_3]        = temp_pv_list_3
+#             df_bldgs_names[temp_name_3]         = ""
+#             df_bldgs_names[temp_name_3]         = temp_bldg_og_name_list_df_3
+#             df_zones_names[temp_name_3]         = ""
+#             df_zones_names[temp_name_3]         = temp_bldg_zones_list_df_3
+#             df_join_individual[temp_name_3]     = ""
+#             df_join_community[temp_name_3]      = ""
+#             df_join_individual[temp_name_3]     = temp_join_individual_list_3
+#             df_join_community[temp_name_3]      = temp_join_community_list_3
+#             df_num_smart_meters[temp_name_3]    = ""
+#             df_num_smart_meters[temp_name_3]    = temp_num_smartmeters_list_3
+#             df_num_members[temp_name_3]         = ""
+#             df_num_members[temp_name_3]         = temp_num_members_list_3
+#             temp_names_comms_list_3.append(temp_name_comms_3)
+#             set_flag_pros_cons_individual = 0 #reset flag so that erroneous columns in the dataframe are not created
+#         
+# =============================================================================
     NPV_combos = pd.DataFrame(data = None)
-    year = 5 #get this from the ABM!
     
+    year = 5 #get this from the ABM!!!***
     
     #this calculates NPVs for all possible combinations
     from npv_combos_function import npv_calc_combos
-    NPV_combos = npv_calc_combos(df_solar_combo, df_demand_combo, year, 'Homeowner',#agents_info.loc[i]["bldg_owner"],
-                                 df_pvsize_combo, df_num_smart_meters,df_num_members,
-                                 admin_costs, rate_cooperation, temp_names_comms_list) #year should be the current year in the model! 2018, 2019... so that the correct PV price is taken
+    NPV_combos = npv_calc_combos(df_solar_combo, df_demand_combo, year, data.loc[i]["bldg_owner"],
+                                 df_pvsize_combo, df_num_smart_meters,df_num_members): #admin_costs, rate_cooperation, temp_names_comms_list) #year should be the current year in the model! 2018, 2019... so that the correct PV price is taken
     
     #this ranks the NPVs and then returns the best NPV. If no combination is possible then an empty dataframe is returned.
     from combos_ranking import ranking_combos
