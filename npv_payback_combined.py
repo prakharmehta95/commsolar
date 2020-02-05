@@ -37,6 +37,7 @@ from __main__ import disc_rate      #= 0.05 or 5%
 #%%
 import pandas as pd
 #read this now from the MAIN FILE
+# Skeleton_Updated_No_100MWh_Restriction is now stored in the Dropbox folder # C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\ZZZ_Intermediate_Files
 agents_info = pd.read_excel(r"C:\\Users\\iA\\OneDrive - ETHZ\\Thesis\\PM\\Data_Prep_ABM\\Skeleton_Updated_No_100MWh_Restriction.xlsx")
 agents_info = agents_info.set_index('bldg_id')    
 
