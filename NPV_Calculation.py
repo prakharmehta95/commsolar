@@ -6,10 +6,12 @@ Created on Tue Apr  9 18:45:09 2019
 
 __main__ = run_adoption_loop.py
 """
-#%% importing parameters from run_adoption_loop
-temp_try = 100
+#%% importing parameters from __main__ = run_adoption_loop
+
+from __main__ import path               #holds the path to the files in the computer     
+
 #Price Levels
-from __main__ import PV_price_baseline
+from __main__ import PV_price_baseline  # excel with the baseline PV price assumptions
 from __main__ import fit_high           #= 8.5/100 #CHF per kWH
 from __main__ import fit_low            #= 4.45/100 #CHF per kWH
 from __main__ import ewz_high_large     #= 6/100 #CHF per kWh
@@ -30,20 +32,21 @@ from __main__ import disc_rate_landlord   #discount rate for NPV Calculation
 from __main__ import pp_rate              #= 0 - discount rate for the discounted payback period formula, considered zero
 
 #Agent information
-from __main__ import agents_info
-from __main__ import agent_list_final
+from __main__ import agents_info          #main excel file with all the info on the agents    
+from __main__ import agent_list_final     #list of all agents
 agents_info = agents_info.set_index('bldg_name')    
 
 #%% IMPORT SOLAR PV GENERATION FOR EACH BUILDING
 
 import pandas as pd
 
-#import solar and demand
-df_solar = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
-df_demand = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')     
+#import solar and demand\
+#CHECK! - these files may need to be changed later...
+df_solar = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
+df_demand = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')     
 
 #multiply the solar PV data with an efficiency factor to convert to AC
-df_solar_AC = df_solar.copy()*0.97    #multiply by 0.5 to do the 50% reduction
+df_solar_AC = df_solar.copy()*0.97    
 
 #%% adding hours of the day to the demand and supply dataframes
 list_hours = []  
@@ -62,41 +65,28 @@ df_demand['Hour'] = list_hours
 
 
 #%% adding day of the week 
-ctr = 0
-days                = ['Sat','Sun','Mon','Tue','Wed','Thu',' Fri'] #this order because 2005 started with a Saturday - very crude way to code
-list_days           = []
+
+from datetime import timedelta
+import datetime 
+
 df_demand['Day']    = ""
 df_solar_AC['Day']  = ""
+weekDays    = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
+day_count   = 365                                                               #1 year
+daylist     = []
+start_date  =  datetime.date(2005,1,1)                                          #reference year is 2005
 
-for i in range(365):
-    if ctr % 7 == 0:
-            ctr = 0
-    if ctr == 0:
-        for x in range(24):
-            list_days.append('Sat')
-    if ctr == 1:
-        for x in range(24):
-            list_days.append('Sun')
-    if ctr == 2:
-        for x in range(24):
-            list_days.append('Mon')
-    if ctr == 3:
-        for x in range(24):
-            list_days.append('Tue')
-    if ctr == 4:
-        for x in range(24):
-            list_days.append('Wed')
-    if ctr == 5:
-        for x in range(24):
-            list_days.append('Thu')
-    if ctr == 6:
-        for x in range(24):
-            list_days.append('Fri')
-    ctr = ctr + 1
+for single_date in (start_date + timedelta(n) for n in range(day_count)):
+    DayAsString = weekDays[single_date.weekday()]
+    for i in range (24):
+        daylist.append(DayAsString)
+
+print(len(daylist))
+df_demand['Day']    = daylist
+df_solar_AC['Day']  = daylist
     
     
-df_demand['Day']    = list_days
-df_solar_AC['Day']  = list_days
+
 
 #%% adding info about HIGH/LOW hours of the day
 import numpy as np
@@ -113,8 +103,6 @@ df_demand['price_level']    = np.where(np.logical_and(np.logical_and(df_solar_AC
 PV PRICES in the next years. Base PV price data from EnergieSchweiz.
 Projections Source = IEA Technology Roadmap 2014
 '''
-
-
 #this stores projected PV prices for all sizes of PV systems
 PV_price_projection = pd.DataFrame(data = None)
 
@@ -124,13 +112,13 @@ PV_price_projection['Year'] = years
 
 x_array = [i for i in range(1,24)]
 xp_array = [1,23]
+#interpolation from current year to 2040. Prices assumed to be half in 2040. 
+#CHECK - maybe for better sources?
 for i in list(PV_price_baseline.columns):
     fp_array = [PV_price_baseline.loc[0][i],PV_price_baseline.loc[0][i]/2]
     y = np.interp(x_array, xp_array,fp_array)
     PV_price_projection[i] = ""
     PV_price_projection[i] = y
-        
-        
         
 #%% Preparation for NPV Calculation - savings and costs estimations
 """        

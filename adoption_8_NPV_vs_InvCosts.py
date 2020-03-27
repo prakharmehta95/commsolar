@@ -21,8 +21,7 @@ useful packages to work with
 import random 
 import itertools
 from random import seed
-from random import gauss
-import json        
+from random import gauss     
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt 
@@ -37,12 +36,14 @@ from mesa.datacollection import DataCollector                                  #
 '''
 AGENT INFORMATION
 '''
-
+path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
 #INFORMATION on agents and all combinations
-agents_info = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
-df_demand   = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_Demand_TOTAL_FINAL_3Dec.pickle')
-df_solar    = pd.read_pickle(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
-df_solar    = df_solar*0.97 #converting solar PV DC output to AC 
+agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
+
+#CHECK - these might change!
+df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
+df_solar    = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
+df_solar    = df_solar.copy()*0.97 #converting solar PV DC output to AC 
 
 df_solar_combos     = pd.DataFrame(data = None)     #holds PV potential of the communities formed
 df_demand_combos    = pd.DataFrame(data = None)     #holds demands      of the communities formed
@@ -52,8 +53,8 @@ Combos_formed_Info  = pd.DataFrame(data = None)     #holds information  of the  
 from __main__ import Agents_NPVs as Agents_Ind_NPVs
 from __main__ import Agents_SCRs as Agents_Ind_SCRs
 from __main__ import Agents_Investment_Costs as Agents_Ind_Investment_Costs 
-from __main__ import Agents_Peer_Network as Agents_Peers
-from __main__ import Agents_PPs_Norm as Agents_Ind_PPs_Norm #payback periods for individual agents normalized
+#from __main__ import Agents_Peer_Network as Agents_Peers
+from __main__ import Agents_PPs_Norm as Agents_Ind_PPs_Norm                    #payback periods for individual agents normalized
 
 from __main__ import distances as distances #Holds the distances from each agent to its nearest 200 agents (200 agents because dataframe size is reasonable but still satisfies all criteria for the ABM conceptual model)
 
@@ -117,7 +118,7 @@ class tpb_agent(Agent):
         
         '''
         super().__init__(unique_id,model) 
-        
+        self.unique_id          = unique_id 
         self.bldg_type          = bldg_type
         self.bldg_own           = bldg_own
         self.bldg_zone          = bldg_zone
@@ -151,7 +152,7 @@ class tpb_agent(Agent):
             #print("start of new agent uid = ",self.unique_id, "has intention = ",self.intention)
             functions.check_peers(self,self.unique_id)                            #sets the peer_effect
             functions.check_neighbours_subplots(self,self.unique_id)              #sets the neighbor_influence
-            self.pp = functions.econ_attr(self)
+            self.pp = functions.econ_attr(self, self.unique_id)
             
             #call the intention function
             stage1_intention(self,self.unique_id, self.attitude,self.pp,self.peer_effect,self.neighbor_influence)
@@ -221,7 +222,7 @@ class tpb(Model):
             #agent creation
             a = tpb_agent(agents_info.loc[i]['bldg_name'],self,agents_info.loc[i]['bldg_type'],agents_info.loc[i]['bldg_owner'],
                           agents_info.loc[i]['zone_id'],agents_info.loc[i]['plot_id'],
-                          functions.env_attitude(agents_info.loc[i]['IDs']),functions.econ_attr(self),
+                          functions.env_attitude(agents_info.loc[i]['bldg_name']),functions.econ_attr(self, self.unique_id),
                           intention,intention_yr,ratio,neighbor_influence,total,counter,
                           adopt_ind,adopt_comm,adopt_year,en_champ,agents_info.loc[i]['pv_size_kw'],
                           agents_info.loc[i]['demand_yearly_kWh'])
@@ -266,7 +267,7 @@ class functions:
     FUNCTIONS for agent attributes, counting installed capacity by building typologies
     
     @Alejandro: most of these functions here are for data collection.
-    Check the datacollector definition and you will see. Can besimply modified
+    Check the datacollector definition and you will see. Can be simply modified
     so that we can collect data based on ownership/building-use type separately
     """
 
@@ -407,7 +408,7 @@ class functions:
         @Alejandro : use beta-pert function instead of gauss
         """
         uid = uid
-        if agents_info.loc[uid]['MINERGIE'] == 1:
+        if agents_info.loc[uid]['minergie'] == 1:
             value = 0.95
         else:
             value = gauss(0.698,0.18)
@@ -416,13 +417,13 @@ class functions:
         return value
     
     
-    def econ_attr(self):
+    def econ_attr(self, uid):
         """
         To update the payback ratio every step
         Takes data from the profitability_index pickle
         @Alejandro: Check the Agents_Ind_PPs_Norm dataframe to ensure the values make sense 
         """
-        uid = self.unique_id
+        uid = uid#self.unique_id
         try:
             self.pp = Agents_Ind_PPs_Norm#profitability_index.loc[step_ctr][uid]
         except KeyError:
@@ -443,7 +444,7 @@ class functions:
         """
         swn_with_solar = 0
         temp_list = []
-        temp_list = Agents_Peers[uid].values.tolist() #make a list of all peers of that particular agent with uid
+        temp_list = []#Agents_Peers[uid].values.tolist() #make a list of all peers of that particular agent with uid
         
         """
         Explanation of the for loops coming ahead:
@@ -467,7 +468,7 @@ class functions:
                         swn_with_solar = swn_with_solar + 1
         
         
-        self.peer_effect = (swn_with_solar/len(Agents_Peers.loc[:,self.unique_id]))
+        self.peer_effect = (swn_with_solar/1)#len(Agents_Peers.loc[:,self.unique_id]))
                          
     def check_neighbours_subplots(self,uid):
         """
@@ -504,6 +505,15 @@ class functions:
         self.neighbor_influence = (neighbor_influence_counter/len(temp_df_ZEV_members.bldg_name)) 
         
 
+#%%
+"""
+Making a CLASS for the community information
+"""
+#class communities_formed_info(self, members, type_comm):
+#    pass
+    
+        
+        
  
 #%% STAGES of the ABM
 
@@ -525,6 +535,7 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
     # GOAL OF THIS PART -> include buildings with existing solar in model outputs
     # TO DO -> MOVE TO INITIALIZATION DURING AGENT CREATION
     # --> BUILDINGS WITH PV IN REALITY, CREATE AS ALREADY ADOPTED
+    # --> perhaps get it from the agents_info file itself...
     #checking for buildings with already installed solar and initializing their intention to 1 regardless of the total
     if scenario == "ZEV" or scenario == "no_ZEV":
         if self.unique_id in list_installed_solar_bldgs_100MWh:
@@ -606,7 +617,7 @@ def stage2_decision(self,uid,idea):
                             agents_objects_list[h].intention = 0                                                        #setting intention as 0 for all agents involved
                             agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
                             agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
-                            agents_info.update(pd.Series([temp_comm_name],         name  = 'Community_ID', index = [g]))
+                            agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
                             agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
                             #agents_info.update(pd.Series([share_npv],       name  = 'Comm_NPV',     index = [g])) #npv share of each building to be saved here, NOT COMPLETE AS ON 10 DEC
                             #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [g])) #npv share of each building to be saved here, NOT COMPLETE AS ON 10 DEC
@@ -627,7 +638,8 @@ def stage2_decision(self,uid,idea):
                 self.intention  = 0
                 self.adopt_comm = 0
             
-        elif len(Combos_Info.index) == 0: #meaning that NO community is formed, hence go for individual PV adoption
+        elif len(Combos_Info.index) == 0:
+        #meaning that NO community is formed, hence go for individual PV adoption
             if Agents_Ind_NPVs.loc[self.unique_id]['npv'] >=0:
                 #adopt individual
                 #set adoption as 1 for an individual PV formation

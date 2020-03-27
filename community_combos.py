@@ -7,10 +7,11 @@ Created on Mon Nov 25 14:13:01 2019
 
 #%%
 import pandas as pd
-def community_combinations(data_og, same_plot_agents_positive_intention, distances, df_solar, df_demand, df_solar_combos_main , df_demand_combos_main, Combos_formed_Info, uid, year):
+def community_combinations(data_og, same_plot_agents_positive_intention, distances, df_solar, df_demand,
+                           df_solar_combos_main , df_demand_combos_main, Combos_formed_Info, uid, year):
     
     '''
-    data                                = agents_info - Info dataframe on all agents. Contains who passed the intention stage, who has individal/community PV, IDs of the adopted PV systems  
+    data_og                             = agents_info - Info dataframe on all agents. Contains who passed the intention stage, who has individal/community PV, IDs of the adopted PV systems  
     same_plot_agents_positive_intention = all agents in the same plot as the active agent who have passed the intention stage
     distances                           = Holds the distances from each agent to its nearest 200 agents (200 agents because dataframe size is reasonable but still satisfies all criteria for the ABM conceptual model)
     df_solar                            = Individual building solar PV potential
@@ -23,7 +24,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     '''
     
     data = data_og.copy()
-
+    print("uid = ", uid)
 # =============================================================================
 #     
 #     #since cooperation costs are considered as 0, no need for these now
@@ -34,51 +35,52 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
 # =============================================================================
 
 # =============================================================================
-#    
-#     #this will be done within the ABM. Done now just for testing purposes
-#     
+    
+     #this will be done within the ABM. Done now just for testing purposes
+     
 
-      #will read agents_info in place of 'data'
-#     #same_plot_agents_positive_intention dataframe can be read directly from within the ABM
-#     data['intention'] = ""
-#     data['intention'] = [ 1 if i%2 == 1 else 1 for i in range(len(data.index))] # temporarily setting intention so that I can replicate what happens in the ABM
-#     
-#     data['individual'] = ""
-#     data['individual'] =  [ 0 if i%2 == 1 else 0 for i in range(len(data.index))] # temporarily setting adoption so that I can replicate what happens in the ABM
-#     data.at['B147890','individual'] = 0
-#     data.at['B147891','individual'] = 0
-#     data.at['B147892','individual'] = 0
-#     #data.at['B147893','individual'] = 0
-#     data.at['B2371142','individual'] = 1
-#     
-#     
-#     data['community'] = ""
-#     data['community'] =  [ 0 if i%2 == 1 else 0 for i in range(len(data.index))] # temporarily setting community adoption so that I can replicate what happens in the ABM
-#     #data.at['B147891','community'] = 1
-#     data.at['B147889','community'] = 1
-#     data.at['B147890','community'] = 1
-#     #data.at['B147893','community'] = 1
-#     data.at['B2371142','community'] = 0
-#     #data.at['B147889','community'] = 0
-#     
-#    '''
-#     lets say that the filtering is already done and I have the building which is being considered at the moment
-#     This will also be done by tge ABM
-#     '''
-#     data = data.set_index('bldg_name', drop = False)
-#     for i in uid:#['B147890']: #data.index: THIS IS THE BUILDING BEING CONSIDERED IN THE ABM VIA THE self.uid...
-#         if data.loc[i]['intention'] == 1: #find other buildings in same plot with positive intention
-#             temp_plot_id = data.loc[i]['plot_id']
-#             same_plot_agents = data.loc[data['plot_id']==temp_plot_id].copy()
-#             same_plot_agents_positive_intention = same_plot_agents.loc[same_plot_agents['intention'] == 1].copy() #available to form community
-#     #until here will actually be done in the ABM code. Now just so that I can test these functions.
-#     #same_plot_agents_positive_intention dataframe can be read directly from within the ABM! - this will be individual buildings with info on individual/community adoptions
-#     #------------------------------------------
-#     
-#     #to find the closest 'n' neighbours available for community formation - even if they have already adopted individual/formed a community?
-#     #do not have distance info on the communities which will be formed - then, take distance of the first agent in that community (i.e. the energy champion) - just easier to code this way I think
-#     
-#    
+     #will read agents_info in place of 'data'
+     #same_plot_agents_positive_intention dataframe can be read directly from within the ABM
+    data['intention'] = ""
+    data['intention'] = [ 1 if i%2 == 1 else 1 for i in range(len(data.index))] # temporarily setting intention so that I can replicate what happens in the ABM
+     
+    data['individual'] = ""
+    data['individual'] =  [ 0 if i%2 == 1 else 0 for i in range(len(data.index))] # temporarily setting adoption so that I can replicate what happens in the ABM
+    data.at['B147890','individual'] = 0
+    data.at['B147891','individual'] = 0
+    data.at['B147892','individual'] = 0
+    #data.at['B147893','individual'] = 0
+    data.at['B2371142','individual'] = 1
+     
+     
+    data['community'] = ""
+    data['community'] =  [ 0 if i%2 == 1 else 0 for i in range(len(data.index))] # temporarily setting community adoption so that I can replicate what happens in the ABM
+    #data.at['B147891','community'] = 1
+    data.at['B147889','community'] = 1
+    data.at['B147890','community'] = 1
+    #data.at['B147893','community'] = 1
+    data.at['B2371142','community'] = 0
+    #data.at['B147889','community'] = 0
+    
+    '''
+     lets say that the filtering is already done and I have the building which is being considered at the moment
+     This will also be done by tge ABM
+     '''
+    #data = data.set_index('bldg_name')#, drop = False)
+    for i in [uid]:#['B147890']: #data.index: THIS IS THE BUILDING BEING CONSIDERED IN THE ABM VIA THE self.uid...
+        print(i)
+        if data.loc[i]['intention'] == 1: #find other buildings in same plot with positive intention
+            temp_plot_id = data.loc[i]['plot_id']
+            same_plot_agents = data.loc[data['plot_id']==temp_plot_id].copy()
+            same_plot_agents_positive_intention = same_plot_agents.loc[same_plot_agents['intention'] == 1].copy() #available to form community
+    #until here will actually be done in the ABM code. Now just so that I can test these functions.
+    #same_plot_agents_positive_intention dataframe can be read directly from within the ABM! - this will be individual buildings with info on individual/community adoptions
+    #------------------------------------------
+     
+     #to find the closest 'n' neighbours available for community formation - even if they have already adopted individual/formed a community?
+     #do not have distance info on the communities which will be formed - then, take distance of the first agent in that community (i.e. the energy champion) - just easier to code this way I think
+     
+    
 # =============================================================================
     #EVERYTHING BEFORE^^ IS ONLY FOR TESTING THIS FUNCTION SEPARATELY
     
@@ -106,8 +108,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     #READ FROM THE MAIN ABM A FILE WHICH CONTAINS INFO ON ALREADY FORMED COMMUNITIES, THEN FILTER FOR THE BUILDINGS IN THIS CASE AND ASSIGN TO THE COLUMNS IN combos_consider
     combos_consider['Comm_formed']  = ""
     combos_consider['Ind_formed']   = ""
-    combos_consider['Community']  = ""
-    combos_consider['Individual']  = ""
+    combos_consider['Community']    = ""
+    combos_consider['Individual']   = ""
     for i in combos_consider.index:
         combos_consider.at[i,'Community']   = data.loc[i]['Adopt_COMM']
         combos_consider.at[i,'Individual']  = data.loc[i]['Adopt_IND']
@@ -117,23 +119,23 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
 
 #     
 # =============================================================================
-#     FOR TESTING THIS FUNCTION SEPARATELY
+     #FOR TESTING THIS FUNCTION SEPARATELY
         
-#     combos_consider.at['B147890','Comm_formed'] = "C_B147890_B147889_"
-#     combos_consider.at['B147889','Comm_formed'] = "C_B147890_B147889_"
-#     #combos_consider.at['B147893','Comm_formed'] = "C_B147891_B147893_"
-#     #in case there are communities already formed, consider them for an agent to join a community later    
-#     #temp_combos_list_temp = list(combos_consider.index)
-#     #temp_combos_list_filter = [combos_consider.loc[i]['Comm_formed'] if combos_consider.loc[i]['community'] == 1 else combos_consider.loc[i]['Ind_formed'] if combos_consider.loc[i]['individual'] == 1  else i for i in temp_combos_list_temp]
-#     #temp_combos_list_filter = temp_combos_list_temp
-#     #%make the possible combinations    
-#     
-#     #-------------
-#     #do a similar thing as above for buildings with individual PV installed
-#     combos_consider.at['B2371142','Ind_formed'] = "PV_B2371142"
-#     #temp_combos_list_filter = [combos_consider.loc[i]['Ind_formed'] if combos_consider.loc[i]['individual'] == 1 else i for i in temp_combos_list_temp]
-#     #temp_combos_list_filter = temp_combos_list_temp
-#     
+    combos_consider.at['B147890','Comm_formed'] = "C_B147890_B147889_"
+    combos_consider.at['B147889','Comm_formed'] = "C_B147890_B147889_"
+    #combos_consider.at['B147893','Comm_formed'] = "C_B147891_B147893_"
+    #in case there are communities already formed, consider them for an agent to join a community later    
+    temp_combos_list_temp = list(combos_consider.index)
+    temp_combos_list_filter = [combos_consider.loc[i]['Comm_formed'] if combos_consider.loc[i]['community'] == 1 else combos_consider.loc[i]['Ind_formed'] if combos_consider.loc[i]['individual'] == 1  else i for i in temp_combos_list_temp]
+    temp_combos_list_filter = temp_combos_list_temp
+    #%make the possible combinations    
+     
+     #-------------
+    #do a similar thing as above for buildings with individual PV installed
+    #combos_consider.at['B2371142','Ind_formed'] = "PV_B2371142"
+    #temp_combos_list_filter = [combos_consider.loc[i]['Ind_formed'] if combos_consider.loc[i]['individual'] == 1 else i for i in temp_combos_list_temp]
+    #temp_combos_list_filter = temp_combos_list_temp
+     
 # =============================================================================
     
     temp_combos_list_temp = list(combos_consider.index)
@@ -501,7 +503,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     
     #this calculates NPVs for all possible combinations
     from npv_combos_function import npv_calc_combos
-    NPV_combos = npv_calc_combos(df_solar_combo, df_demand_combo, year, data.loc[i]["bldg_owner"],
+    NPV_combos = npv_calc_combos(df_solar_combo, df_demand_combo, year, data.loc[uid]["bldg_owner"],
                                  df_pvsize_combo, df_num_smart_meters,df_num_members) #admin_costs, rate_cooperation, temp_names_comms_list) #year should be the current year in the model! 2018, 2019... so that the correct PV price is taken
     
     #this ranks the NPVs and then returns the best NPV. If no combination is possible then an empty dataframe is returned.

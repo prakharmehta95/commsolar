@@ -5,9 +5,6 @@ Created on Wed May  8 18:23:37 2019
 @author: Prakhar Mehta
 """
 
-"""
-Results on 14 May for ZEV regulations used att_seed = 3; randomseed == 22 to begin with
-"""
 #%%
 import pandas as pd
 import time
@@ -44,7 +41,8 @@ Agent information read from excel, pickles etc...
 !!!!!!TEST EXCEL being read in now!!!!!!!!!!
 """
 
-agents_info = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
+path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
 agent_list_final = agents_info.bldg_name
 
 #%%
@@ -53,7 +51,7 @@ NPV Calculation call from here - calculates the NPVs of individual buildings
 """
 #define the costs etc here which are read in the NPV_Calculation file:::
 
-PV_price_baseline   = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
+PV_price_baseline   = pd.read_excel(path + r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
 fit_high            = 8.5/100   #CHF per kWH
 fit_low             = 4.45/100  #CHF per kWH
 ewz_high_large      = 6/100     #CHF per kWh
@@ -73,20 +71,22 @@ disc_rate_instn     = 0.05      #discount rate for NPV Calculation
 disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
 pp_rate             = 0         #discount rate for payback period calculation is always zero    
 
-import NPV_Calculation #runs the NPV calculation code and calculates individual NPVs for the agents involved
+#import NPV_Calculation #runs the NPV calculation code and calculates individual NPVs for the agents involved
 
-from NPV_Calculation import Agents_NPVs 
-from NPV_Calculation import Agents_SCRs 
-from NPV_Calculation import Agents_Investment_Costs 
-from NPV_Calculation import Agents_PPs_Norm
+#from NPV_Calculation import Agents_NPVs 
+#from NPV_Calculation import Agents_SCRs 
+#from NPV_Calculation import Agents_Investment_Costs 
+#from NPV_Calculation import Agents_PPs_Norm
 
 
 #%% =============================================================================
+"""
+CREATION OF SMALL-WORLD NETWORK
+"""
+distances = pd.read_csv(path + r'07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
 
-distances = pd.read_csv(r'C:\Users\iA\Dropbox\Com_Paper\07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
-
-from small_world_network import  make_swn
-Agents_Peer_Network = make_swn(distances, agents_info) #calls swn function
+#from small_world_network import  make_swn
+#Agents_Peer_Network = make_swn(distances, agents_info) #calls swn function
 
 #%%
 number = 4919   #number of agents
@@ -125,7 +125,7 @@ for j in range(runs):
         
         #stores results across multiple Years and multiple runs
         t1 = pd.DataFrame.copy(agents_info)
-        t2 = pd.DataFrame.copy(Agents_Possibles_Combos)
+        t2 = pd.DataFrame.copy(Agents_Possibles_Combos) #CHECK - where is this coming from/gonna be used??
         d_agents_info_runs_correct[temp_name_3] = t1#agents_info
         d_combos_info_runs_correct[temp_name_4] = t2#Agents_Possibles_Combos
     

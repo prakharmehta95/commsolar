@@ -86,15 +86,20 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
     npvs_max_best       = npvs_max_best_temp.loc[npvs_max_best_temp.all_same_zones == 'Y']
     npvs_max_best       = npvs_max_best.sort_values(by = ['npv'], ascending = False) #holds combinations in which all community members agree AND all are in the same zone
     if len(npvs_max_best.index) > 0:
+        diff_zones = 0
         community = npvs_max_best.index[0]      #best npv, all agree, same zones
-    elif len(npvs_max_best_temp.index) > 0:
+    elif ((len(npvs_max_best.index) == 0) and (len(npvs_max_best_temp.index) > 0)) == 1:
+        diff_zones = 1
         community = npvs_max_best_temp.index[0] #best npv, all agree, different zones
     else:
         community = ""                          #no community is formed
     
     #storing information on the community formed
     if community != "":
-        comm_bldgs      = npvs_max_best.loc[community]['Bldg_Names']    #get names of the buildings in the community
+        if diff_zones == 0:
+            comm_bldgs      = npvs_max_best.loc[community]['Bldg_Names']    #get names of the buildings in the community
+        elif diff_zones == 1:
+            comm_bldgs      = npvs_max_best_temp.loc[community]['Bldg_Names']    #get names of the buildings in the community
         en_champ_agent  = comm_bldgs[0]                                 #the first building in the community is the energy champion
     
         if len(comm_bldgs) > 0: #meaning that there is indeed a community formed. Else comm_bldgs = 0

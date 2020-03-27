@@ -115,7 +115,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     '''
     
     #import next line from main...    ALLOWED HERE FOR TEST
-    PV_price_baseline = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
+    PV_price_baseline = pd.read_excel(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
     
     #this stores projected PV prices for all sizes of PV systems
     PV_price_projection = pd.DataFrame(data = None)
@@ -288,8 +288,9 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     Agents_NetSavings = Agents_Savings - Agents_OM_Costs - Agents_EWZ_Costs
     
     '''
-    small PV = < 100kW (medium is betwwen 30 and 100)
-    large PV = >= 100kW
+    small PV    = < 30kW 
+    medium PV   =  >= 30 and  < 100kW
+    large PV    = >= 100kW
     '''
     
     print("NPV Calculation")
