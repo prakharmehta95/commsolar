@@ -12,11 +12,20 @@ Initial libraries and data import from the run_adoption_loop file
 __main__ is the run_adoption_loop script
 
 """
-from __main__ import *
+
 #%%
 """
 useful packages to work with
 """
+from __main__ import *
+#NPV information of individual agents
+from __main__ import Agents_NPVs as Agents_Ind_NPVs
+from __main__ import Agents_SCRs as Agents_Ind_SCRs
+from __main__ import Agents_Investment_Costs as Agents_Ind_Investment_Costs 
+from __main__ import Agents_Peer_Network as Agents_Peers
+from __main__ import Agents_PPs_Norm as Agents_Ind_PPs_Norm                    #payback periods for individual agents normalized
+
+from community_combos import community_combinations
 
 import random 
 import itertools
@@ -37,8 +46,6 @@ from mesa.datacollection import DataCollector                                  #
 AGENT INFORMATION
 '''
 path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
-#INFORMATION on agents and all combinations
-agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
 
 #CHECK - these might change!
 df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
@@ -49,15 +56,6 @@ df_solar_combos     = pd.DataFrame(data = None)     #holds PV potential of the c
 df_demand_combos    = pd.DataFrame(data = None)     #holds demands      of the communities formed
 Combos_formed_Info  = pd.DataFrame(data = None)     #holds information  of the  communities formed
 
-#NPV information of individual agents
-from __main__ import Agents_NPVs as Agents_Ind_NPVs
-from __main__ import Agents_SCRs as Agents_Ind_SCRs
-from __main__ import Agents_Investment_Costs as Agents_Ind_Investment_Costs 
-#from __main__ import Agents_Peer_Network as Agents_Peers
-from __main__ import Agents_PPs_Norm as Agents_Ind_PPs_Norm                    #payback periods for individual agents normalized
-
-from __main__ import distances as distances #Holds the distances from each agent to its nearest 200 agents (200 agents because dataframe size is reasonable but still satisfies all criteria for the ABM conceptual model)
-
 list_agents = list(agents_info.bldg_name)
 
 #existing PV installations
@@ -65,21 +63,22 @@ PV_already_installed = agents_info.loc[agents_info['pv_already_installed_size_kW
 list_installed_solar_bldgs = PV_already_installed.bldg_name
 
 #creating new columns to hold information on the agents
-agents_info['intention']    = 0
+agents_info['intention']    = 0#[ 1 if i%2 == 1 else 0 for i in range(len(agents_info.index))]# 0
 agents_info['Comm_NPV']     = 0
 agents_info['Ind_NPV']      = 0
 agents_info['Reason']       = ""
 agents_info['Ind_SCR']      = 0
 agents_info['Comm_SCR']     = 0
-agents_info['Adopt_IND']    = 0        #saves 1 if INDIVIDUAL adoption occurs, else stays 0
-agents_info['Adopt_COMM']   = 0       #saves 1 if COMMUNITY  adoption occurs, else stays 0
+agents_info['Adopt_IND']    = 0         #saves 1 if INDIVIDUAL adoption occurs, else stays 0
+agents_info['Adopt_COMM']   = 0         #saves 1 if COMMUNITY  adoption occurs, else stays 0
 agents_info['En_Champ']     = 0         #saves who is the energy champion of that community
-agents_info['Adopt_Year']   = 0             #saves year of adoption
-agents_info['Community_ID'] = ""    #community ID of the community formed
-agents_info['Individual_ID'] = ""    #individual ID of the individual PV formed. Eg = PV_B123456 etc...
+agents_info['Adopt_Year']   = 0         #saves year of adoption
+agents_info['Community_ID'] = ""        #community ID of the community formed
+agents_info['Individual_ID'] = ""       #individual ID of the individual PV formed. Eg = PV_B123456 etc...
 agents_info['bldg_names']   = ""
+
 agents_info['bldg_names']   = agents_info['bldg_name']
-agents_info = agents_info.set_index('bldg_names')
+agents_info = agents_info.set_index('bldg_name', drop = False)
 
 #agents_subplots = subplots_final
 
@@ -124,7 +123,7 @@ class tpb_agent(Agent):
         self.bldg_zone          = bldg_zone
         self.bldg_plot          = bldg_plot
         self.attitude           = attitude              #environmental attitude
-        self.pp                 = pp                    #perceived profitability
+        self.pp                 = tpb_functions.econ_attr(self, self.unique_id)#pp                    #perceived profitability
         self.peer_effect        = peer_effect           #peer effect - calculated in the step_idea later so just add a placeholder here for agent initialization?
         self.neighbor_influence = neighbor_influence    #stores the neighbor_influence, called with the 'check_neighbours_subplots' function in step_idea(self)
         self.total              = total                 #sum of the intention function
@@ -162,8 +161,9 @@ class tpb_agent(Agent):
         After developing the intention in the step_idea, agents make the final
         decision in this step.
         """
-        #only those agents whose intention is HIGH can go to decision making
-        if self.intention == 1:
+        #only those agents whose intention is HIGH can go to decision making,
+        # or those who have already adopted individual or community PV
+        if self.intention == 1 or self.adopt_ind == 1 or self.adopt_comm == 1:
             global r
             r = 0
             stage2_decision(self,self.unique_id,self.intention) #call the decision making function i.e. stage 2 of the ABM simulation
@@ -227,7 +227,8 @@ class tpb(Model):
                           agents_info.loc[i]['zone_id'],
                           agents_info.loc[i]['plot_id'],
                           tpb_functions.env_attitude(agents_info.loc[i]['bldg_name']),
-                          tpb_functions.econ_attr(self, self.unique_id),
+                          0,
+                          #tpb_functions.econ_attr(self, self.unique_id),
                           intention,
                           intention_yr,
                           ratio,
@@ -272,7 +273,7 @@ class tpb(Model):
                                                               "Num_SINGLE_RES"          :functions.agent_type_single_res},
                                             agent_reporters = {"Building_ID"        :"unique_id",
                                                                "Building_Type"      :"bldg_type",
-                                                               "Part_Comm"          :"part_comm",
+                                                               #"Part_Comm"          :"part_comm",
                                                                "PV_Size"            :"pv_size",
                                                                "Demand_MWhyr"       :"dem_total",
                                                                "Intention"          :"intention",
@@ -554,7 +555,7 @@ class functions:
                 sum_agent_type_single_res_ind = sum_agent_type_single_res_ind + i.adopt_ind
         return sum_agent_type_single_res_ind
     
-    def agent_type_res_CAP(model):
+    def agent_type_single_res_CAP(model):
         '''
         to find total CAPACITY of SINGLE_RES individual adoptions
         '''
@@ -644,7 +645,7 @@ class tpb_functions:
         """
         uid = uid#self.unique_id
         try:
-            self.pp = Agents_Ind_PPs_Norm#profitability_index.loc[step_ctr][uid]
+            self.pp = Agents_Ind_PPs_Norm[uid][step_ctr]#profitability_index.loc[step_ctr][uid]
         except KeyError:
             self.pp = 0
         
@@ -687,7 +688,7 @@ class tpb_functions:
                         swn_with_solar = swn_with_solar + 1
         
         
-        self.peer_effect = (swn_with_solar/1)#len(Agents_Peers.loc[:,self.unique_id]))
+        self.peer_effect = (swn_with_solar/len(Agents_Peers.loc[:,self.unique_id]))
                          
     def check_neighbours_subplots(self,uid):
         """
@@ -724,16 +725,7 @@ class tpb_functions:
         self.neighbor_influence = (neighbor_influence_counter/len(temp_df_ZEV_members.bldg_name)) 
         
 
-#%%
-"""
-Making a CLASS for the community information
-"""
-#class communities_formed_info(self, members, type_comm):
-#    pass
-    
-        
-        
- 
+
 #%% STAGES of the ABM
 
 
@@ -751,30 +743,12 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
     total = w_att*attitude + w_econ*pp + w_swn*ratio + w_subplot*neighbor_influence
     self.total = total
     
-    # GOAL OF THIS PART -> include buildings with existing solar in model outputs
-    # TO DO -> MOVE TO INITIALIZATION DURING AGENT CREATION
-    # --> BUILDINGS WITH PV IN REALITY, CREATE AS ALREADY ADOPTED
-    # --> perhaps get it from the agents_info file itself...
-    #checking for buildings with already installed solar and initializing their intention to 1 regardless of the total
-    if scenario == "ZEV" or scenario == "no_ZEV":
-        if self.unique_id in list_installed_solar_bldgs_100MWh:
-            print(self.unique_id)
-            total = 1
-            self.total = total
-            self.intention = 1
-    elif scenario == "TOP4_no100MWh_retail" or scenario == "TOP4_no100MWh_wholesale":
-        if self.unique_id in list_installed_solar_bldgs_ALL:
-            print(self.unique_id)
-            total = 1
-            self.total = total
-            self.intention = 1
-        
-        
     if total > threshold:
         intention = 1
         self.counter = self.counter + 1
         self.intention = intention
         self.intention_yr = intention
+        agents_info.update(pd.Series([intention], name  = 'intention', index = [self.unique_id]))
     else:
         intention = 0
         self.intention = intention
@@ -782,7 +756,8 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
         
         # TO DO -> MAKE SURE DATA COLLECTION WORKS REGARDLESS OF AGENT GETTING
         # INTO STAGE 2 OR NOT
-        #since in the last year if the intention is 0, stage 2 will not be entered. Results won't be written, hence write them here.
+        #since in the last year if the intention is 0, stage 2 will not be entered.
+        #Results won't be written, hence write them here.
         if step_ctr == 17:
             agents_info.update(pd.Series([0], name  = 'Adopt_IND', index = [self.unique_id]))
             agents_info.update(pd.Series([self.total], name  = 'intention', index = [self.unique_id]))
@@ -799,67 +774,97 @@ def stage2_decision(self,uid,idea):
     if self.intention == 1:
         temp_plot_id = agents_info.loc[self.unique_id]['plot_id']
         same_plot_agents = agents_info[agents_info['plot_id']==temp_plot_id]
-        same_plot_agents_positive_intention = same_plot_agents[same_plot_agents['intention'] == 1 or same_plot_agents['adoption'] == 1] #available to form community
-        #only agents without solar will have the intention variable as '1'. If an agent has individual/community PV then intention is always '0', but adoption will be '1'
-        
-        #check for community formation 
-        from community_combos import community_combinations
-        Combos_Info, NPV_Combos, df_solar_combos_possible, df_demand_combos_possible, comm_name = community_combinations(agents_info, same_plot_agents_positive_intention,
+        same_plot_agents_positive_intention = same_plot_agents[(same_plot_agents['intention'] >0) or (same_plot_agents['Adopt_IND'] >0)] #or (same_plot_agents.adoption == 1)] #available to form community
+        #only agents without solar will have the intention variable as '1'.
+        #If an agent has individual/community PV then intention is always '0',
+        #but adoption will be '1'
+            
+        #this should only be called if same_plot_agents_positive_intention is not empty,
+        # and if ZEV is 1 meaning community formation is allowed
+        if len(same_plot_agents_positive_intention.index) > 1 and (ZEV == 1):
+            
+            Combos_Info, NPV_Combos, df_solar_combos_possible, df_demand_combos_possible, comm_name = community_combinations(agents_info, same_plot_agents_positive_intention,         
                                                                                                                          distances, df_solar, df_demand, df_solar_combos,
                                                                                                                          df_demand_combos, Combos_formed_Info,
-                                                                                                                         self.unique_id, step_ctr)
-        
-        #keeping info of the community formed as it is needed later in case an agent wants to join a particular community
-        temp_comm_name                                  = comm_name                                 #'C_' + comm_name - CHECK if this needs to be done. comm_name itself sends back a name like: 'C_B123456_B789101112'
-        df_solar_combos[temp_comm_name]                 = df_solar_combos_possible[comm_name]       #add a new column  
-        df_demand_combos[temp_comm_name]                = df_demand_combos_possible[comm_name]      #add a new column  
-        Combos_formed_Info.loc[Combos_Info.index[0]]    = Combos_Info.iloc[0]                       #copying the only row in Combos_Info to Combos_formed_Info
-        
-        
-        if len(Combos_Info.index) != 0: #meaning that some community is formed
-            #here compare with individual NPVs
-            
-            if Agents_Ind_NPVs.loc[self.unique_id]['npv'] < Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] > 0:
-                #form a community
-                #set the adoption as 1 for all the constituent  buildings
-                #set some variable which indicates whether it is a community or an individual PV system
-                agents_adopting_comm = Combos_Info.combos_bldg_names
-                for g in agents_adopting_comm:
-                    if g == self.unique_id:
-                        # ACTIVATED AGENT : ENERGY CHAMPION 
-                        self.en_champ = 1                                                                               #setting the agent which is the energy champion - the first agent
-                        agents_info.update(pd.Series([self.en_champ], name  = 'En_Champ', index = [self.unique_id]))
-                    for h in range(len(agents_objects_list)):
-                        if g == agents_objects_list[h].unique_id:
-                            agents_objects_list[h].adopt_comm = 1                                                       #setting community adoption as 1 for all agents involved
-                            self.adopt_year = 2018 + step_ctr
-                            agents_objects_list[h].intention = 0                                                        #setting intention as 0 for all agents involved
-                            agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
-                            agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
-                            agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
-                            agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
-                            #agents_info.update(pd.Series([share_npv],       name  = 'Comm_NPV',     index = [g])) #npv share of each building to be saved here, NOT COMPLETE AS ON 10 DEC
-                            #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [g])) #npv share of each building to be saved here, NOT COMPLETE AS ON 10 DEC
-                            agents_info.update(pd.Series(["Comm>Ind"],      name  = 'Reason',       index = [g]))
-                            #agents_info.update(pd.Series([ind_scr],         name  = 'Ind_SCR',      index = [g])) #scr of each building to be saved here, NOT COMPLETE AS ON 10 DEC
-                            #agents_info.update(pd.Series([comm_scr],        name  = 'Comm_SCR',     index = [g]))
-            
-            elif Agents_Ind_NPVs.loc[self.unique_id]['npv'] >= Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[self.unique_id]['npv'] > 0:
-                #adopt individual
-                self.adopt_ind  = 1
-                self.adopt_year = 2018 + step_ctr
-                ind_npv = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
-                agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
-                self.intention  = 0
-                self.adopt_comm = 0
-            
-        elif len(Combos_Info.index) == 0:
-        #meaning that NO community is formed, hence go for individual PV adoption
-            if Agents_Ind_NPVs.loc[self.unique_id]['npv'] >=0:
+                                                                                                                         self.unique_id, agents_info.loc[self.unique_id]['zone_id'],
+                                                                                                                         no_closest_neighbors_consider,step_ctr,Agents_Ind_NPVs,
+                                                                                                                         disc_rate, fit_high, fit_low, ewz_high_large,ewz_low_large,
+                                                                                                                         ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
+                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate)
+                                                                                                                         
+            if len(Combos_Info.index) != 0: #meaning that some community is formed
+                #here compare with individual NPVs
+                
+                #keeping info of the community formed as it is needed later in case an agent wants to join a particular community
+                temp_comm_name                                  = comm_name                                 #'C_' + comm_name - CHECK if this needs to be done. comm_name itself sends back a name like: 'C_B123456_B789101112'
+                #temp_comm_name = 'C_' + comm_name
+                df_solar_combos[temp_comm_name]                 = df_solar_combos_possible[temp_comm_name]       #add a new column  
+                df_demand_combos[temp_comm_name]                = df_demand_combos_possible[comm_name]      #add a new column  
+                row_info                                        = Combos_Info.iloc[0]
+                Combos_formed_Info[temp_comm_name]              = row_info                       #copying the only row in Combos_Info to Combos_formed_Info
+                
+                temp_comm_name = 'C_' + comm_name
+                if Agents_Ind_NPVs.loc[step_ctr][self.unique_id] < Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] > 0:
+                    #form a community
+                    #set the adoption as 1 for all the constituent  buildings
+                    #set some variable which indicates whether it is a community or an individual PV system
+                    agents_adopting_comm = Combos_Info.combos_bldg_names
+                    for g in agents_adopting_comm:
+                        if g == self.unique_id:
+                            # ACTIVATED AGENT : ENERGY CHAMPION 
+                            self.en_champ = 1                                                                               #setting the agent which is the energy champion - the first agent
+                            agents_info.update(pd.Series([self.en_champ], name  = 'En_Champ', index = [self.unique_id]))
+                        for h in range(len(agents_objects_list)):
+                            if g == agents_objects_list[h].unique_id:
+                                agents_objects_list[h].adopt_comm = 1                                                       #setting community adoption as 1 for all agents involved
+                                self.adopt_year = 2018 + step_ctr
+                                agents_objects_list[h].intention = 0                                                        #setting intention as 0 for all agents involved
+                                agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
+                                agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
+                                agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
+                                agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
+                                
+                                #npv share of each building to be saved here, NOT COMPLETE - do not calculate the info for this!
+                                #agents_info.update(pd.Series([share_npv],       name  = 'Comm_NPV',     index = [g])) 
+                                agents_info.update(pd.Series(["Comm>Ind"],      name  = 'Reason',       index = [g]))
+                                
+                                #scr of each building to be saved here, NOT COMPLETE - do not calculate the info for this! 
+                                #agents_info.update(pd.Series([comm_scr],        name  = 'Comm_SCR',     index = [g]))
+                
+                elif Agents_Ind_NPVs.loc[step_ctr][self.unique_id] >= Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[step_ctr][self.unique_id] > 0:
+                    #adopt individual
+                    self.adopt_ind  = 1
+                    self.adopt_year = 2018 + step_ctr
+                    ind_npv = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                    agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                    agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                    agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                    agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                    agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                    #do not set this back to 0 anymore as agents continue to be in the ABM even if they have installed PV
+                    #self.intention  = 0
+                    #self.adopt_comm = 0
+                
+            elif len(Combos_Info.index) == 0:
+            #meaning that NO community is formed, hence go for individual PV adoption
+                if Agents_Ind_NPVs.loc[step_ctr][self.unique_id] >=0:
+                    #adopt individual
+                    #set adoption as 1 for an individual PV formation
+                    self.adopt_ind  = 1
+                    self.adopt_year = 2018 + step_ctr
+                    ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                    agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                    agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                    agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
+                    agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                    agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                    agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                    
+                    
+        elif len(same_plot_agents_positive_intention.index) == 0 and self.adopt_ind != 1:
+            #meaning that NO community is formed, hence go for individual PV adoption
+            #only if PV is not previously installed
+            if Agents_Ind_NPVs.loc[step_ctr][self.unique_id] >=0:
                 #adopt individual
                 #set adoption as 1 for an individual PV formation
                 self.adopt_ind  = 1
@@ -867,16 +872,13 @@ def stage2_decision(self,uid,idea):
                 ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
                 agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
                 agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
                 agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
                 agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
                 agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
-                # TO DO - CHANGE IN ORDER TO ALLOW THEM TO CHANGE AFTER INDIVIDUAL
-                # ADOPTION
-                # WHY? BECAUSE .INTENTION IS USED TO LET IN/OUT AGENTS INTO 
-                # INTENTION STAGE
-                self.intention  = 0
-                self.adopt_comm = 0
-            
+                
+                
+                
         
         
     

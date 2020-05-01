@@ -6,19 +6,36 @@ Created on Fri Nov 29 14:13:11 2019
 """
 #%%
 
-def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_pv_size,
-                    df_num_smartmeters, df_num_members):#, admin_costs, rate_cooperation):
+def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_pv_size, 
+                    df_pv_size_cost, df_num_smartmeters, df_num_smartmeters_cost,
+                    df_num_members, disc_rate,
+                    fit_high, fit_low, ewz_high_large,ewz_low_large,
+                    ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
+                    PV_lifetime, PV_degradation, OM_Cost_rate):
     
     '''
     df_solar_AC             = PV potential of all the possible combinations
     df_demand               = Demands of all the possible combinations
-    year_model              = 
+    year_model              = Year the model is in. Used for taking the right cost of PV system (in future years cost reduces)
     agent_enchamp_type      = owner type of the activated agent
     df_pv_size              = PV system size of all the possible combinations
+    df_pv_size_cost         = PV system size of NEW installation in all the possible combinations for which there is incurred cost
     df_num_smartmeters      = Number of smart meters of all the possible combinations
+    df_num_smartmeters_cost = Number of NEW smart meters of all the possible combinations for which there is incurred cost
     df_num_members          = Number of members (agents) in all the possible combinations
-    admin_costs             = Admin costs for community formation, read from main ABM
-    rate_cooperation        = Cooperation cost rate (alphas according to ANJ's equations)
+    disc_rate               = Discount rate used for NPV. set to 0.05 in the main script
+    fit_high                = Read in from the main script 8.5/100 #CHF per kWH
+    fit_low                 = Read in from the main script 4.45/100 #CHF per kWH
+    ewz_high_large          = Read in from the main script 6/100 
+    ewz_low_large           = Read in from the main script 5/100
+    ewz_high_small          = Read in from the main script 24.3/100
+    ewz_low_small           = Read in from the main script 14.4/100
+    ewz_solarsplit_fee      = Read in from the main script 4/100 #CHF per kWH      
+    PV_lifetime             = Read in from the main script 25 #years
+    PV_degradation          = Read in from the main script 0.994 #(0.6% every year) - not allowed to degrade as NPV is calculated only for 1 year
+    OM_Cost_rate            = Read in from the main script 0.06 # CHF per kWh of solar PV production
+    
+    returns Agents_NPVs     = NPVs of all combos  
     '''
     
     #-------------------------
@@ -32,25 +49,8 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     agent_list_final = df_solar_AC.columns
     
     install_year = year_model #this is read in from the main ABM, equal to the step_ctr which keeps track of the year of the simulation.
-    
-    #==========================================================================
-    #temporarily writing these here, use from the model in the main ABM run
-    disc_rate_homeown = 0.05
-    disc_rate_landlord = 0.1
-    disc_rate_firm = 0.1
-    disc_rate_instn = 0.1
-    #==========================================================================
-    
-    if agent_enchamp_type == "Homeowner":
-        disc_rate_npv = disc_rate_homeown
-    elif agent_enchamp_type == "Landlord":
-        disc_rate_npv = disc_rate_landlord
-    elif agent_enchamp_type == "Firm":
-        disc_rate_npv = disc_rate_firm
-    elif agent_enchamp_type == "Institution":
-        disc_rate_npv = disc_rate_instn
-    
-    
+    disc_rate_npv = disc_rate
+
     #adding hours to the solar and demand dataframes for hourly pricing later
     list_hours = []  
     ctr = 0  
@@ -66,40 +66,25 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     df_demand['Hour'] = ""
     df_demand['Hour'] = list_hours
     
-    #adding day of the week - very crude way to code, I did it before so I didn't change it
-    ctr = 0
-    days = ['Sat','Sun','Mon','Tue','Wed','Thu',' Fri'] #this order because 2005 started with a Saturday 
-    list_days = []
-    df_demand['Day'] = ""
-    df_solar_AC['Day'] = ""
-    for i in range(365):
-        if ctr % 7 == 0:
-                ctr = 0
-        if ctr == 0:
-            for x in range(24):
-                list_days.append('Sat')
-        if ctr == 1:
-            for x in range(24):
-                list_days.append('Sun')
-        if ctr == 2:
-            for x in range(24):
-                list_days.append('Mon')
-        if ctr == 3:
-            for x in range(24):
-                list_days.append('Tue')
-        if ctr == 4:
-            for x in range(24):
-                list_days.append('Wed')
-        if ctr == 5:
-            for x in range(24):
-                list_days.append('Thu')
-        if ctr == 6:
-            for x in range(24):
-                list_days.append('Fri')
-        ctr = ctr + 1
-        
-    df_demand['Day']    = list_days
-    df_solar_AC['Day']  = list_days
+    #adding day of the week 
+    from datetime import timedelta
+    import datetime 
+    
+    df_demand['Day']    = ""
+    df_solar_AC['Day']  = ""
+    weekDays    = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
+    day_count   = 365                                                               #1 year
+    daylist     = []
+    start_date  =  datetime.date(2005,1,1)                                          #reference year is 2005
+    
+    for single_date in (start_date + timedelta(n) for n in range(day_count)):
+        DayAsString = weekDays[single_date.weekday()]
+        for i in range (24):
+            daylist.append(DayAsString)
+    
+    print(len(daylist))
+    df_demand['Day']    = daylist
+    df_solar_AC['Day']  = daylist
     
     #adding price information depending on hour of day
     df_demand['price_level']    = ""
@@ -135,40 +120,13 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
             
     #%%
     """        
-    demand remains constant
-    discount rate = 5%
-    Lifetime = 25 years
-    O&M costs = 0.06 CHF per kWh of solar PV production
-    EWZ Fee = 4Rp./kWh of Self consumption 
-    
-    Separate the high and low hours of the year as prices are different, and then calculate the savings for the year
-    
+    NPV Calculation Preparation of dataframes, ToU pricing, etc...
     """
     print("Prep for NPV Calculation")
     #dataframes to filter high and low times
     df_HIGH = pd.DataFrame(data = None)        
     df_LOW  = pd.DataFrame(data = None)        
-    
-    # =============================================================================
-    # READ IN FROM THE MAIN FILE - ALLOWED FOR TEST
-    # 
-    fit_high            = 8.5/100 #CHF per kWH
-    fit_low             =  4.45/100 #CHF per kWH
-    # 
-    #ewz_high = 24.3/100 #CHF per kWH
-    #ewz_low = 14.4/100 #CHF per kWH
-    ewz_high_large      = 6/100 
-    ewz_low_large       = 5/100
-    
-    ewz_high_small      = 24.3/100
-    ewz_low_small       = 14.4/100
-    ewz_solarsplit_fee  = 4/100 #CHF per kWH      
-    # 
-    # PV_lifetime = 25 #years - not needed as in this function NPV is only calculated for 1 year
-    PV_degradation      = 1 #0.994 #(0.6% every year) - not allowed to degrade as NPV is calculated only for 1 year
-    OM_Cost_rate        = 0.06 # CHF per kWh of solar PV production
-    # 
-    # =============================================================================
+
     Agents_Savings      = pd.DataFrame(data = None, index = agent_list_final)
     Agents_OM_Costs     = pd.DataFrame(data = None, index = agent_list_final)
     Agents_EWZ_Costs    = pd.DataFrame(data = None, index = agent_list_final)
@@ -176,7 +134,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     Agents_SCRs         = pd.DataFrame(data = None, index =agent_list_final)
     
     #-------- O&M costs ------------------
-    for year in range(1): #only calculating for one year 
+    for year in range(PV_lifetime): #only calculating for one year 
         col_name = 'Year' + str(year)
         list_om_costs = []
         
@@ -189,7 +147,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
         Agents_OM_Costs[col_name] = list_om_costs
     #---------------------
     
-    for year in range(1): #only calculating for one year 
+    for year in range(PV_lifetime): #only calculating for one year 
         col_name = 'Year' + str(year)
         list_savings = []
         list_om_costs = []
@@ -288,31 +246,14 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     Agents_NetSavings = Agents_Savings - Agents_OM_Costs - Agents_EWZ_Costs
     
     '''
+    Actual NPV calculation happens now
     small PV    = < 30kW 
     medium PV   =  >= 30 and  < 100kW
     large PV    = >= 100kW
     '''
     
-    print("NPV Calculation")
-    
-    #disc_rate = 0.05 - NOW READ FROM THE MAIN FILE
-    
-    
+    print("NPV Calculation for Combos")
     Agents_NPVs = pd.DataFrame(data = None, index = agent_list_final, columns = ['npv'])
-    #Agents_NPVs['Installation_Year'] = list(range(2018,2019))
-    
-    #-----NOT CALCULATING THESE HERE AS ONLY INTERESTED IN NPVs------
-    #Agents_PPs = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
-    #Agents_PPs['Installation_Year'] = list(range(2018,2036))
-    #Agents_PPs_Norm = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
-    #Agents_PPs_Norm['Installation_Year'] = list(range(2018,2036))
-    #Agents_Investment_Costs = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
-    #Agents_Investment_Costs['Installation_Year'] = list(range(2018,2036))
-    #Agents_PV_Investment_Costs = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
-    #Agents_PV_Investment_Costs['Installation_Year'] = list(range(2018,2036))
-    #Agents_Smart_Meter_Investment_Costs = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
-    #Agents_Smart_Meter_Investment_Costs['Installation_Year'] = list(range(2018,2036))
-    
     
     temp_net_yearlysavings = []
     for row in Agents_NetSavings.iterrows():
@@ -334,11 +275,8 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     coop_cost                   = 0
     for i in agent_list_final:
         
-        install_year = 5 #'''NEED TO FIND OUT WHICH YEAR WE ARE IN!''' read from the main ABM!
-        
-        temp_pv_size    = df_pv_size.loc['Size'][i]
-        temp_num_meters = df_num_smartmeters.loc['Num'][i]
-        
+        temp_pv_size    = df_pv_size_cost.loc['Size'][i]
+        temp_num_meters = df_num_smartmeters_cost.loc['Num'][i]
         
         if temp_pv_size < 30:
             temp_pv_subsidy =  1600 + 460*temp_pv_size
@@ -347,7 +285,8 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
         elif temp_pv_size >= 100:
             temp_pv_subsidy =  1400 + 300*temp_pv_size
         
-        if install_year >= 12: #subsidy stops
+        #subsidy stops
+        if install_year >= 12: 
             temp_pv_subsidy =  0
         
         #depending on the PV system size, the investment cost per kW changes
@@ -414,33 +353,8 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
         pv_inv_cost             = invest_rate*temp_pv_size
         smart_meter_inv_cost    = temp_num_meters*invest_meter_rate
         
-# =============================================================================
-##      cooperation is okay for a new community formation but how do I do this for an existing community and someone joining it?
-        #maybe I read in another dataframe which has info if a particular community has been formed, and if that is the case have another formula 
-        #using an if-else statement?
-                 
-        #NO NEED FOR THIS NOW AS COOPERATION COSTS ARE ZERO FOR THE BASELINE SCENARIO
-
-        #small code to figure out if any existing community is part of this
-#         for i in agent_list_final:
-#             if i in temp_names_comms_list:
-#                 join_new_comm = 0
-#             else:
-#                 join_new_comm = 1
-#         
-#         
-#         #NEEDS TO BE EDITED HERE!!
-#         #READ THE NAME OF THE COMBO TO FIGURE OUT IF JOINING A NEW COMM? OR MAKE ANOTHER TEMPORARY DATAFRAME?
-#         join_new_comm = 1 #temporarily set to 1 so that always considered like a new community. Ideally read in from some dataframe 
-#         if join_new_comm == 1:
-#             coop_cost               = admin_costs + (df_num_members.loc['Num_Members'][i]*rate_cooperation)
-#         elif join_new_comm == 0: #joining an exisiting community here
-#             coop_cost               = admin_costs + (1*rate_cooperation*2 + df_num_members.loc['Num_Members'][i]*rate_cooperation) #if you are new you pay twice as a cooperation cost
-#         
-# =============================================================================
-        
-        coop_cost           = 0 # COOPERATION COST IS SET TO ZERO
-        investment_cost     = pv_inv_cost + smart_meter_inv_cost + coop_cost # + some calculated cooperation cost dependent on the number of potential community members
+        coop_cost               = 0 # COOPERATION COST IS SET TO ZERO
+        investment_cost         = pv_inv_cost + smart_meter_inv_cost + coop_cost # + some calculated cooperation cost dependent on the number of potential community members
         #print(investment_cost)
         
         pv_inv_cost_list.append(pv_inv_cost)
@@ -454,34 +368,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
         cash_flows.extend(savings_temp)
         temp_npv = np.npv(disc_rate_npv,cash_flows)
         temp_npv_list.append(temp_npv) #only npv is stored 
-# =============================================================================
-#             #payback period calculation 
-#             cf_df = pd.DataFrame(cash_flows, columns=['UndiscountedCashFlows'])
-#             cf_df.index.name = 'Year'
-#             cf_df['DiscountedCashFlows'] = np.pv(rate=0, pmt=0, nper=cf_df.index, fv=-cf_df['UndiscountedCashFlows'])
-#             cf_df['CumulativeDiscountedCashFlows'] = np.cumsum(cf_df['DiscountedCashFlows'])
-#             if any(cf_df.CumulativeDiscountedCashFlows > 0):
-#                 final_full_year = cf_df[cf_df.CumulativeDiscountedCashFlows < 0].index.values.max()
-#                 fractional_yr = -cf_df.CumulativeDiscountedCashFlows[final_full_year ]/cf_df.DiscountedCashFlows[final_full_year + 1]
-#             else:
-#                 final_full_year = 999
-#                 fractional_yr = 0
-#             
-#             payback_period = final_full_year + fractional_yr
-#             temp_payback_list.append(payback_period)   
-#             #print(payback_period)
-#         
-# =============================================================================
-            
     
     Agents_NPVs['npv'] = temp_npv_list
-    print('Agents_NPVs ====', Agents_NPVs)
-    #Agents_PPs[i] = temp_payback_list
-    #Agents_PPs_Norm[i] = 1 - Agents_PPs[i]/15
-    #Agents_PPs_Norm.loc[Agents_PPs_Norm[i]<0,i] = 0
-    #Agents_Investment_Costs[i] = inv_cost_list
-    #Agents_PV_Investment_Costs[i] = pv_inv_cost_list
-    #Agents_Smart_Meter_Investment_Costs[i] = smart_meter_inv_cost_list
-
     return Agents_NPVs
 
