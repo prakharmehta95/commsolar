@@ -5,38 +5,34 @@ Created on Wed May  8 18:23:37 2019
 @author: Prakhar Mehta
 """
 
-"""
-Results on 14 May for ZEV regulations used att_seed = 3; randomseed == 22 to begin with
-"""
 #%%
 import pandas as pd
 import time
 start = time.time()
 import pickle
+import random
+
+from NPV_Calculation import npv_calc_individual
+from small_world_network import make_swn
 
 #%%
-#import the main ABM code
-#from adoption_8_NPV_vs_InvCosts import *
-#from adoption_8_NPV_vs_InvCosts import scenario
 """
 define all parameters here
 """
-#initializing the scenario
-scenario = "ZEV"                       #100% size, 100 MWh Restriction on buildings, 100 MWh Community Restriction
+
 
 #initializing the weights used in the intention function 
-w_econ      = 0.30
-w_swn       = 0.31
-w_att       = 0.39
-w_subplot   = 0.1
-threshold   = 0.5
-reduction   = -0.05
-comm_limit  = 1      #limit of 100 MWh for community size applies
-ZEV         = 0     #default - ZEV formation not allowed (no_ZEV scenario). See next IF statement for the ZEV scenario
-if scenario == "ZEV":
-    ZEV = 1             #binary variable to turn on/off whether to allow community formation
-    
- 
+w_econ      = 0.9#0.30
+w_swn       = 0.9#0.31
+w_att       = 0.9#0.39
+w_subplot   = 0.9#0.1
+threshold   = 0.1
+reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
+comm_limit  = 1         #limit of 100 MWh for community size applies
+ZEV         = 0         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
+peer_seed = 1           #setting seed for the peer network calculations    
+
+no_closest_neighbors_consider = 4
 #%%
 """
 Agent information read from excel, pickles etc...
@@ -44,16 +40,16 @@ Agent information read from excel, pickles etc...
 !!!!!!TEST EXCEL being read in now!!!!!!!!!!
 """
 
-agents_info = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
+path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
 agent_list_final = agents_info.bldg_name
 
 #%%
 """
 NPV Calculation call from here - calculates the NPVs of individual buildings
 """
-#define the costs etc here which are read in the NPV_Calculation file:::
-
-PV_price_baseline   = pd.read_excel(r'C:\Users\iA\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
+#define the costs etc here which are read in the NPV_Calculation file
+PV_price_baseline   = pd.read_excel(path + r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
 fit_high            = 8.5/100   #CHF per kWH
 fit_low             = 4.45/100  #CHF per kWH
 ewz_high_large      = 6/100     #CHF per kWh
@@ -67,30 +63,38 @@ diff_prices         = 1         #if = 1, then both wholesale and retail prices a
 PV_lifetime         = 25        #years
 PV_degradation      = 0.994     #(0.6% every year)
 OM_Cost_rate        = 0.06      #CHF per kWh of solar PV production
-disc_rate_homeown   = 0.05      #discount rate for NPV Calculation
-disc_rate_firm      = 0.05      #discount rate for NPV Calculation
-disc_rate_instn     = 0.05      #discount rate for NPV Calculation
-disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
-pp_rate             = 0         #discount rate for payback period calculation is always zero    
 
-import NPV_Calculation #runs the NPV calculation code and calculates individual NPVs for the agents involved
+#discount rates 
+disc_rate           = 0.05      #discount rate for NPV Calculation
+pp_rate             = 0         #discount rate for payback period calculation is zero 
+# =============================================================================
+# keep it the same for all
+# disc_rate_homeown   = 0.05      #discount rate for NPV Calculation
+# disc_rate_firm      = 0.05      #discount rate for NPV Calculation
+# disc_rate_instn     = 0.05      #discount rate for NPV Calculation
+# disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
+# =============================================================================
+   
 
-from NPV_Calculation import Agents_NPVs 
-from NPV_Calculation import Agents_SCRs 
-from NPV_Calculation import Agents_Investment_Costs 
-from NPV_Calculation import Agents_PPs_Norm
+#runs the NPV calculation code and calculates individual NPVs for the agents involved
+Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_calc_individual(path,PV_price_baseline,disc_rate,
+                                                                                         pp_rate, fit_high, fit_low,
+                                                                                         ewz_high_large,ewz_low_large,
+                                                                                         ewz_high_small, ewz_low_small,
+                                                                                         diff_prices, ewz_solarsplit_fee,
+                                                                                         PV_lifetime, PV_degradation,
+                                                                                         OM_Cost_rate, agents_info,agent_list_final)
 
-
-#%% =============================================================================
-
-distances = pd.read_csv(r'C:\Users\iA\Dropbox\Com_Paper\07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
-
-from small_world_network import  make_swn
-Agents_Peer_Network = make_swn(distances, agents_info) #calls swn function
 
 #%%
-number = 4919   #number of agents
-years = 1    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
+#Creation of Small World Network
+distances = pd.read_csv(path + r'07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
+Agents_Peer_Network = make_swn(distances, agents_info,peer_seed) #calls swn function
+
+
+#%%
+number = len(agent_list_final) #4919   #number of agents
+years = 18    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
 
 #empty dictionaries to store results
 results_agentlevel = {}
@@ -101,7 +105,7 @@ d_agents_info_runs_correct = {}
 d_combos_info_runs_correct = {}
 
 att_seed = 3        #initial seed for the attitude gauss function. Used to reproduce results.  
-runs = 1          #no of runs. 100 for a typical ABM simulation in this work
+runs = 1         #no of runs. 100 for a typical ABM simulation in this work
 randomseed = 22     #initial seed used to set the order of shuffling of agents withing the scheduler
 
 print("Did you change the name of the final pickle storage file?") #so that my results are not overwritten!
@@ -125,18 +129,18 @@ for j in range(runs):
         
         #stores results across multiple Years and multiple runs
         t1 = pd.DataFrame.copy(agents_info)
-        t2 = pd.DataFrame.copy(Agents_Possibles_Combos)
+        t2 = pd.DataFrame.copy(Combos_formed_Info) 
         d_agents_info_runs_correct[temp_name_3] = t1#agents_info
         d_combos_info_runs_correct[temp_name_4] = t2#Agents_Possibles_Combos
     
     temp_name = "gini_" + str(j)
     temp_name_2 = "gini_model_" + str(j)
-    gini = test.datacollector.get_agent_vars_dataframe()
-    gini_model = test.datacollector.get_model_vars_dataframe()
+    agent_vars = test.datacollector.get_agent_vars_dataframe()
+    model_vars = test.datacollector.get_model_vars_dataframe()
     
     #stores results across multiple runs
-    results_agentlevel[temp_name] = gini
-    results_emergent[temp_name_2] = gini_model
+    results_agentlevel[temp_name] = agent_vars
+    results_emergent[temp_name_2] = model_vars
     
 
 
