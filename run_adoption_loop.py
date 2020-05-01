@@ -29,8 +29,8 @@ w_subplot   = 0.9#0.1
 threshold   = 0.1
 reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
 comm_limit  = 1         #limit of 100 MWh for community size applies
-ZEV         = 0         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
-peer_seed = 1           #setting seed for the peer network calculations    
+ZEV         = 1         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
+peer_seed   = 1           #setting seed for the peer network calculations    
 
 no_closest_neighbors_consider = 4
 #%%

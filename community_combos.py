@@ -72,11 +72,6 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         #with which a community combination can be considered by the active agent
         
         
-        # ****check if this is needed or not...seems like I do need it, then I have
-        # ****to replace data by Combos_formed_Info
-        # READ FROM THE MAIN ABM A FILE WHICH CONTAINS INFO ON ALREADY FORMED COMMUNITIES,
-        # THEN FILTER FOR THE BUILDINGS IN THIS CASE AND ASSIGN TO THE COLUMNS IN combos_consider
-        print(combos_consider)
         combos_consider['Comm_formed']  = ""
         combos_consider['Ind_formed']   = ""
         combos_consider['Community']    = ""

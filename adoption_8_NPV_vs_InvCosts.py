@@ -774,7 +774,7 @@ def stage2_decision(self,uid,idea):
     if self.intention == 1:
         temp_plot_id = agents_info.loc[self.unique_id]['plot_id']
         same_plot_agents = agents_info[agents_info['plot_id']==temp_plot_id]
-        same_plot_agents_positive_intention = same_plot_agents[(same_plot_agents['intention'] >0) or (same_plot_agents['Adopt_IND'] >0)] #or (same_plot_agents.adoption == 1)] #available to form community
+        same_plot_agents_positive_intention = same_plot_agents[(same_plot_agents['intention'] >0) | (same_plot_agents['Adopt_IND'] >0)] #or (same_plot_agents.adoption == 1)] #available to form community
         #only agents without solar will have the intention variable as '1'.
         #If an agent has individual/community PV then intention is always '0',
         #but adoption will be '1'
