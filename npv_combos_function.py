@@ -100,7 +100,10 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     '''
     
     #import next line from main...    ALLOWED HERE FOR TEST
-    PV_price_baseline = pd.read_excel(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
+    path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
+    e_data_file = r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx'
+    PV_price_baseline   = pd.read_excel(path + e_data_file)
+    #PV_price_baseline = pd.read_excel(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
     
     #this stores projected PV prices for all sizes of PV systems
     PV_price_projection = pd.DataFrame(data = None)

@@ -46,6 +46,7 @@ from mesa.datacollection import DataCollector                                  #
 AGENT INFORMATION
 '''
 path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
 
 #CHECK - these might change!
 df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
@@ -170,7 +171,6 @@ class tpb_agent(Agent):
             
         
 #%% MODEL code
-        
         
 class tpb(Model):
     '''
@@ -728,9 +728,6 @@ class tpb_functions:
 
 #%% STAGES of the ABM
 
-
-
-
 def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
     """
     Intention development at the end of stage 1
@@ -877,9 +874,3 @@ def stage2_decision(self,uid,idea):
                 agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
                 agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
                 
-                
-                
-        
-        
-    
-    
