@@ -9,7 +9,7 @@ Created on Thu Apr  4 17:58:04 2019
 """
 Initial libraries and data import from the run_adoption_loop file
 
-__main__ is the run_adoption_loop script
+__main__ is the main script
 
 """
 
@@ -25,7 +25,7 @@ from __main__ import Agents_Investment_Costs as Agents_Ind_Investment_Costs
 from __main__ import Agents_Peer_Network as Agents_Peers
 from __main__ import Agents_PPs_Norm as Agents_Ind_PPs_Norm                    #payback periods for individual agents normalized
 
-from community_combos import community_combinations
+#from community_combos import community_combinations
 
 import random 
 import itertools
@@ -38,9 +38,11 @@ import networkx as nx
 
 #ABM Packages
 from mesa import Agent, Model                                                  #base classes in the mesa library
-from Scheduler_StagedActivation_Random import StagedActivation_random          #slightly modified StagedActivation to have control over the random seed
+from scheduler import StagedActivation_random  #slightly modified StagedActivation to have control over the random seed
+    
 from mesa.datacollection import DataCollector                                  #for data collection, of course
 
+from Tools import rank_combos, npv_combo, dc_functions
 #%%
 '''
 AGENT INFORMATION
@@ -91,8 +93,8 @@ class tpb_agent(Agent):
     """Class for the agents. Agents are initialised in init, and the step_idea
     and step_decision methods execute what the agents are supposed to do
     """
-    def tpb_agent(self):
-        self.adopt_ind
+    #def tpb_agent(self):
+    #    self.adopt_ind
     def __init__(self,unique_id,model,bldg_type,bldg_own,bldg_zone,bldg_plot,attitude,pp,intention,intention_yr,
                  peer_effect,neighbor_influence,total,counter,adopt_ind,adopt_comm,adopt_year,en_champ,pv_size,dem_total):
         '''
@@ -246,31 +248,31 @@ class tpb(Model):
             self.schedule.add(a)
             
         #data collection
-        self.datacollector = DataCollector(model_reporters = {"Ind_solar_number"        :functions.cumulate_solar_ind,
-                                                              "Ind_PV_Installed_CAP"    :functions.cumulate_solar_ind_sizes,
-                                                              "Comm_solar_number"       :functions.cumulate_solar_comm,
-                                                              "Num_of_Comms"            :functions.cumulate_solar_champions,
-                                                              "Comm_PV_Installed_CAP"   :functions.cumulate_solar_comm_sizes,
-                                                              "GYM_PV_CAP"              :functions.agent_type_gym_CAP,
-                                                              "HOSPITAL_PV_CAP"         :functions.agent_type_hospital_CAP,
-                                                              "HOTEL_PV_CAP"            :functions.agent_type_hotel_CAP,
-                                                              "INDUSTRIAL_PV_CAP"       :functions.agent_type_industrial_CAP,
-                                                              "LIBRARY_PV_CAP"          :functions.agent_type_library_CAP,
-                                                              "MULTI_RES_PV_CAP"        :functions.agent_type_multi_res_CAP,
-                                                              "OFFICE_PV_CAP"           :functions.agent_type_office_CAP,
-                                                              "PARKING_PV_CAP"          :functions.agent_type_parking_CAP,
-                                                              "SCHOOL_PV_CAP"           :functions.agent_type_school_CAP,
-                                                              "SINGLE_RES_PV_CAP"       :functions.agent_type_single_res_CAP,
-                                                              "Num_GYM"                 :functions.agent_type_gym,
-                                                              "Num_HOSPITAL"            :functions.agent_type_hospital,
-                                                              "Num_HOTEL"               :functions.agent_type_hotel,
-                                                              "Num_INDUSTRIAL"          :functions.agent_type_industrial,
-                                                              "Num_LIBRARY"             :functions.agent_type_library,
-                                                              "Num_MULTI_RES"           :functions.agent_type_multi_res,
-                                                              "Num_OFFICE"              :functions.agent_type_office,
-                                                              "Num_PARKING"             :functions.agent_type_parking,
-                                                              "Num_SCHOOL"              :functions.agent_type_school,
-                                                              "Num_SINGLE_RES"          :functions.agent_type_single_res},
+        self.datacollector = DataCollector(model_reporters = {"Ind_solar_number"        :dc_functions.functions.cumulate_solar_ind,
+                                                              "Ind_PV_Installed_CAP"    :dc_functions.functions.cumulate_solar_ind_sizes,
+                                                              "Comm_solar_number"       :dc_functions.functions.cumulate_solar_comm,
+                                                              "Num_of_Comms"            :dc_functions.functions.cumulate_solar_champions,
+                                                              "Comm_PV_Installed_CAP"   :dc_functions.functions.cumulate_solar_comm_sizes,
+                                                              "GYM_PV_CAP"              :dc_functions.functions.agent_type_gym_CAP,
+                                                              "HOSPITAL_PV_CAP"         :dc_functions.functions.agent_type_hospital_CAP,
+                                                              "HOTEL_PV_CAP"            :dc_functions.functions.agent_type_hotel_CAP,
+                                                              "INDUSTRIAL_PV_CAP"       :dc_functions.functions.agent_type_industrial_CAP,
+                                                              "LIBRARY_PV_CAP"          :dc_functions.functions.agent_type_library_CAP,
+                                                              "MULTI_RES_PV_CAP"        :dc_functions.functions.agent_type_multi_res_CAP,
+                                                              "OFFICE_PV_CAP"           :dc_functions.functions.agent_type_office_CAP,
+                                                              "PARKING_PV_CAP"          :dc_functions.functions.agent_type_parking_CAP,
+                                                              "SCHOOL_PV_CAP"           :dc_functions.functions.agent_type_school_CAP,
+                                                              "SINGLE_RES_PV_CAP"       :dc_functions.functions.agent_type_single_res_CAP,
+                                                              "Num_GYM"                 :dc_functions.functions.agent_type_gym,
+                                                              "Num_HOSPITAL"            :dc_functions.functions.agent_type_hospital,
+                                                              "Num_HOTEL"               :dc_functions.functions.agent_type_hotel,
+                                                              "Num_INDUSTRIAL"          :dc_functions.functions.agent_type_industrial,
+                                                              "Num_LIBRARY"             :dc_functions.functions.agent_type_library,
+                                                              "Num_MULTI_RES"           :dc_functions.functions.agent_type_multi_res,
+                                                              "Num_OFFICE"              :dc_functions.functions.agent_type_office,
+                                                              "Num_PARKING"             :dc_functions.functions.agent_type_parking,
+                                                              "Num_SCHOOL"              :dc_functions.functions.agent_type_school,
+                                                              "Num_SINGLE_RES"          :dc_functions.functions.agent_type_single_res},
                                             agent_reporters = {"Building_ID"        :"unique_id",
                                                                "Building_Type"      :"bldg_type",
                                                                #"Part_Comm"          :"part_comm",
@@ -299,324 +301,7 @@ class tpb(Model):
         global step_ctr                         #Counter for the year of the simulation. Used to change agent attributes based on the year
         step_ctr += 1
         
-    
-
-#%% MORE FUNCTIONS for agent attributes and also for outputs of ABM segregated by agent types
-
-class functions:
-    """
-    FUNCTIONS for agent attributes, counting installed capacity by building typologies
-    
-    @Alejandro: most of these functions here are for data collection.
-    Check the datacollector definition and you will see. Can be simply modified
-    so that we can collect data based on ownership/building-use type separately
-    """
-        
-#-----GYM-----    
-    def agent_type_gym(model):
-        '''
-        to find total number of GYM individual adoptions
-        '''
-        sum_agent_type_gym_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'GYM':
-                sum_agent_type_gym_ind = sum_agent_type_gym_ind + i.adopt_ind
-        return sum_agent_type_gym_ind
-    
-    
-    def agent_type_gym_CAP(model):
-        '''
-        to find total CAPACITY of GYM individual adoptions
-        '''
-        sum_agent_type_gym_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'GYM' and i.adopt_ind == 1:
-                sum_agent_type_gym_ind_cap = sum_agent_type_gym_ind_cap + i.pv_size
-        return sum_agent_type_gym_ind_cap
-
-#-----HOSPITAL-----    
-    def agent_type_hospital(model):
-        '''
-        to find total number of HOSPITAL individual adoptions
-        '''
-        sum_agent_type_hospital_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'HOSPITAL':
-                sum_agent_type_hospital_ind = sum_agent_type_hospital_ind + i.adopt_ind
-        return sum_agent_type_hospital_ind
-    
-    def agent_type_hospital_CAP(model):
-        '''
-        to find total CAPACITY of HOSPITAL individual adoptions
-        '''
-        sum_agent_type_hospital_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'HOSPITAL' and i.adopt_ind == 1:
-                sum_agent_type_hospital_ind_cap = sum_agent_type_hospital_ind_cap + i.pv_size
-        return sum_agent_type_hospital_ind_cap
-
-#-----HOTEL-----    
-    def agent_type_hotel(model):
-        '''
-        to find total number of HOTEL individual adoptions
-        '''
-        sum_agent_type_hotel_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'HOTEL':
-                sum_agent_type_hotel_ind = sum_agent_type_hotel_ind + i.adopt_ind
-        return sum_agent_type_hotel_ind
-    
-    def agent_type_hotel_CAP(model):
-        '''
-        to find total CAPACITY of HOTEL individual adoptions
-        '''
-        sum_agent_type_hotel_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'HOTEL' and i.adopt_ind == 1:
-                sum_agent_type_hotel_ind_cap = sum_agent_type_hotel_ind_cap + i.pv_size
-        return sum_agent_type_hotel_ind_cap
-
-#-----INDUSTRIAL-----
-    def agent_type_industrial(model):
-        '''
-        to find total number of INDUSTRIAL individual adoptions
-        '''
-        sum_agent_type_industrial_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'INDUSTRIAL':
-                sum_agent_type_industrial_ind = sum_agent_type_industrial_ind + i.adopt_ind
-        return sum_agent_type_industrial_ind
-    
-    def agent_type_industrial_CAP(model):
-        '''
-        to find total CAPACITY of INDUSTRIAL individual adoptions
-        '''
-        sum_agent_type_industrial_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'INDUSTRIAL' and i.adopt_ind == 1:
-                sum_agent_type_industrial_ind_cap = sum_agent_type_industrial_ind_cap + i.pv_size
-        return sum_agent_type_industrial_ind_cap
-
-#-----LIBRARY-----    
-    def agent_type_library(model):
-        '''
-        to find total number of LIBRARY individual adoptions
-        '''
-        sum_agent_type_library_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'LIBRARY':
-                sum_agent_type_library_ind = sum_agent_type_library_ind + i.adopt_ind
-        return sum_agent_type_library_ind
-    
-    def agent_type_library_CAP(model):
-        '''
-        to find total CAPACITY of LIBRARY individual adoptions
-        '''
-        sum_agent_type_library_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'LIBRARY' and i.adopt_ind == 1:
-                sum_agent_type_library_ind_cap = sum_agent_type_library_ind_cap + i.pv_size
-        return sum_agent_type_library_ind_cap
-
-#-----MULTI_RES-----    
-    def agent_type_multi_res(model):
-        '''
-        to find total number of MULTI_RES individual adoptions
-        '''
-        sum_agent_type_multi_res_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'MULTI_RES':
-                sum_agent_type_multi_res_ind = sum_agent_type_multi_res_ind + i.adopt_ind
-        return sum_agent_type_multi_res_ind
-    
-    def agent_type_multi_res_CAP(model):
-        '''
-        to find total CAPACITY of MULTI_RES individual adoptions
-        '''
-        sum_agent_type_multi_res_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'MULTI_RES' and i.adopt_ind == 1:
-                sum_agent_type_multi_res_ind_cap = sum_agent_type_multi_res_ind_cap + i.pv_size
-        return sum_agent_type_multi_res_ind_cap
-
-#-----OFFICE-----    
-    def agent_type_office(model):
-        '''
-        to find total number of OFFICE individual adoptions
-        '''
-        sum_agent_type_office_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'OFFICE':
-                sum_agent_type_office_ind = sum_agent_type_office_ind + i.adopt_ind
-        return sum_agent_type_office_ind
-    
-    def agent_type_office_CAP(model):
-        '''
-        to find total CAPACITY of OFFICE individual adoptions
-        '''
-        sum_agent_type_office_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'OFFICE' and i.adopt_ind == 1:
-                sum_agent_type_office_ind_cap = sum_agent_type_office_ind_cap + i.pv_size
-        return sum_agent_type_office_ind_cap
-
-#-----PARKING-----    
-    def agent_type_parking(model):
-        '''
-        to find total number of PARKING individual adoptions
-        '''
-        sum_agent_type_parking_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'PARKING':
-                sum_agent_type_parking_ind = sum_agent_type_parking_ind + i.adopt_ind
-        return sum_agent_type_parking_ind
-    
-    def agent_type_parking_CAP(model):
-        '''
-        to find total CAPACITY of PARKING individual adoptions
-        '''
-        sum_agent_type_parking_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'PARKING' and i.adopt_ind == 1:
-                sum_agent_type_parking_ind_cap = sum_agent_type_parking_ind_cap + i.pv_size
-        return sum_agent_type_parking_ind_cap
-
-#-----RESTAURANT-----    
-    def agent_type_restaurant(model):
-        '''
-        to find total number of RESTAURANT individual adoptions
-        '''
-        sum_agent_type_restaurant_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'RESTAURANT':
-                sum_agent_type_restaurant_ind = sum_agent_type_restaurant_ind + i.adopt_ind
-        return sum_agent_type_restaurant_ind
-    
-    def agent_type_restaurant_CAP(model):
-        '''
-        to find total CAPACITY of RESTAURANT individual adoptions
-        '''
-        sum_agent_type_restaurant_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'RESTAURANT' and i.adopt_ind == 1:
-                sum_agent_type_restaurant_ind_cap = sum_agent_type_restaurant_ind_cap + i.pv_size
-        return sum_agent_type_restaurant_ind_cap
-
-#-----RETAIL-----   
-    def agent_type_retail(model):
-        '''
-        to find total number of RETAIL individual adoptions
-        '''
-        sum_agent_type_retail_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'RETAIL':
-                sum_agent_type_retail_ind = sum_agent_type_retail_ind + i.adopt_ind
-        return sum_agent_type_retail_ind
-    
-    def agent_type_retail_CAP(model):
-        '''
-        to find total CAPACITY of RETAIL individual adoptions
-        '''
-        sum_agent_type_retail_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'RETAIL' and i.adopt_ind == 1:
-                sum_agent_type_retail_ind_cap = sum_agent_type_retail_ind_cap + i.pv_size
-        return sum_agent_type_retail_ind_cap
-
-#-----SCHOOL-----   
-    def agent_type_school(model):
-        '''
-        to find total number of SCHOOL individual adoptions
-        '''
-        sum_agent_type_school_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'SCHOOL':
-                sum_agent_type_school_ind = sum_agent_type_school_ind + i.adopt_ind
-        return sum_agent_type_school_ind
-    
-    def agent_type_school_CAP(model):
-        '''
-        to find total CAPACITY of SCHOOL individual adoptions
-        '''
-        sum_agent_type_school_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'SCHOOL' and i.adopt_ind == 1:
-                sum_agent_type_school_ind_cap = sum_agent_type_school_ind_cap + i.pv_size
-        return sum_agent_type_school_ind_cap
-
-#-----SINGLE_RES-----
-    def agent_type_single_res(model):
-        '''
-        to find total number of SINGLE_RES individual adoptions
-        '''
-        sum_agent_type_single_res_ind = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'SINGLE_RES':
-                sum_agent_type_single_res_ind = sum_agent_type_single_res_ind + i.adopt_ind
-        return sum_agent_type_single_res_ind
-    
-    def agent_type_single_res_CAP(model):
-        '''
-        to find total CAPACITY of SINGLE_RES individual adoptions
-        '''
-        sum_agent_type_single_res_ind_cap = 0
-        for i in model.schedule.agents:
-            if i.bldg_type == 'SINGLE_RES' and i.adopt_ind == 1:
-                sum_agent_type_single_res_ind_cap = sum_agent_type_single_res_ind_cap + i.pv_size
-        return sum_agent_type_single_res_ind_cap
-
-#--------------------------
-        
-    def cumulate_solar_ind(model):
-        """
-        To find the cumulative INDIVIDUAL installations at the end of every time step
-        """
-        solar_sum_ind = 0
-        for i in model.schedule.agents:
-            solar_sum_ind = solar_sum_ind + i.adopt_ind
-        return solar_sum_ind
-            
-    def cumulate_solar_comm(model):
-        """
-        To find the cumulative COMMUNITY "ALL buildings with installations" at the end of every time step
-        """
-        solar_sum_comm = 0
-        for i in model.schedule.agents:
-            solar_sum_comm = solar_sum_comm + i.adopt_comm
-        return solar_sum_comm  
-    
-    def cumulate_solar_champions(model):
-        """
-        To find the cumulative COMMUNITY installations at the end of every time step
-         = total number of communities formed
-        """
-        solar_sum_champ = 0
-        for i in model.schedule.agents:
-            solar_sum_champ = solar_sum_champ + i.en_champ
-        return solar_sum_champ        
-    
-    def cumulate_solar_ind_sizes(model):
-        """
-        To find the cumulative INDIVIDUAL solar capacity at the end of every time step
-        """
-        solar_sum_sizes = 0
-        
-        for i in model.schedule.agents:
-            if i.adopt_ind == 1:
-                solar_sum_sizes = solar_sum_sizes + i.pv_size
-        return solar_sum_sizes
-     
-    def cumulate_solar_comm_sizes(model):
-        """
-        To find the cumulative COMMUNITY solar capacity at the end of every time step
-        """
-        solar_comm_sizes = 0
-        for i in model.schedule.agents:
-            if i.adopt_comm == 1:
-                solar_comm_sizes = solar_comm_sizes + i.pv_size
-        return solar_comm_sizes
-    
-
+ #%%   
 class tpb_functions:
     """
     Functions to calculate values for the intention function
@@ -728,9 +413,6 @@ class tpb_functions:
 
 #%% STAGES of the ABM
 
-
-
-
 def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
     """
     Intention development at the end of stage 1
@@ -783,14 +465,14 @@ def stage2_decision(self,uid,idea):
         # and if ZEV is 1 meaning community formation is allowed
         if len(same_plot_agents_positive_intention.index) > 1 and (ZEV == 1):
             
-            Combos_Info, NPV_Combos, df_solar_combos_possible, df_demand_combos_possible, comm_name = community_combinations(agents_info, same_plot_agents_positive_intention,         
+            Combos_Info, NPV_Combos, df_solar_combos_possible, df_demand_combos_possible, comm_name = comm_combos.community_combinations(agents_info, same_plot_agents_positive_intention,         
                                                                                                                          distances, df_solar, df_demand, df_solar_combos,
                                                                                                                          df_demand_combos, Combos_formed_Info,
                                                                                                                          self.unique_id, agents_info.loc[self.unique_id]['zone_id'],
                                                                                                                          no_closest_neighbors_consider,step_ctr,Agents_Ind_NPVs,
                                                                                                                          disc_rate, fit_high, fit_low, ewz_high_large,ewz_low_large,
                                                                                                                          ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
-                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate)
+                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate,npv_combo,rank_combos)
                                                                                                                          
             if len(Combos_Info.index) != 0: #meaning that some community is formed
                 #here compare with individual NPVs
@@ -818,7 +500,14 @@ def stage2_decision(self,uid,idea):
                             if g == agents_objects_list[h].unique_id:
                                 agents_objects_list[h].adopt_comm = 1                                                       #setting community adoption as 1 for all agents involved
                                 self.adopt_year = 2018 + step_ctr
-                                agents_objects_list[h].intention = 0                                                        #setting intention as 0 for all agents involved
+                                
+                                #I used to set intention to zero after adoption, but not doing it anymore
+                                #every agent calculates intention at every step inthe ABM for now
+                                #agents_objects_list[h].intention = 0                                                        #setting intention as 0 for all agents involved
+                                
+                                #writing to dataframe all constituent buildings who adopt community PV
+                                
+                                #consider using agents_info.at[g,'Adopt_COMM'] = 1
                                 agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
                                 agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
                                 agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
@@ -831,13 +520,14 @@ def stage2_decision(self,uid,idea):
                                 #scr of each building to be saved here, NOT COMPLETE - do not calculate the info for this! 
                                 #agents_info.update(pd.Series([comm_scr],        name  = 'Comm_SCR',     index = [g]))
                 
-                elif Agents_Ind_NPVs.loc[step_ctr][self.unique_id] >= Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[step_ctr][self.unique_id] > 0:
+                elif Agents_Ind_NPVs.loc[step_ctr][self.unique_id] > Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[step_ctr][self.unique_id] > 0:
                     #adopt individual
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
                     ind_npv = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
                     agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
                     agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                    agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
                     agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
                     agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
                     agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))

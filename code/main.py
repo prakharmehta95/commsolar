@@ -12,8 +12,7 @@ start = time.time()
 import pickle
 import random
 
-from NPV_Calculation import npv_calc_individual
-from small_world_network import make_swn
+from Tools import npv_ind, swn, comm_combos
 
 #%%
 """
@@ -48,7 +47,7 @@ agent_list_final = agents_info.bldg_name
 """
 NPV Calculation call from here - calculates the NPVs of individual buildings
 """
-#define the costs etc here which are read in the NPV_Calculation file
+#define the costs etc here which are read in the npv_ind file
 PV_price_baseline   = pd.read_excel(path + r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
 fit_high            = 8.5/100   #CHF per kWH
 fit_low             = 4.45/100  #CHF per kWH
@@ -77,7 +76,7 @@ pp_rate             = 0         #discount rate for payback period calculation is
    
 
 #runs the NPV calculation code and calculates individual NPVs for the agents involved
-Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_calc_individual(path,PV_price_baseline,disc_rate,
+Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_ind.npv_calc_individual(path,PV_price_baseline,disc_rate,
                                                                                          pp_rate, fit_high, fit_low,
                                                                                          ewz_high_large,ewz_low_large,
                                                                                          ewz_high_small, ewz_low_small,
@@ -89,7 +88,7 @@ Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_calc_in
 #%%
 #Creation of Small World Network
 distances = pd.read_csv(path + r'07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
-Agents_Peer_Network = make_swn(distances, agents_info,peer_seed) #calls swn function
+Agents_Peer_Network = swn.make_swn(distances, agents_info,peer_seed) #calls swn function
 
 
 #%%
@@ -109,14 +108,13 @@ runs = 1         #no of runs. 100 for a typical ABM simulation in this work
 randomseed = 22     #initial seed used to set the order of shuffling of agents withing the scheduler
 
 print("Did you change the name of the final pickle storage file?") #so that my results are not overwritten!
-from adoption_8_NPV_vs_InvCosts import *
-from adoption_8_NPV_vs_InvCosts import scenario
+from agent_model import *
 
 #main loop for the ABM simulation
 for j in range(runs):
     print("run = ",j,"----------------------------------------------------------------")
     randomseed = randomseed + j*642     #642 is just any number to change the seed for every run 
-    test = tpb(number,randomseed)       #initializes by calling the model from adoption_8_NPV_vs_InvCosts and setting up with the class init methods
+    test = tpb(number,randomseed)       #initializes by calling the model from agent_model and setting up with the class init methods
     att_seed = att_seed + j*10          #seed for attitude changes in a new run
 
 
@@ -147,20 +145,20 @@ for j in range(runs):
 #%% Export data to pickle to save it!
 
 #f = open("03June_ZEV_d_agents_info.pickle","wb") #enter name of the stored result file
-pickle.dump(d_agents_info_runs_correct,f)
-f.close()
+#pickle.dump(d_agents_info_runs_correct,f)
+#f.close()
 
 #f = open("03June_ZEV_d_gini.pickle","wb") #enter name of the stored result file
-pickle.dump(results_agentlevel,f)
-f.close()
+#pickle.dump(results_agentlevel,f)
+#f.close()
 
 #f = open("03June_ZEV_d_combos_info_runs.pickle","wb") #enter name of the stored result file
-pickle.dump(d_combos_info_runs_correct,f)
-f.close()
+#pickle.dump(d_combos_info_runs_correct,f)
+#f.close()
 
 #f = open("03June_ZEV_d_gini_model.pickle","wb") #enter name of the stored result file
-pickle.dump(results_emergent,f)
-f.close()
+#pickle.dump(results_emergent,f)
+#f.close()
 
 
 

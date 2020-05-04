@@ -1,8 +1,10 @@
 # commsolar
 ABM for the CommSolar Paper
 
-<<<<<<< HEAD
+code contains code, ofc
 
-Directory structure | |-> 0_Archive -- contains old code |-> Analysis -- contains code for anlaysis of outputs |-> Data -- stores input files for model |-> Model -- contains ABM code |-> Outputs -- stores output from simulations |-> Tools -- contains small code used in ABM
-=======
->>>>>>> b34298c9fa431fd09f5854837de271fd90981044
+could not move scheduler to Tools - modulenotfound errors :/
+
+agent_model has both agent and model classes, and also other functions for the ABM
+
+main has the parameter definitions, call to the ABM agent and model classes to actually run the ABM, and storage of results (still in progress)
