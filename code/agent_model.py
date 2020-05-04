@@ -48,6 +48,7 @@ from Tools import rank_combos, npv_combo, dc_functions
 AGENT INFORMATION
 '''
 path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
 
 #CHECK - these might change!
 df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
@@ -172,7 +173,6 @@ class tpb_agent(Agent):
             
         
 #%% MODEL code
-        
         
 class tpb(Model):
     '''
@@ -566,6 +566,7 @@ def stage2_decision(self,uid,idea):
                 agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
                 agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
                 agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+<<<<<<< HEAD:code/agent_model.py
                 
                 
                 
@@ -573,3 +574,6 @@ def stage2_decision(self,uid,idea):
         
     
     
+=======
+                
+>>>>>>> b5a7273950743da393fdb4499f9da450c8a5d097:adoption_8_NPV_vs_InvCosts.py
