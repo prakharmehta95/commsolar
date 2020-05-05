@@ -48,7 +48,7 @@ from Tools import rank_combos, npv_combo, dc_functions
 AGENT INFORMATION
 '''
 path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
-path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
+#path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
 
 #CHECK - these might change!
 df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
@@ -180,11 +180,8 @@ class tpb(Model):
     Called the FIRST time when the execution happens. Agents are initiated
     '''    
     
-    global list_datacollector
-    list_datacollector = []
-    
     def __init__(self,N,randomseed):
-        print("--TPB MODEL CALLED--")
+        #print("--TPB MODEL CALLED--")
         agents_info['Adopt_IND'] = 0            #saves 1 if INDIVIDUAL adoption occurs, else stays 0
         agents_info['Adopt_COMM'] = 0           #saves 1 if COMMUNITY  adoption occurs, else stays 0
         agents_info['Community_ID'] = ""        #community ID of the community formed
@@ -200,9 +197,6 @@ class tpb(Model):
         
         global agents_objects_list
         agents_objects_list = []            #list of initialized agents
-        
-        
-        global norm_dist_env_attitude_list
         global step_ctr #year of the simulation
         step_ctr = 0
         global i
@@ -430,7 +424,8 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
         self.counter = self.counter + 1
         self.intention = intention
         self.intention_yr = intention
-        agents_info.update(pd.Series([intention], name  = 'intention', index = [self.unique_id]))
+        #agents_info.update(pd.Series([intention], name  = 'intention', index = [self.unique_id]))
+        agents_info.at[self.unique_id,'intention'] = intention
     else:
         intention = 0
         self.intention = intention
@@ -441,10 +436,13 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
         #since in the last year if the intention is 0, stage 2 will not be entered.
         #Results won't be written, hence write them here.
         if step_ctr == 17:
-            agents_info.update(pd.Series([0], name  = 'Adopt_IND', index = [self.unique_id]))
-            agents_info.update(pd.Series([self.total], name  = 'intention', index = [self.unique_id]))
-            agents_info.update(pd.Series(["Intention<threshold"], name  = 'Reason', index = [self.unique_id]))
-
+            #agents_info.update(pd.Series([0], name  = 'Adopt_IND', index = [self.unique_id]))
+            #agents_info.update(pd.Series([self.total], name  = 'intention', index = [self.unique_id]))
+            #agents_info.update(pd.Series(["Intention<threshold"], name  = 'Reason', index = [self.unique_id]))
+            agents_info.at[self.unique_id,'Adopt_IND'] = 0
+            agents_info.at[self.unique_id,'intention'] = self.total
+            agents_info.at[self.unique_id,'Reason'] = "Intention"
+            
     
 
 def stage2_decision(self,uid,idea):
@@ -508,14 +506,18 @@ def stage2_decision(self,uid,idea):
                                 #writing to dataframe all constituent buildings who adopt community PV
                                 
                                 #consider using agents_info.at[g,'Adopt_COMM'] = 1
-                                agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
-                                agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
-                                agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
-                                agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
-                                
+                                #agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
+                                #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
+                                #agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
+                                #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
+                                agents_info.at[g,'Year'] = 2018 + step_ctr
+                                agents_info.at[g,'Adopt_COMM'] = 1
+                                agents_info.at[g,'Community_ID'] = temp_comm_name
+                                agents_info.at[g,'intention'] = self.total
+                                agents_info.at[g,'Reason'] = "Comm>Ind"
                                 #npv share of each building to be saved here, NOT COMPLETE - do not calculate the info for this!
                                 #agents_info.update(pd.Series([share_npv],       name  = 'Comm_NPV',     index = [g])) 
-                                agents_info.update(pd.Series(["Comm>Ind"],      name  = 'Reason',       index = [g]))
+                                #agents_info.update(pd.Series(["Comm>Ind"],      name  = 'Reason',       index = [g]))
                                 
                                 #scr of each building to be saved here, NOT COMPLETE - do not calculate the info for this! 
                                 #agents_info.update(pd.Series([comm_scr],        name  = 'Comm_SCR',     index = [g]))
@@ -525,12 +527,20 @@ def stage2_decision(self,uid,idea):
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
                     ind_npv = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
-                    agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                    agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                    agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
-                    agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                    agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                    agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                    #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                    #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                    #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
+                    #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                    #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                    #agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                    
+                    agents_info.at[self.unique_id,'Year'] = 2018 + step_ctr
+                    agents_info.at[self.unique_id,'Adopt_IND'] = 1
+                    agents_info.at[self.unique_id,'Individual_ID'] = 'PV_' + self.unique_id
+                    agents_info.at[self.unique_id,'intention'] = self.total
+                    agents_info.at[self.unique_id,'Reason'] = "Only_Ind"
+                    agents_info.at[self.unique_id,'Ind_NPV'] = ind_npv
+                                
                     #do not set this back to 0 anymore as agents continue to be in the ABM even if they have installed PV
                     #self.intention  = 0
                     #self.adopt_comm = 0
@@ -543,12 +553,18 @@ def stage2_decision(self,uid,idea):
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
                     ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
-                    agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                    agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                    agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
-                    agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                    agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                    agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                    #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                    #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                    #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
+                    #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                    #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                    #agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                    agents_info.at[self.unique_id,'Year'] = 2018 + step_ctr
+                    agents_info.at[self.unique_id,'Adopt_IND'] = 1
+                    agents_info.at[self.unique_id,'Individual_ID'] = 'PV_' + self.unique_id
+                    agents_info.at[self.unique_id,'intention'] = self.total
+                    agents_info.at[self.unique_id,'Reason'] = "Only_Ind"
+                    agents_info.at[self.unique_id,'Ind_NPV'] = ind_npv
                     
                     
         elif len(same_plot_agents_positive_intention.index) == 0 and self.adopt_ind != 1:
@@ -560,20 +576,16 @@ def stage2_decision(self,uid,idea):
                 self.adopt_ind  = 1
                 self.adopt_year = 2018 + step_ctr
                 ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
-                agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
-                agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
-<<<<<<< HEAD:code/agent_model.py
-                
-                
-                
-        
-        
-    
-    
-=======
-                
->>>>>>> b5a7273950743da393fdb4499f9da450c8a5d097:adoption_8_NPV_vs_InvCosts.py
+                #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
+                #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
+                #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
+                #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
+                #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
+                #agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
+                agents_info.at[self.unique_id,'Year'] = 2018 + step_ctr
+                agents_info.at[self.unique_id,'Adopt_IND'] = 1
+                agents_info.at[self.unique_id,'Individual_ID'] = 'PV_' + self.unique_id
+                agents_info.at[self.unique_id,'intention'] = self.total
+                agents_info.at[self.unique_id,'Reason'] = "Only_Ind"
+                agents_info.at[self.unique_id,'Ind_NPV'] = ind_npv
+                    

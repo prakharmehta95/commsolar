@@ -93,7 +93,7 @@ Agents_Peer_Network = swn.make_swn(distances, agents_info,peer_seed) #calls swn 
 
 #%%
 number = len(agent_list_final) #4919   #number of agents
-years = 18    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
+years = 1    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
 
 #empty dictionaries to store results
 results_agentlevel = {}

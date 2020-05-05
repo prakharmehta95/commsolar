@@ -71,15 +71,15 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         
         #combos_consider will be the dataframe which holds all possible members
         #with which a community combination can be considered by the active agent
-        combos_consider['Comm_formed']  = ""
-        combos_consider['Ind_formed']   = ""
-        combos_consider['Community']    = ""
-        combos_consider['Individual']   = ""
-        for i in combos_consider.index:
-            combos_consider.at[i,'Community']   = data.loc[i]['Adopt_COMM']
-            combos_consider.at[i,'Individual']  = data.loc[i]['Adopt_IND']
-            combos_consider.at[i,'Comm_formed'] = data.loc[i]['Community_ID']
-            combos_consider.at[i,'Ind_formed']  = data.loc[i]['Individual_ID']
+        #combos_consider['Comm_formed']  = ""
+        #combos_consider['Ind_formed']   = ""
+        #combos_consider['Community']    = ""
+        #combos_consider['Individual']   = ""
+        #for i in combos_consider.index:
+        #    combos_consider.at[i,'Community']   = data.loc[i]['Adopt_COMM']
+        #    combos_consider.at[i,'Individual']  = data.loc[i]['Adopt_IND']
+        #    combos_consider.at[i,'Comm_formed'] = data.loc[i]['Community_ID']
+        #    combos_consider.at[i,'Ind_formed']  = data.loc[i]['Individual_ID']
     
        
         #so that if someone has formed a community or individual PV it is taken in to account here
