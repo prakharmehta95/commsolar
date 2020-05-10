@@ -15,7 +15,8 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
                                ewz_high_small, ewz_low_small,
                                diff_prices, ewz_solarsplit_fee,
                                PV_lifetime, PV_degradation,
-                               OM_Cost_rate, agents_info,agent_list_final):
+                               OM_Cost_rate, agents_info,agent_list_final,
+                               PV_price_projection):
     
     '''
     path                    = Path to where the solar and demand data is stored
@@ -34,6 +35,7 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     OM_Cost_rate            = Read in from the main script 0.06 # CHF per kWh of solar PV production
     agents_info             = Information on the agents
     agent_list_final        = List of all agents
+    PV_price_projection     = PV prices projected until 2040 
     '''
     import pandas as pd
     import numpy as np
@@ -81,7 +83,6 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
         for i in range (24):
             daylist.append(DayAsString)
     
-    print(len(daylist))
     df_demand['Day']    = daylist
     df_solar_AC['Day']  = daylist
     
@@ -101,21 +102,6 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     Projections Source = IEA Technology Roadmap 2014
     '''
     #this stores projected PV prices for all sizes of PV systems
-    PV_price_projection = pd.DataFrame(data = None)
-    
-    PV_price_projection['Year'] = ""
-    years = list(range(2018,2041))
-    PV_price_projection['Year'] = years
-    
-    x_array = [i for i in range(1,24)]
-    xp_array = [1,23]
-    #interpolation from current year to 2040. Prices assumed to be half in 2040. 
-    #CHECK - maybe for better sources?
-    for i in list(PV_price_baseline.columns):
-        fp_array = [PV_price_baseline.loc[0][i],PV_price_baseline.loc[0][i]/2]
-        y = np.interp(x_array, xp_array,fp_array)
-        PV_price_projection[i] = ""
-        PV_price_projection[i] = y
             
     #%% Preparation for NPV Calculation - savings and costs estimations
     """        
@@ -132,17 +118,17 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     print("Prep for NPV Calculation")
     #dataframes to filter high and low times
     df_HIGH = pd.DataFrame(data = None)        
-    df_LOW = pd.DataFrame(data = None)        
+    df_LOW  = pd.DataFrame(data = None)        
     
-    Agents_Savings = pd.DataFrame(data = None, index = agent_list_final)
-    Agents_OM_Costs = pd.DataFrame(data = None, index = agent_list_final)
-    Agents_EWZ_Costs= pd.DataFrame(data = None, index = agent_list_final)
-    Agents_NetSavings = pd.DataFrame(data = None, index = agent_list_final)
-    Agents_SCRs =  pd.DataFrame(data = None, index =agent_list_final)
+    Agents_Savings      = pd.DataFrame(data = None, index = agent_list_final)
+    Agents_OM_Costs     = pd.DataFrame(data = None, index = agent_list_final)
+    Agents_EWZ_Costs    = pd.DataFrame(data = None, index = agent_list_final)
+    Agents_NetSavings   = pd.DataFrame(data = None, index = agent_list_final)
+    Agents_SCRs         = pd.DataFrame(data = None, index = agent_list_final)
     
     #-------- O&M costs ------------------
     for year in range(PV_lifetime):
-        print(year)
+        #print(year)
         col_name = 'Year' + str(year)
         list_om_costs = []
         
@@ -160,7 +146,6 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
         list_om_costs = []
         list_ewz_costs = []
         list_scrs = []
-        print(year)
         for i in agent_list_final: #['Z0003','Z0004']:
             
             total_PV_production = sum(df_solar_AC[i])   #for SCR calculation
@@ -209,15 +194,15 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
             sum_selfcons_HIGH   = sum(list_selfcons_HIGH)
             #low times
             list_selfcons_LOW   = []
-            list_selfcons_LOW   =  df_LOW.loc [df_LOW[i + '_PV-dem'] < 0 , i + '_solar']
+            list_selfcons_LOW   = df_LOW.loc[df_LOW[i + '_PV-dem'] < 0 , i + '_solar']
             sum_selfcons_LOW    = sum(list_selfcons_LOW)
             
             
             if diff_prices == 1:                    #wholesale or retail electricity pricing
-                if agents_info.loc[i]['demand_yearly_kWh'] >=100000:
+                if agents_info.at[i,'demand_yearly_kWh'] >=100000:
                     ewz_high    = ewz_high_large       #6/100 #CHF per kWh
                     ewz_low     = ewz_low_large         #5/100 #CHF per kWh
-                elif agents_info.loc[i]['demand_yearly_kWh'] < 100000:
+                elif agents_info.at[i,'demand_yearly_kWh'] < 100000:
                     ewz_high    = ewz_high_small       #24.3/100 #CHF per kWh
                     ewz_low     = ewz_low_small         #14.4/100 #CHF per kWh
             elif diff_prices == 0:                  #retail electricity pricing for all
@@ -296,27 +281,16 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
         pv_inv_cost_list            = []
         
         disc_rate_npv = disc_rate
-    # =============================================================================
-    #     take the same discount rate for all ownership types for now    
-    #     if agents_info.loc[i]["bldg_owner"] == "Homeowner":
-    #         disc_rate_npv = disc_rate_homeown
-    #     elif agents_info.loc[i]["bldg_owner"] == "Landlord":
-    #         disc_rate_npv = disc_rate_landlord
-    #     elif agents_info.loc[i]["bldg_owner"] == "Firm":
-    #         disc_rate_npv = disc_rate_firm
-    #     elif agents_info.loc[i]["bldg_owner"] == "Institution":
-    #         disc_rate_npv = disc_rate_instn
-    #     
-    # =============================================================================
+        
         print(i)
         for install_year in range(18): # 0 = 2018, 17 = 2035
             #print(i)
-            temp_pv_subsidy =  agents_info.loc[i]['pv_subsidy']
+            temp_pv_subsidy =  agents_info.at[i,'pv_subsidy']
             if install_year >= 12:
                 temp_pv_subsidy =  0
             
-            temp_pv_size =   agents_info.loc[i]['pv_size_kw']
-            temp_num_meters = agents_info.loc[i]['num_smart_meters']
+            temp_pv_size =   agents_info.at[i,'pv_size_kw']
+            temp_num_meters = agents_info.at[i,'num_smart_meters']
             
             #depending on the PV system size, the investment cost per kW changes
             if temp_pv_size <= 2:

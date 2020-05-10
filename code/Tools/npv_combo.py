@@ -11,7 +11,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
                     df_num_members, disc_rate,
                     fit_high, fit_low, ewz_high_large,ewz_low_large,
                     ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
-                    PV_lifetime, PV_degradation, OM_Cost_rate):
+                    PV_lifetime, PV_degradation, OM_Cost_rate,PV_price_projection):
     
     '''
     df_solar_AC             = PV potential of all the possible combinations
@@ -93,35 +93,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     df_solar_AC['price_level']  = np.where(np.logical_and(np.logical_and(df_solar_AC['Hour'] > 5,df_solar_AC['Hour'] < 22), df_solar_AC['Day'] != 'Sun'),'high','low')
     df_demand['price_level']    = np.where(np.logical_and(np.logical_and(df_solar_AC['Hour'] > 5,df_solar_AC['Hour'] < 22), df_solar_AC['Day'] != 'Sun'),'high','low')
     
-    #%%
-    '''
-    PV PRICES in the next years. Base PV price data from EnergieSchweiz.
-    Projections Source = IEA Technology Roadmap 2014
-    '''
-    
-    #import next line from main...    ALLOWED HERE FOR TEST
-    path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
-    e_data_file = r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx'
-    PV_price_baseline   = pd.read_excel(path + e_data_file)
-    #PV_price_baseline = pd.read_excel(r'C:\Users\prakh\Dropbox\Com_Paper\05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
-    
-    #this stores projected PV prices for all sizes of PV systems
-    PV_price_projection = pd.DataFrame(data = None)
-    
-    PV_price_projection['Year'] = ""
-    years = list(range(2018,2041))
-    PV_price_projection['Year'] = years
-    
-    x_array = [i for i in range(1,24)]
-    xp_array = [1,23]
-    for i in list(PV_price_baseline.columns):
-        fp_array = [PV_price_baseline.loc[0][i],PV_price_baseline.loc[0][i]/2]
-        y = np.interp(x_array, xp_array,fp_array)
-        PV_price_projection[i] = ""
-        PV_price_projection[i] = y
-            
-            
-    #%%
+#%%
     """        
     NPV Calculation Preparation of dataframes, ToU pricing, etc...
     """
@@ -134,7 +106,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     Agents_OM_Costs     = pd.DataFrame(data = None, index = agent_list_final)
     Agents_EWZ_Costs    = pd.DataFrame(data = None, index = agent_list_final)
     Agents_NetSavings   = pd.DataFrame(data = None, index = agent_list_final)
-    Agents_SCRs         = pd.DataFrame(data = None, index =agent_list_final)
+    Agents_SCRs         = pd.DataFrame(data = None, index = agent_list_final)
     
     #-------- O&M costs ------------------
     for year in range(PV_lifetime): #only calculating for one year 

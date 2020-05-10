@@ -451,7 +451,7 @@ def stage2_decision(self,uid,idea):
     """
     
     #only entered if intention is 1! Modify if necessary
-    if self.intention == 1:
+    if self.intention == 1 or self.adopt_comm ==1 or self.adopt_ind == 1:
         temp_plot_id = agents_info.loc[self.unique_id]['plot_id']
         same_plot_agents = agents_info[agents_info['plot_id']==temp_plot_id]
         same_plot_agents_positive_intention = same_plot_agents[(same_plot_agents['intention'] >0) | (same_plot_agents['Adopt_IND'] >0)] #or (same_plot_agents.adoption == 1)] #available to form community
@@ -470,7 +470,7 @@ def stage2_decision(self,uid,idea):
                                                                                                                          no_closest_neighbors_consider,step_ctr,Agents_Ind_NPVs,
                                                                                                                          disc_rate, fit_high, fit_low, ewz_high_large,ewz_low_large,
                                                                                                                          ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
-                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate,npv_combo,rank_combos)
+                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate,npv_combo,rank_combos,PV_price_projection)
                                                                                                                          
             if len(Combos_Info.index) != 0: #meaning that some community is formed
                 #here compare with individual NPVs
@@ -484,7 +484,7 @@ def stage2_decision(self,uid,idea):
                 Combos_formed_Info[temp_comm_name]              = row_info                       #copying the only row in Combos_Info to Combos_formed_Info
                 
                 temp_comm_name = 'C_' + comm_name
-                if Agents_Ind_NPVs.loc[step_ctr][self.unique_id] < Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] > 0:
+                if Agents_Ind_NPVs.at[step_ctr,self.unique_id] < Combos_Info.at[temp_comm_name,'npv_share_en_champ'] and Combos_Info.at[temp_comm_name,'npv_share_en_champ'] > reduction*Agents_Ind_Investment_Costs.at[step_ctr,self.unique_id]:
                     #form a community
                     #set the adoption as 1 for all the constituent  buildings
                     #set some variable which indicates whether it is a community or an individual PV system
@@ -522,11 +522,11 @@ def stage2_decision(self,uid,idea):
                                 #scr of each building to be saved here, NOT COMPLETE - do not calculate the info for this! 
                                 #agents_info.update(pd.Series([comm_scr],        name  = 'Comm_SCR',     index = [g]))
                 
-                elif Agents_Ind_NPVs.loc[step_ctr][self.unique_id] > Combos_Info.loc[temp_comm_name]['npv_share_en_champ'] and Agents_Ind_NPVs.loc[step_ctr][self.unique_id] > 0:
+                elif Agents_Ind_NPVs.at[step_ctr,self.unique_id] > Combos_Info.at[temp_comm_name,'npv_share_en_champ'] and Agents_Ind_NPVs.at[step_ctr,self.unique_id] > reduction*Agents_Ind_Investment_Costs.at[step_ctr,self.unique_id]:
                     #adopt individual
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
-                    ind_npv = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                    ind_npv = Agents_Ind_NPVs.at[step_ctr,self.unique_id]
                     #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
                     #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
                     #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
@@ -547,12 +547,12 @@ def stage2_decision(self,uid,idea):
                 
             elif len(Combos_Info.index) == 0:
             #meaning that NO community is formed, hence go for individual PV adoption
-                if Agents_Ind_NPVs.loc[step_ctr][self.unique_id] >=0:
+                if Agents_Ind_NPVs.at[step_ctr,self.unique_id] >= reduction*Agents_Ind_Investment_Costs.at[step_ctr, self.unique_id]:
                     #adopt individual
                     #set adoption as 1 for an individual PV formation
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
-                    ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                    ind_npv         = Agents_Ind_NPVs.at[step_ctr,self.unique_id]
                     #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
                     #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
                     #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
@@ -570,12 +570,12 @@ def stage2_decision(self,uid,idea):
         elif len(same_plot_agents_positive_intention.index) == 0 and self.adopt_ind != 1:
             #meaning that NO community is formed, hence go for individual PV adoption
             #only if PV is not previously installed
-            if Agents_Ind_NPVs.loc[step_ctr][self.unique_id] >=0:
+            if Agents_Ind_NPVs.at[step_ctr,self.unique_id] >= reduction*Agents_Ind_Investment_Costs.at[step_ctr,self.unique_id]:
                 #adopt individual
                 #set adoption as 1 for an individual PV formation
                 self.adopt_ind  = 1
                 self.adopt_year = 2018 + step_ctr
-                ind_npv         = Agents_Ind_NPVs.loc[step_ctr][self.unique_id]
+                ind_npv         = Agents_Ind_NPVs.at[step_ctr,self.unique_id]
                 #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
                 #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
                 #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))

@@ -13,7 +13,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                            disc_rate, fit_high, fit_low, ewz_high_large,ewz_low_large,
                            ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
                            PV_lifetime, PV_degradation, OM_Cost_rate,
-                           npv_combo, rank_combos):
+                           npv_combo, rank_combos,PV_price_projection):
     
     '''
     data_og                             = agents_info - Info dataframe on all agents. Contains who passed the intention stage, who has individal/community PV, IDs of the adopted PV systems  
@@ -84,7 +84,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
        
         #so that if someone has formed a community or individual PV it is taken in to account here
         temp_combos_list_temp = list(combos_consider.index)
-        temp_combos_list_filter = [combos_consider.loc[i]['Community_ID'] if combos_consider.loc[i]['Adopt_COMM'] == 1 else combos_consider.loc[i]['Individual_ID'] if combos_consider.loc[i]['Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
+        temp_combos_list_filter = [combos_consider.at[i,'Community_ID'] if combos_consider.at[i,'Adopt_COMM'] == 1 else combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
         
         
         #make combinations in the following lines of code--------------------------
@@ -171,12 +171,12 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         temp_bldg                       = temp_combos_list[i][j] 
                         temp_solar                      = temp_solar + df_solar[temp_bldg]
                         temp_demand                     = temp_demand + df_demand[temp_bldg]
-                        temp_pv_size                    = temp_pv_size + combos_consider.loc[temp_bldg]['pv_size_kw']
-                        temp_pv_size_cost               = temp_pv_size + combos_consider.loc[temp_bldg]['pv_size_kw']
+                        temp_pv_size                    = temp_pv_size + combos_consider.at[temp_bldg,'pv_size_kw']
+                        temp_pv_size_cost               = temp_pv_size + combos_consider.at[temp_bldg,'pv_size_kw']
                         #temp_bldg_og_name_list.append(temp_bldg)
-                        temp_bldg_zones_list.append(combos_consider.loc[temp_bldg]['zone_id'])
-                        temp_num_smart_meters           = temp_num_smart_meters + combos_consider.loc[temp_bldg]['num_smart_meters']
-                        temp_num_smart_meters_cost      = temp_num_smart_meters_cost + combos_consider.loc[temp_bldg]['num_smart_meters'] 
+                        temp_bldg_zones_list.append(combos_consider.at[temp_bldg,'zone_id'])
+                        temp_num_smart_meters           = temp_num_smart_meters + combos_consider.at[temp_bldg,'num_smart_meters']
+                        temp_num_smart_meters_cost      = temp_num_smart_meters_cost + combos_consider.at[temp_bldg,'num_smart_meters'] 
                         temp_num_members                = temp_num_members + 1                                                          #always add 1 in this case as 1 agent will be considered here
                         temp_name                       = temp_name + temp_combos_list[i][j]+ '_'
                         temp_name_comms                 = temp_name 
@@ -199,12 +199,12 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_zones_list.extend(Combos_formed_Info.loc[temp_bldg]['combos_zone_ids'])
                                 temp_solar                      = temp_solar + df_solar_combos_main[temp_bldg]
                                 temp_demand                     = temp_demand + df_demand_combos_main[temp_bldg]
-                                temp_pv_size                    = temp_pv_size + Combos_formed_Info.loc[temp_bldg]['combos_pv_size_kw']
+                                temp_pv_size                    = temp_pv_size + Combos_formed_Info.at[temp_bldg,'combos_pv_size_kw']
                                 temp_pv_size_cost               = temp_pv_size_cost #since cost is only incurred for newly installed PV  - avoiding counting size for already installed PV by the existing community
                                 temp_join_community             = 1
-                                temp_num_smart_meters           = temp_num_smart_meters + Combos_formed_Info.loc[temp_bldg]['combos_num_smart_meters']
+                                temp_num_smart_meters           = temp_num_smart_meters + Combos_formed_Info.at[temp_bldg,'combos_num_smart_meters']
                                 temp_num_smart_meters_cost      = temp_num_smart_meters_cost #since cost is only incurred for newly installed PV  - avoiding counting smartmeters for already installed meters by the existing community
-                                temp_num_members                = temp_num_members + Combos_formed_Info.loc[temp_bldg]['Num_Members']#len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
+                                temp_num_members                = temp_num_members + Combos_formed_Info.at[temp_bldg,'Num_Members']#len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
                                 temp_name                       = temp_name + temp_combos_list[i][j]+ '_'
                                 temp_name_comms                 = temp_name
                             
@@ -222,15 +222,15 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('C')
                                 temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(Combos_formed_Info.loc[temp_bldg]['combos_zone_ids'])
+                                temp_bldg_zones_list.extend(Combos_formed_Info.at[temp_bldg,'combos_zone_ids'])
                                 temp_solar                      = temp_solar + df_solar_combos_main[temp_bldg]
                                 temp_demand                     = temp_demand + df_demand_combos_main[temp_bldg]
-                                temp_pv_size                    = temp_pv_size + Combos_formed_Info.loc[temp_bldg]['combos_pv_size_kw']
+                                temp_pv_size                    = temp_pv_size + Combos_formed_Info.at[temp_bldg,'combos_pv_size_kw']
                                 temp_pv_size_cost               = temp_pv_size_cost #since cost is only incurred for newly installed PV - avoiding counting size for already installed PV by the existing community
                                 temp_join_community             = 1
-                                temp_num_smart_meters           = temp_num_smart_meters + Combos_formed_Info.loc[temp_bldg]['combos_num_smart_meters']
+                                temp_num_smart_meters           = temp_num_smart_meters + Combos_formed_Info.at[temp_bldg,'combos_num_smart_meters']
                                 temp_num_smart_meters_cost      = temp_num_smart_meters_cost #since cost is only incurred for newly installed PV  - avoiding counting smartmeters for already installed meters by the existing community
-                                temp_num_members                = temp_num_members + Combos_formed_Info.loc[temp_bldg]['Num_Members']#len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
+                                temp_num_members                = temp_num_members + Combos_formed_Info.at[temp_bldg,'Num_Members']#len(temp_combos_list[i])#temp_num_members + combos_consider.loc[temp_bldg]['']
                                 temp_name                       = temp_name + temp_combos_list[i][j]+ '_' #removed Pros from the start of the name
                                 #make something to save this community name so that later it is known who is forming with community so the coop costs can be accounted for properly
                                 temp_name_comms                 = temp_name
@@ -245,15 +245,15 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
                                 temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(combos_consider.loc[temp_bldg_comm]['zone_id'])
+                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm,'zone_id'])
                                 print("temp_bldg in k = 1 = ", temp_bldg)
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
                                 temp_demand                     = temp_demand + df_demand[temp_bldg_name_edited]
-                                temp_pv_size                    = temp_pv_size + combos_consider.loc[temp_bldg_name_edited]['pv_size_kw']
+                                temp_pv_size                    = temp_pv_size + combos_consider.at[temp_bldg_name_edited,'pv_size_kw']
                                 temp_pv_size_cost               = temp_pv_size_cost #since cost is only incurred for newly installed PV - avoiding counting size for already installed PV by the existing community
                                 temp_join_individual            = 1
-                                temp_num_smart_meters           = temp_num_smart_meters + combos_consider.loc[temp_bldg_name_edited]['num_smart_meters']
+                                temp_num_smart_meters           = temp_num_smart_meters + combos_consider.at[temp_bldg_name_edited,'num_smart_meters']
                                 temp_num_smart_meters_cost      = temp_num_smart_meters_cost #since cost is only incurred for newly installed PV  - avoiding counting smartmeters for already installed meters by the existing community
                                 temp_num_members                = temp_num_members + 1 #just add 1 coz only 1 agent will be considered here. 
                                 temp_name                       = temp_name + temp_combos_list[i][j]+ '_'
@@ -268,14 +268,14 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
                                 temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(combos_consider.loc[temp_bldg_comm]['zone_id'])
+                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm,'zone_id'])
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
                                 temp_demand                     = temp_demand + df_demand[temp_bldg_name_edited]
-                                temp_pv_size                    = temp_pv_size + combos_consider.loc[temp_bldg_name_edited]['pv_size_kw'] #CHECK!!
+                                temp_pv_size                    = temp_pv_size + combos_consider.at[temp_bldg_name_edited,'pv_size_kw'] #CHECK!!
                                 temp_pv_size_cost               = temp_pv_size_cost #since cost is only incurred for newly installed PV - avoiding counting size for already installed PV by the existing community
                                 temp_join_individual            = 1
-                                temp_num_smart_meters           = temp_num_smart_meters + combos_consider.loc[temp_bldg_name_edited]['num_smart_meters']
+                                temp_num_smart_meters           = temp_num_smart_meters + combos_consider.at[temp_bldg_name_edited,'num_smart_meters']
                                 temp_num_smart_meters_cost      = temp_num_smart_meters_cost #since cost is only incurred for newly installed PV  - avoiding counting smartmeters for already installed meters by the existing community
                                 temp_num_members                = len(temp_combos_list[i])      
                                 temp_name                       = temp_name + temp_combos_list[i][j]+ '_' #removed Pros from the start of the name
@@ -336,7 +336,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             #print(temp_names_comms_list)
             
             NPV_combos = npv_combo.npv_calc_combos(df_solar_combo, df_demand_combo, year,
-                                         data.loc[uid]["bldg_owner"],
+                                         data.at[uid,"bldg_owner"],
                                          df_pvsize_combo, df_pvsize_cost_combo,
                                          df_num_smart_meters, df_num_smart_meters_cost,
                                          df_num_members,disc_rate,
@@ -345,7 +345,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                          ewz_high_small, ewz_low_small,
                                          ewz_solarsplit_fee,
                                          PV_lifetime, PV_degradation,
-                                         OM_Cost_rate)
+                                         OM_Cost_rate,PV_price_projection)
             #this ranks the NPVs and then returns the best NPV. If no combination is possible then an empty dataframe is returned.
             
             Combos_Info = rank_combos.ranking_combos(NPV_combos, df_demand, combos_consider,

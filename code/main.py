@@ -7,13 +7,13 @@ Created on Wed May  8 18:23:37 2019
 
 #%%
 import pandas as pd
+import numpy as np
 import time
 start = time.time()
 import pickle
 import random
 
 from Tools import npv_ind, swn, comm_combos
-
 #%%
 """
 define all parameters here
@@ -73,8 +73,19 @@ pp_rate             = 0         #discount rate for payback period calculation is
 # disc_rate_instn     = 0.05      #discount rate for NPV Calculation
 # disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
 # =============================================================================
-   
-
+'''
+PV PRICES in the next years. Base PV price data from EnergieSchweiz.
+Projections Source = IEA Technology Roadmap 2014
+'''
+       
+PV_price_projection = pd.DataFrame(data = None, columns = ['Year'])
+PV_price_projection['Year'] = list(range(2018,2041))#years
+for i in list(PV_price_baseline.columns):
+    fp_array = [PV_price_baseline.loc[0][i],PV_price_baseline.loc[0][i]/2]
+    y = np.interp([i for i in range(1,24)], [1,23],fp_array)
+    PV_price_projection[i] = ""
+    PV_price_projection[i] = y
+    
 #runs the NPV calculation code and calculates individual NPVs for the agents involved
 Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_ind.npv_calc_individual(path,PV_price_baseline,disc_rate,
                                                                                          pp_rate, fit_high, fit_low,
@@ -82,7 +93,8 @@ Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_ind.npv
                                                                                          ewz_high_small, ewz_low_small,
                                                                                          diff_prices, ewz_solarsplit_fee,
                                                                                          PV_lifetime, PV_degradation,
-                                                                                         OM_Cost_rate, agents_info,agent_list_final)
+                                                                                         OM_Cost_rate, agents_info,agent_list_final,
+                                                                                         PV_price_projection)
 
 
 #%%
@@ -93,7 +105,7 @@ Agents_Peer_Network = swn.make_swn(distances, agents_info,peer_seed) #calls swn 
 
 #%%
 number = len(agent_list_final) #4919   #number of agents
-years = 1    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
+years = 18    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
 
 #empty dictionaries to store results
 results_agentlevel = {}
