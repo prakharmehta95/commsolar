@@ -16,7 +16,7 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
                                diff_prices, ewz_solarsplit_fee,
                                PV_lifetime, PV_degradation,
                                OM_Cost_rate, agents_info,agent_list_final,
-                               PV_price_projection):
+                               PV_price_projection, list_hours, daylist):
     
     '''
     path                    = Path to where the solar and demand data is stored
@@ -39,8 +39,6 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     '''
     import pandas as pd
     import numpy as np
-    from datetime import timedelta
-    import datetime 
     
     agents_info = agents_info.set_index('bldg_name')    
     
@@ -53,36 +51,11 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     #multiply the solar PV data with an efficiency factor to convert to AC
     df_solar_AC = df_solar.copy()*0.97    
     
-    #%% adding hours of the day to the demand and supply dataframes
-    list_hours = []  
-    ctr = 0  
-    for i in range(8760):
-        if i % 24 == 0:
-            ctr = 0
-        list_hours.append(ctr)
-        ctr = ctr + 1
+    #%% adding hours of the day and day of the week to the 
+    #demand and supply dataframes
     
-    df_solar_AC['Hour'] = ""
     df_solar_AC['Hour'] = list_hours
-    
-    df_demand['Hour'] = ""
-    df_demand['Hour'] = list_hours
-    
-    
-    #%% adding day of the week 
-    
-    df_demand['Day']    = ""
-    df_solar_AC['Day']  = ""
-    weekDays    = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
-    day_count   = 365                                                               #1 year
-    daylist     = []
-    start_date  =  datetime.date(2005,1,1)                                          #reference year is 2005
-    
-    for single_date in (start_date + timedelta(n) for n in range(day_count)):
-        DayAsString = weekDays[single_date.weekday()]
-        for i in range (24):
-            daylist.append(DayAsString)
-    
+    df_demand['Hour']   = list_hours
     df_demand['Day']    = daylist
     df_solar_AC['Day']  = daylist
     
@@ -294,35 +267,35 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
             
             #depending on the PV system size, the investment cost per kW changes
             if temp_pv_size <= 2:
-                invest_rate = PV_price_projection.loc[install_year]['Two']
+                invest_rate = PV_price_projection.at[install_year,'Two']
             elif temp_pv_size == 3:
-                invest_rate = PV_price_projection.loc[install_year]['Three']
+                invest_rate = PV_price_projection.at[install_year,'Three']
             elif temp_pv_size == 4:
-                invest_rate = PV_price_projection.loc[install_year]['Four']
+                invest_rate = PV_price_projection.at[install_year,'Four']
             elif temp_pv_size == 5:
-                invest_rate = PV_price_projection.loc[install_year]['Five']
+                invest_rate = PV_price_projection.at[install_year,'Five']
             elif 5 < temp_pv_size < 10 :
-                invest_rate = PV_price_projection.loc[install_year]['Five']
+                invest_rate = PV_price_projection.at[install_year,'Five']
             elif 10 <= temp_pv_size < 15:
-                invest_rate = PV_price_projection.loc[install_year]['Ten']
+                invest_rate = PV_price_projection.at[install_year,'Ten']
             elif 15 <= temp_pv_size < 20:
-                invest_rate = PV_price_projection.loc[install_year]['Fifteen']
+                invest_rate = PV_price_projection.at[install_year,'Fifteen']
             elif 20 <= temp_pv_size < 30:
-                invest_rate = PV_price_projection.loc[install_year]['Twenty']
+                invest_rate = PV_price_projection.at[install_year,'Twenty']
             elif 30 <= temp_pv_size < 50:
-                invest_rate = PV_price_projection.loc[install_year]['Thirty']
+                invest_rate = PV_price_projection.at[install_year,'Thirty']
             elif 50 <= temp_pv_size < 75:
-                invest_rate = PV_price_projection.loc[install_year]['Fifty']
+                invest_rate = PV_price_projection.at[install_year,'Fifty']
             elif 75 <= temp_pv_size < 100:
-                invest_rate = PV_price_projection.loc[install_year]['Seventy-five']
+                invest_rate = PV_price_projection.at[install_year,'Seventy-five']
             elif 100 <= temp_pv_size < 125:
-                invest_rate = PV_price_projection.loc[install_year]['Hundred']
+                invest_rate = PV_price_projection.at[install_year,'Hundred']
             elif 125 <= temp_pv_size < 150:
-                invest_rate = PV_price_projection.loc[install_year]['Hundred-twenty-five']
+                invest_rate = PV_price_projection.at[install_year,'Hundred-twenty-five']
             elif temp_pv_size == 150:
-                invest_rate = PV_price_projection.loc[install_year]['One-Fifty']
+                invest_rate = PV_price_projection.at[install_year,'One-Fifty']
             elif temp_pv_size > 150:
-                invest_rate = PV_price_projection.loc[install_year]['Greater']
+                invest_rate = PV_price_projection.at[install_year,'Greater']
             
             #depending on the number of smart meters to be installed, the meter_investment cost per meter changes
             '''

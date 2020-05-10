@@ -12,6 +12,9 @@ import time
 start = time.time()
 import pickle
 import random
+from datetime import timedelta
+import datetime 
+    
 
 from Tools import npv_ind, swn, comm_combos
 #%%
@@ -27,7 +30,7 @@ w_att       = 0.9#0.39
 w_subplot   = 0.9#0.1
 threshold   = 0.1
 reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
-comm_limit  = 1         #limit of 100 MWh for community size applies
+diff_prices = 1         #if demand >100 MWh then wholesale prices for them. If set to 0, then retail prices for all irrespective of demand
 ZEV         = 1         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
 peer_seed   = 1           #setting seed for the peer network calculations    
 
@@ -73,6 +76,30 @@ pp_rate             = 0         #discount rate for payback period calculation is
 # disc_rate_instn     = 0.05      #discount rate for NPV Calculation
 # disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
 # =============================================================================
+
+#adding hours of the day to the demand and supply dataframes for npv calculation
+list_hours = []  
+ctr = 0  
+for i in range(8760):
+    if i % 24 == 0:
+        ctr = 0
+    list_hours.append(ctr)
+    ctr = ctr + 1
+    
+#adding day of the week to the demand and supply dataframes for npv calculation
+weekDays    = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
+day_count   = 365                                                               #1 year
+daylist     = []
+start_date  =  datetime.date(2005,1,1)                                          #reference year is 2005
+for single_date in (start_date + timedelta(n) for n in range(day_count)):
+    DayAsString = weekDays[single_date.weekday()]
+    for i in range (24):
+        daylist.append(DayAsString)
+    
+
+
+
+
 '''
 PV PRICES in the next years. Base PV price data from EnergieSchweiz.
 Projections Source = IEA Technology Roadmap 2014
@@ -94,7 +121,7 @@ Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_ind.npv
                                                                                          diff_prices, ewz_solarsplit_fee,
                                                                                          PV_lifetime, PV_degradation,
                                                                                          OM_Cost_rate, agents_info,agent_list_final,
-                                                                                         PV_price_projection)
+                                                                                         PV_price_projection,list_hours,daylist)
 
 
 #%%

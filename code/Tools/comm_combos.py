@@ -13,7 +13,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                            disc_rate, fit_high, fit_low, ewz_high_large,ewz_low_large,
                            ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
                            PV_lifetime, PV_degradation, OM_Cost_rate,
-                           npv_combo, rank_combos,PV_price_projection):
+                           npv_combo, rank_combos,PV_price_projection,
+                           list_hours, daylist,diff_prices):
     
     '''
     data_og                             = agents_info - Info dataframe on all agents. Contains who passed the intention stage, who has individal/community PV, IDs of the adopted PV systems  
@@ -245,7 +246,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
                                 temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm,'zone_id'])
+                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg,'zone_id'])
                                 print("temp_bldg in k = 1 = ", temp_bldg)
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
@@ -268,7 +269,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
                                 temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm,'zone_id'])
+                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg,'zone_id'])
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
                                 temp_demand                     = temp_demand + df_demand[temp_bldg_name_edited]
@@ -345,7 +346,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                          ewz_high_small, ewz_low_small,
                                          ewz_solarsplit_fee,
                                          PV_lifetime, PV_degradation,
-                                         OM_Cost_rate,PV_price_projection)
+                                         OM_Cost_rate,PV_price_projection,
+                                         list_hours, daylist,diff_prices)
             #this ranks the NPVs and then returns the best NPV. If no combination is possible then an empty dataframe is returned.
             
             Combos_Info = rank_combos.ranking_combos(NPV_combos, df_demand, combos_consider,

@@ -424,7 +424,6 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
         self.counter = self.counter + 1
         self.intention = intention
         self.intention_yr = intention
-        #agents_info.update(pd.Series([intention], name  = 'intention', index = [self.unique_id]))
         agents_info.at[self.unique_id,'intention'] = intention
     else:
         intention = 0
@@ -436,9 +435,6 @@ def stage1_intention(self, uid, attitude, pp,ratio,neighbor_influence):
         #since in the last year if the intention is 0, stage 2 will not be entered.
         #Results won't be written, hence write them here.
         if step_ctr == 17:
-            #agents_info.update(pd.Series([0], name  = 'Adopt_IND', index = [self.unique_id]))
-            #agents_info.update(pd.Series([self.total], name  = 'intention', index = [self.unique_id]))
-            #agents_info.update(pd.Series(["Intention<threshold"], name  = 'Reason', index = [self.unique_id]))
             agents_info.at[self.unique_id,'Adopt_IND'] = 0
             agents_info.at[self.unique_id,'intention'] = self.total
             agents_info.at[self.unique_id,'Reason'] = "Intention"
@@ -451,7 +447,7 @@ def stage2_decision(self,uid,idea):
     """
     
     #only entered if intention is 1! Modify if necessary
-    if self.intention == 1 or self.adopt_comm ==1 or self.adopt_ind == 1:
+    if self.intention == 1: #or self.adopt_comm ==1 or self.adopt_ind == 1:
         temp_plot_id = agents_info.loc[self.unique_id]['plot_id']
         same_plot_agents = agents_info[agents_info['plot_id']==temp_plot_id]
         same_plot_agents_positive_intention = same_plot_agents[(same_plot_agents['intention'] >0) | (same_plot_agents['Adopt_IND'] >0)] #or (same_plot_agents.adoption == 1)] #available to form community
@@ -470,7 +466,8 @@ def stage2_decision(self,uid,idea):
                                                                                                                          no_closest_neighbors_consider,step_ctr,Agents_Ind_NPVs,
                                                                                                                          disc_rate, fit_high, fit_low, ewz_high_large,ewz_low_large,
                                                                                                                          ewz_high_small, ewz_low_small,ewz_solarsplit_fee,
-                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate,npv_combo,rank_combos,PV_price_projection)
+                                                                                                                         PV_lifetime, PV_degradation, OM_Cost_rate,npv_combo,rank_combos,
+                                                                                                                         PV_price_projection,list_hours, daylist,diff_prices)
                                                                                                                          
             if len(Combos_Info.index) != 0: #meaning that some community is formed
                 #here compare with individual NPVs
