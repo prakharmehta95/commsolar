@@ -67,7 +67,6 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     """        
     NPV Calculation Preparation of dataframes, ToU pricing, etc...
     """
-    print("Prep for NPV Calculation")
     #dataframes to filter high and low times
     df_HIGH = pd.DataFrame(data = None)        
     df_LOW  = pd.DataFrame(data = None)        

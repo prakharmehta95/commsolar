@@ -21,25 +21,12 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
     df_zones_names      = Info on zones of the buildings in the possible community formations
     '''
     
-    print("ranking entered")
-    print(NPV_combos)
-    print(NPV_combos.index)
-    print(combos_consider)
-    print(df_join_individual)
-    print(df_join_individual.index)
-    
     import pandas as pd
     df_join_individual  = df_join_individual.transpose()
     df_join_community   = df_join_community.transpose()
     
     NPV_combos['Join_Exist_Ind']    = df_join_individual['Join_Ind']
     NPV_combos['Join_Exist_Comm']   = df_join_community['Join_Comm'] 
-        
-    print(NPV_combos)
-    print(NPV_combos.index)
-    print(NPV_combos.columns)
-            
-    
     
     npv_max_temp    = NPV_combos.copy()
     npv_max_temp    = npv_max_temp.sort_values(by = ['npv'], ascending = False)
@@ -59,11 +46,11 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
     npvs_max['all_same_zones']  = ""
     npvs_max['npv_share_en_champ']  = ""
     
-    print('npvs_max = ',npvs_max)
+    #print('npvs_max = ',npvs_max)
     #print('npvs_max columns = ',npvs_max.columns)
     #print('npvs_max index = ',npvs_max.index)
-    print('npvs_max Bldg Names column = ',npvs_max.Bldg_Names)
-    print(df_bldgs_names)
+    #print('npvs_max Bldg Names column = ',npvs_max.Bldg_Names)
+    #print(df_bldgs_names)
     
     for i in npvs_max.index:
         #dataframe to hold npv shares of the agents temporarily

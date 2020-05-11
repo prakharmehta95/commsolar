@@ -124,7 +124,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         
         #%% COLLECTING AND STORING ALL INFO ON COMBINATIONS
         # IT IS NEEDED TO CALCULATE THE NPVs FOR THE COMBINATIONS
-        
+        print("-------here,now----------------")
+        print(combos_consider)
         if len(temp_combos_list) > 0:
             #make the solar and demand info for all the combinations to calculate the NPVs
             df_solar_combo              = pd.DataFrame(data = None)
@@ -245,8 +246,11 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm_contain          = temp_combos_list[i][j] 
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
-                                temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg,'zone_id'])
+                                try:
+                                    temp_bldg_og_name_list.extend(temp_bldg_comm)
+                                    temp_bldg_zones_list.extend(combos_consider.at[temp_bldg,'zone_id'])
+                                except KeyError:
+                                    continue
                                 print("temp_bldg in k = 1 = ", temp_bldg)
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
