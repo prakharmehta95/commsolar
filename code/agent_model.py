@@ -47,7 +47,8 @@ from Tools import rank_combos, npv_combo, dc_functions
 '''
 AGENT INFORMATION
 '''
-path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+path = r'C:\Users\no23sane\Dropbox (Personal)\Com_Paper\\'
+#path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
 #path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
 
 #CHECK - these might change!

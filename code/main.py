@@ -29,7 +29,7 @@ w_swn       = 0.9#0.31
 w_att       = 0.9#0.39
 w_subplot   = 0.9#0.1
 threshold   = 0.1
-reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
+reduction   = -0.5     #allows negative NPV to also install, as long as it -5% of investment cost
 diff_prices = 1         #if demand >100 MWh then wholesale prices for them. If set to 0, then retail prices for all irrespective of demand
 ZEV         = 1         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
 peer_seed   = 1           #setting seed for the peer network calculations    
@@ -42,7 +42,8 @@ Agent information read from excel, pickles etc...
 !!!!!!TEST EXCEL being read in now!!!!!!!!!!
 """
 
-path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+#path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
+path = r'C:\Users\no23sane\Dropbox (Personal)\Com_Paper\\'
 agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
 agent_list_final = agents_info.bldg_name
 

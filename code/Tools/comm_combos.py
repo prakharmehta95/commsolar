@@ -175,7 +175,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                         temp_demand                     = temp_demand + df_demand[temp_bldg]
                         temp_pv_size                    = temp_pv_size + combos_consider.at[temp_bldg,'pv_size_kw']
                         temp_pv_size_cost               = temp_pv_size + combos_consider.at[temp_bldg,'pv_size_kw']
-                        #temp_bldg_og_name_list.append(temp_bldg)
+                        temp_bldg_og_name_list.append(temp_bldg)
+                        #temp_bldg_og_name_list.append([temp_bldg])
                         temp_bldg_zones_list.append(combos_consider.at[temp_bldg,'zone_id'])
                         temp_num_smart_meters           = temp_num_smart_meters + combos_consider.at[temp_bldg,'num_smart_meters']
                         temp_num_smart_meters_cost      = temp_num_smart_meters_cost + combos_consider.at[temp_bldg,'num_smart_meters'] 
@@ -197,7 +198,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm_contain          = temp_combos_list[i][j] 
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('C')
-                                temp_bldg_og_name_list.extend(temp_bldg_comm)
+                                temp_bldg_og_name_list.append(temp_bldg_comm)
+                                #temp_bldg_og_name_list.extend([temp_bldg_comm])
                                 temp_bldg_zones_list.extend(Combos_formed_Info.loc[temp_bldg]['combos_zone_ids'])
                                 temp_solar                      = temp_solar + df_solar_combos_main[temp_bldg]
                                 temp_demand                     = temp_demand + df_demand_combos_main[temp_bldg]
@@ -223,7 +225,11 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm_contain          = temp_combos_list[i][j] 
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('C')
-                                temp_bldg_og_name_list.extend(temp_bldg_comm)
+                                temp_bldg_og_name_list.append(temp_bldg_comm[0])
+                                #temp_bldg_og_name_list.extend([temp_bldg_comm])
+                                
+                                #check if temp_bldg must be used in next line or
+                                #temp_bldg_comm[0]
                                 temp_bldg_zones_list.extend(Combos_formed_Info.at[temp_bldg,'combos_zone_ids'])
                                 temp_solar                      = temp_solar + df_solar_combos_main[temp_bldg]
                                 temp_demand                     = temp_demand + df_demand_combos_main[temp_bldg]
@@ -239,6 +245,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 
                          #*existing individually installed PV is an option*
                         if temp_bldg[0] == 'P':
+                            print("case with PV existing")
                             if len(temp_combos_list[i]) != 2:
                                 #case in which new community is being formed with multiple new agents and an exisiting community.
                                 #***everyone installs solar on their roofs - all PROSUMERS***
@@ -246,11 +253,10 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm_contain          = temp_combos_list[i][j] 
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
-                                try:
-                                    temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                    temp_bldg_zones_list.extend(combos_consider.at[temp_bldg,'zone_id'])
-                                except KeyError:
-                                    continue
+                                #temp_bldg_og_name_list.extend([temp_bldg_comm])
+                                print('temp_bldg_comm = ',temp_bldg_comm[0])
+                                temp_bldg_og_name_list.append(temp_bldg_comm[0])
+                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm[0],'zone_id'])
                                 print("temp_bldg in k = 1 = ", temp_bldg)
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
@@ -269,11 +275,12 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 #case in which only the activated agent and an exisiting individually adopted agent is present
                                 #***agent will also install solar on his own roof - PROSUMER***
                                 temp_bldg                       = temp_combos_list[i][j] 
+                                print(temp_bldg)
                                 temp_bldg_comm_contain          = temp_combos_list[i][j] 
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
-                                temp_bldg_og_name_list.extend(temp_bldg_comm)
-                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg,'zone_id'])
+                                temp_bldg_og_name_list.append(temp_bldg_comm[0])
+                                temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm[0],'zone_id'])
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
                                 temp_demand                     = temp_demand + df_demand[temp_bldg_name_edited]
@@ -295,8 +302,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                 df_demand_combo[temp_name]              = temp_demand
                 temp_pv_list.append(temp_pv_size)
                 temp_pv_cost_list.append(temp_pv_size_cost)
-                #temp_bldg_og_name_list_df.append(temp_bldg_og_name_list)
-                temp_bldg_og_name_list_df.append(list(temp_combos_list[i]))
+                temp_bldg_og_name_list_df.append(temp_bldg_og_name_list)
+                #temp_bldg_og_name_list_df.append(list(temp_combos_list[i]))
                 temp_bldg_zones_list_df.append(temp_bldg_zones_list)
                 temp_join_individual_list.append(temp_join_individual)
                 temp_join_community_list.append(temp_join_community)
@@ -337,7 +344,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             
             #this calculates NPVs for all possible combinations
             print("uid = ", uid)
-            #print("before sending to NPV combos, columns of df_solar = ", df_solar_combo.columns)
+            print("before sending to NPV combos, columns of df_solar = ", df_solar_combo.columns)
             #print(temp_names_comms_list)
             
             NPV_combos = npv_combo.npv_calc_combos(df_solar_combo, df_demand_combo, year,

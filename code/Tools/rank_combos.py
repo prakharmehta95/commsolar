@@ -46,17 +46,18 @@ def ranking_combos(NPV_combos, df_demand, combos_consider, df_join_individual, d
     npvs_max['all_same_zones']  = ""
     npvs_max['npv_share_en_champ']  = ""
     
-    #print('npvs_max = ',npvs_max)
+    print('npvs_max = ',npvs_max)
     #print('npvs_max columns = ',npvs_max.columns)
     #print('npvs_max index = ',npvs_max.index)
     #print('npvs_max Bldg Names column = ',npvs_max.Bldg_Names)
-    #print(df_bldgs_names)
+    print(df_bldgs_names)
     
     for i in npvs_max.index:
         #dataframe to hold npv shares of the agents temporarily
         df_npv_shares = pd.DataFrame(data = None, index = npvs_max.loc[i]['Bldg_Names'], columns = ['yearly_demand','npv_share','npv_share_mag'])
-        
+        print('i = ',i)
         for j in npvs_max.loc[i]['Bldg_Names']:
+            print('j = ',j)
             if npvs_max.loc[i]['Join_Exist_Ind'] == 1 or npvs_max.loc[i]['Join_Exist_Comm'] == 1:
                 #existing individual PV or community
                 #this means that as they have already installed PV, for the new
