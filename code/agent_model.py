@@ -471,6 +471,7 @@ def stage2_decision(self,uid,idea):
                                                                                                                          PV_price_projection,list_hours, daylist,diff_prices)
                                                                                                                          
             if len(Combos_Info.index) != 0: #meaning that some community is formed
+                print('community possible, compare with individual')
                 #here compare with individual NPVs
                 
                 #keeping info of the community formed as it is needed later in case an agent wants to join a particular community
@@ -482,16 +483,19 @@ def stage2_decision(self,uid,idea):
                 Combos_formed_Info[temp_comm_name]              = row_info                       #copying the only row in Combos_Info to Combos_formed_Info
                 
                 temp_comm_name = 'C_' + comm_name
-                if Agents_Ind_NPVs.at[step_ctr,self.unique_id] < Combos_Info.at[temp_comm_name,'npv_share_en_champ'] and Combos_Info.at[temp_comm_name,'npv_share_en_champ'] > reduction*Agents_Ind_Investment_Costs.at[step_ctr,self.unique_id]:
+                
+                
+                if (Agents_Ind_NPVs.at[step_ctr,self.unique_id] < Combos_Info.at[temp_comm_name,'npv_share_en_champ']) and (Combos_Info.at[temp_comm_name,'npv_share_en_champ'] > reduction*Agents_Ind_Investment_Costs.at[step_ctr,self.unique_id]):
                     #form a community
                     #set the adoption as 1 for all the constituent  buildings
                     #set some variable which indicates whether it is a community or an individual PV system
-                    agents_adopting_comm = Combos_Info.combos_bldg_names
-                    for g in agents_adopting_comm:
+                    agents_adopting_comm = list(Combos_Info.combos_bldg_names)
+                    for g in agents_adopting_comm[0]:
                         if g == self.unique_id:
                             # ACTIVATED AGENT : ENERGY CHAMPION 
                             self.en_champ = 1                                                                               #setting the agent which is the energy champion - the first agent
-                            agents_info.update(pd.Series([self.en_champ], name  = 'En_Champ', index = [self.unique_id]))
+                            self.adopt_comm = 1
+                            agents_info.at[self.unique_id,'En_Champ'] = 1
                         for h in range(len(agents_objects_list)):
                             if g == agents_objects_list[h].unique_id:
                                 agents_objects_list[h].adopt_comm = 1                                                       #setting community adoption as 1 for all agents involved
@@ -503,11 +507,6 @@ def stage2_decision(self,uid,idea):
                                 
                                 #writing to dataframe all constituent buildings who adopt community PV
                                 
-                                #consider using agents_info.at[g,'Adopt_COMM'] = 1
-                                #agents_info.update(pd.Series([1],               name  = 'Adopt_COMM',   index = [g]))
-                                #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [g]))
-                                #agents_info.update(pd.Series([temp_comm_name],  name  = 'Community_ID', index = [g]))
-                                #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [g]))
                                 agents_info.at[g,'Year'] = 2018 + step_ctr
                                 agents_info.at[g,'Adopt_COMM'] = 1
                                 agents_info.at[g,'Community_ID'] = temp_comm_name

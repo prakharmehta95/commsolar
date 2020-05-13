@@ -70,19 +70,6 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     if len(combos_consider.index) > 0:
         #only then is it worth doing all the computation in the sub-functions:
         
-        #combos_consider will be the dataframe which holds all possible members
-        #with which a community combination can be considered by the active agent
-        #combos_consider['Comm_formed']  = ""
-        #combos_consider['Ind_formed']   = ""
-        #combos_consider['Community']    = ""
-        #combos_consider['Individual']   = ""
-        #for i in combos_consider.index:
-        #    combos_consider.at[i,'Community']   = data.loc[i]['Adopt_COMM']
-        #    combos_consider.at[i,'Individual']  = data.loc[i]['Adopt_IND']
-        #    combos_consider.at[i,'Comm_formed'] = data.loc[i]['Community_ID']
-        #    combos_consider.at[i,'Ind_formed']  = data.loc[i]['Individual_ID']
-    
-       
         #so that if someone has formed a community or individual PV it is taken in to account here
         temp_combos_list_temp = list(combos_consider.index)
         temp_combos_list_filter = [combos_consider.at[i,'Community_ID'] if combos_consider.at[i,'Adopt_COMM'] == 1 else combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
@@ -124,8 +111,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         
         #%% COLLECTING AND STORING ALL INFO ON COMBINATIONS
         # IT IS NEEDED TO CALCULATE THE NPVs FOR THE COMBINATIONS
-        print("-------here,now----------------")
-        print(combos_consider)
+        #print("-------here,now----------------")
+        #print(combos_consider)
         if len(temp_combos_list) > 0:
             #make the solar and demand info for all the combinations to calculate the NPVs
             df_solar_combo              = pd.DataFrame(data = None)
@@ -143,6 +130,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             set_flag_pros_cons = 0              #to make 2 cases - consumer (= 1) and prosumer (= 0)
             set_flag_pros_cons_individual = 0
             
+            print(Combos_formed_Info)
             for i in range(len(temp_combos_list)):
                 temp_solar = 0
                 temp_demand = 0
@@ -200,6 +188,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm.remove('C')
                                 temp_bldg_og_name_list.append(temp_bldg_comm)
                                 #temp_bldg_og_name_list.extend([temp_bldg_comm])
+                                print(temp_bldg)
                                 temp_bldg_zones_list.extend(Combos_formed_Info.loc[temp_bldg]['combos_zone_ids'])
                                 temp_solar                      = temp_solar + df_solar_combos_main[temp_bldg]
                                 temp_demand                     = temp_demand + df_demand_combos_main[temp_bldg]
@@ -343,8 +332,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             year = year     #step_ctr from the ABM gives the current year of simulation in the model. 0 = 2018, 1 = 2019 and so on...
             
             #this calculates NPVs for all possible combinations
-            print("uid = ", uid)
-            print("before sending to NPV combos, columns of df_solar = ", df_solar_combo.columns)
+            #print("uid = ", uid)
+            #print("before sending to NPV combos, columns of df_solar = ", df_solar_combo.columns)
             #print(temp_names_comms_list)
             
             NPV_combos = npv_combo.npv_calc_combos(df_solar_combo, df_demand_combo, year,

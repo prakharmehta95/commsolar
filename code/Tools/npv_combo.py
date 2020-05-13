@@ -195,7 +195,7 @@ def npv_calc_combos(df_solar_AC, df_demand, year_model, agent_enchamp_type, df_p
     large PV    = >= 100kW
     '''
     
-    print("NPV Calculation for Combos")
+    #print("NPV Calculation for Combos")
     Agents_NPVs = pd.DataFrame(data = None, index = agent_list_final, columns = ['npv'])
     
     temp_net_yearlysavings = []
