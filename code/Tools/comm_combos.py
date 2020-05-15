@@ -67,14 +67,19 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     else:
         combos_consider                     = same_plot_agents_positive_intention.copy() #closest 4 neighbours
     
+    print("combos consider names of combos = ",combos_consider.index)
     if len(combos_consider.index) > 0:
         #only then is it worth doing all the computation in the sub-functions:
         
         #so that if someone has formed a community or individual PV it is taken in to account here
+        #for now not allowing new agents to join existing community as it 
+        #messes up the runs due to key errors
+        #hence the lower line is commented out
         temp_combos_list_temp = list(combos_consider.index)
-        temp_combos_list_filter = [combos_consider.at[i,'Community_ID'] if combos_consider.at[i,'Adopt_COMM'] == 1 else combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
+        temp_combos_list_filter = [combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
+        #temp_combos_list_filter = [combos_consider.at[i,'Community_ID'] if combos_consider.at[i,'Adopt_COMM'] == 1 else combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
         
-        
+        print("temp combos list filter =",temp_combos_list_filter)
         #make combinations in the following lines of code--------------------------
         import itertools
         temp_combos_list = []
@@ -91,7 +96,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         
         combos_consider_calc = temp_combos_list_filter.copy()
         combos_consider_calc = list(set(combos_consider_calc)) #remove repitition in the combos_consider_calc - will happen in case communities are already existing
-        
+        print('combos consider calc =',combos_consider_calc)
         #create combinations without the activated agent, and then add the activated agent to all combos formed
         for j in range(0,len(combos_consider_calc)):
             for k in itertools.combinations(combos_consider_calc,len(combos_consider_calc)-j):
@@ -112,7 +117,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         #%% COLLECTING AND STORING ALL INFO ON COMBINATIONS
         # IT IS NEEDED TO CALCULATE THE NPVs FOR THE COMBINATIONS
         #print("-------here,now----------------")
-        #print(combos_consider)
+        print("temp_combos_list",temp_combos_list)
         if len(temp_combos_list) > 0:
             #make the solar and demand info for all the combinations to calculate the NPVs
             df_solar_combo              = pd.DataFrame(data = None)
@@ -130,7 +135,6 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             set_flag_pros_cons = 0              #to make 2 cases - consumer (= 1) and prosumer (= 0)
             set_flag_pros_cons_individual = 0
             
-            print(Combos_formed_Info)
             for i in range(len(temp_combos_list)):
                 temp_solar = 0
                 temp_demand = 0
@@ -157,6 +161,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                 temp_names_comms_list = []
                 
                 for j in range(len(temp_combos_list[i])):
+                    print(temp_combos_list[i][j])
                     try:
                         temp_bldg                       = temp_combos_list[i][j] 
                         temp_solar                      = temp_solar + df_solar[temp_bldg]
