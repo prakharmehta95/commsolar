@@ -24,10 +24,10 @@ define all parameters here
 
 
 #initializing the weights used in the intention function 
-w_econ      = 0.9#0.30
-w_swn       = 0.9#0.31
-w_att       = 0.9#0.39
-w_subplot   = 0.9#0.1
+w_econ      = 0.30#0.30
+w_swn       = 0.30#0.31
+w_att       = 0.30#0.39
+w_subplot   = 0.1#0.1
 threshold   = 0.5
 reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
 diff_prices = 1         #if demand >100 MWh then wholesale prices for them. If set to 0, then retail prices for all irrespective of demand
