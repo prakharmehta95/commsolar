@@ -448,8 +448,11 @@ def stage2_decision(self,uid,idea):
     """
     
     #only entered if intention is 1! Modify if necessary
-    if self.intention == 1: #or self.adopt_comm ==1 or self.adopt_ind == 1:
-        temp_plot_id = agents_info.loc[self.unique_id]['plot_id']
+    #if agent has community installed then not allowed to install further.
+    #but other agents without PV can see agents with installed PV and ask them 
+    #to join and form a community with them
+    if self.intention == 1 and agents_info.at[self.unique_id,'can_install_pv'] == 1 and self.adopt_comm == 0: #and self.adopt_ind == 0:
+        temp_plot_id = agents_info.at[self.unique_id,'plot_id']
         same_plot_agents = agents_info[agents_info['plot_id']==temp_plot_id]
         same_plot_agents_positive_intention = same_plot_agents[(same_plot_agents['intention'] >0) | (same_plot_agents['Adopt_IND'] >0)] #or (same_plot_agents.adoption == 1)] #available to form community
         #only agents without solar will have the intention variable as '1'.
@@ -495,9 +498,12 @@ def stage2_decision(self,uid,idea):
                             # ACTIVATED AGENT : ENERGY CHAMPION 
                             self.en_champ = 1                                                                               #setting the agent which is the energy champion - the first agent
                             self.adopt_comm = 1
+                            self.adopt_ind = 0
                             agents_info.at[self.unique_id,'En_Champ'] = 1
                         for h in range(len(agents_objects_list)):
                             if g == agents_objects_list[h].unique_id:
+                                #manually setting adopt_ind to zero to avoid double counting
+                                agents_objects_list[h].adopt_ind = 0      
                                 agents_objects_list[h].adopt_comm = 1                                                       #setting community adoption as 1 for all agents involved
                                 self.adopt_year = 2018 + step_ctr
                                 
@@ -509,6 +515,7 @@ def stage2_decision(self,uid,idea):
                                 
                                 agents_info.at[g,'Year'] = 2018 + step_ctr
                                 agents_info.at[g,'Adopt_COMM'] = 1
+                                agents_info.at[g,'Adopt_IND'] = 0 #manually setting adopt_ind to zero to avoid double counting
                                 agents_info.at[g,'Community_ID'] = temp_comm_name
                                 agents_info.at[g,'intention'] = self.total
                                 agents_info.at[g,'Reason'] = "Comm>Ind"
@@ -524,13 +531,6 @@ def stage2_decision(self,uid,idea):
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
                     ind_npv = Agents_Ind_NPVs.at[step_ctr,self.unique_id]
-                    #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                    #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                    #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
-                    #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                    #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                    #agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
-                    
                     agents_info.at[self.unique_id,'Year'] = 2018 + step_ctr
                     agents_info.at[self.unique_id,'Adopt_IND'] = 1
                     agents_info.at[self.unique_id,'Individual_ID'] = 'PV_' + self.unique_id
@@ -550,12 +550,6 @@ def stage2_decision(self,uid,idea):
                     self.adopt_ind  = 1
                     self.adopt_year = 2018 + step_ctr
                     ind_npv         = Agents_Ind_NPVs.at[step_ctr,self.unique_id]
-                    #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                    #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                    #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
-                    #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                    #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                    #agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
                     agents_info.at[self.unique_id,'Year'] = 2018 + step_ctr
                     agents_info.at[self.unique_id,'Adopt_IND'] = 1
                     agents_info.at[self.unique_id,'Individual_ID'] = 'PV_' + self.unique_id
@@ -573,12 +567,6 @@ def stage2_decision(self,uid,idea):
                 self.adopt_ind  = 1
                 self.adopt_year = 2018 + step_ctr
                 ind_npv         = Agents_Ind_NPVs.at[step_ctr,self.unique_id]
-                #agents_info.update(pd.Series([1],               name  = 'Adopt_IND',    index = [self.unique_id]))
-                #agents_info.update(pd.Series([2018+step_ctr],   name  = 'Year',         index = [self.unique_id]))
-                #agents_info.update(pd.Series(['PV_' + self.unique_id],  name  = 'Individual_ID', index = [self.unique_id]))
-                #agents_info.update(pd.Series([self.total],      name  = 'intention',    index = [self.unique_id]))
-                #agents_info.update(pd.Series([ind_npv],         name  = 'Ind_NPV',      index = [self.unique_id]))
-                #agents_info.update(pd.Series(["Only_Ind"],      name  = 'Reason',       index = [self.unique_id]))
                 agents_info.at[self.unique_id,'Year'] = 2018 + step_ctr
                 agents_info.at[self.unique_id,'Adopt_IND'] = 1
                 agents_info.at[self.unique_id,'Individual_ID'] = 'PV_' + self.unique_id

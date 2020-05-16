@@ -136,6 +136,9 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
             set_flag_pros_cons_individual = 0
             
             for i in range(len(temp_combos_list)):
+                first_agent_non_pv = 0 #counter so that I know first building in combination has pv previously installed or not.
+                #if 0, then the first building considered in the combo has exisiting PV installed
+                #set by default to zero
                 temp_solar = 0
                 temp_demand = 0
                 #maybne no need for this
@@ -143,6 +146,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                 temp_pv_list = []
                 temp_pv_cost_list = []
                 temp_pv_size = 0
+                temp_pv_size_cost = 0
                 temp_bldg_og_name_list_df = []
                 temp_bldg_og_name_list = []
                 temp_bldg_zones_list_df = []
@@ -163,6 +167,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                 for j in range(len(temp_combos_list[i])):
                     print(temp_combos_list[i][j])
                     try:
+                        first_agent_non_pv +=1          #counter so that I know first building in combination has no pv previously installed
                         temp_bldg                       = temp_combos_list[i][j] 
                         temp_solar                      = temp_solar + df_solar[temp_bldg]
                         temp_demand                     = temp_demand + df_demand[temp_bldg]
@@ -256,10 +261,18 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
                                 temp_demand                     = temp_demand + df_demand[temp_bldg_name_edited]
                                 temp_pv_size                    = temp_pv_size + combos_consider.at[temp_bldg_name_edited,'pv_size_kw']
-                                temp_pv_size_cost               = temp_pv_size_cost #since cost is only incurred for newly installed PV - avoiding counting size for already installed PV by the existing community
-                                temp_join_individual            = 1
                                 temp_num_smart_meters           = temp_num_smart_meters + combos_consider.at[temp_bldg_name_edited,'num_smart_meters']
+                                #if first_agent_non_pv == 0:
+                                    #means first agent has existing pv installed
+                                    #so for cost calculation, do not add the pv size of already exisiting installed pv
+                                temp_pv_size_cost               = temp_pv_size_cost #since cost is only incurred for newly installed PV - avoiding counting size for already installed PV by the existing community
                                 temp_num_smart_meters_cost      = temp_num_smart_meters_cost #since cost is only incurred for newly installed PV  - avoiding counting smartmeters for already installed meters by the existing community
+                                #elif first_agent_non_pv != 0:
+                                    #means first agent has no existing pv installed
+                                    #so pv size which is now installed is used for cost calculation 
+                               #     temp_pv_size_cost               = temp_pv_size #since cost is only incurred for newly installed PV - avoiding counting size for already installed PV by the existing community
+                               #     temp_num_smart_meters_cost      = temp_num_smart_meters
+                                temp_join_individual            = 1
                                 temp_num_members                = temp_num_members + 1 #just add 1 coz only 1 agent will be considered here. 
                                 temp_name                       = temp_name + temp_combos_list[i][j]+ '_'
                                 temp_name_comms                 = temp_name
