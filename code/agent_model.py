@@ -53,7 +53,7 @@ path = r'C:\Users\no23sane\Dropbox (Personal)\Com_Paper\\'
 
 #CHECK - these might change!
 df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle')
-df_solar    = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
+df_solar    = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_22May2020.pickle')
 df_solar    = df_solar.copy()*0.97 #converting solar PV DC output to AC 
 
 df_solar_combos     = pd.DataFrame(data = None)     #holds PV potential of the communities formed

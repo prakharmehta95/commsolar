@@ -45,7 +45,7 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     #%% IMPORT SOLAR PV GENERATION FOR EACH BUILDING
     
     #CHECK! - these files may need to be changed later...
-    df_solar = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
+    df_solar = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_22May2020.pickle')
     df_demand = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle')     
     
     #multiply the solar PV data with an efficiency factor to convert to AC
