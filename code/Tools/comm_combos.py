@@ -47,6 +47,8 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
     
     data = data_og.copy()
     temp_distances                  = pd.DataFrame(data = None)
+    #print('+++++++++++++++++++++++++++++++')
+    #print('no_closest_neighbors_consider =',no_closest_neighbors_consider)
     
     #if more than 4 closest agents have positive intention, choose the closest ones and store it in combos_consider
     if len(same_plot_agents_positive_intention.index) > no_closest_neighbors_consider:
@@ -63,11 +65,11 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                 #this usually happens because the same building is referenced and we do not have distance between bldg A and bldg A = 0, duh!
         
         same_plot_agents_positive_intention = same_plot_agents_positive_intention.sort_values(by = ['dist'])
-        combos_consider                     = same_plot_agents_positive_intention.head(5).copy() #closest 4 neighbours
+        combos_consider                     = same_plot_agents_positive_intention.head(no_closest_neighbors_consider+1).copy() #closest few neighbours - head ( +1) is used to take the active agent as well
     else:
-        combos_consider                     = same_plot_agents_positive_intention.copy() #closest 4 neighbours
+        combos_consider                     = same_plot_agents_positive_intention.copy() #closest few neighbours
     
-    print("combos consider names of combos = ",combos_consider.index)
+    #print("combos consider names of combos = ",combos_consider.index)
     if len(combos_consider.index) > 0:
         #only then is it worth doing all the computation in the sub-functions:
         
@@ -79,7 +81,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         temp_combos_list_filter = [combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
         #temp_combos_list_filter = [combos_consider.at[i,'Community_ID'] if combos_consider.at[i,'Adopt_COMM'] == 1 else combos_consider.at[i,'Individual_ID'] if combos_consider.at[i,'Adopt_IND'] == 1  else i for i in temp_combos_list_temp]
         
-        print("temp combos list filter =",temp_combos_list_filter)
+        #print("temp combos list filter =",temp_combos_list_filter)
         #make combinations in the following lines of code--------------------------
         import itertools
         temp_combos_list = []
@@ -96,7 +98,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         
         combos_consider_calc = temp_combos_list_filter.copy()
         combos_consider_calc = list(set(combos_consider_calc)) #remove repitition in the combos_consider_calc - will happen in case communities are already existing
-        print('combos consider calc =',combos_consider_calc)
+        #print('combos consider calc =',combos_consider_calc)
         #create combinations without the activated agent, and then add the activated agent to all combos formed
         for j in range(0,len(combos_consider_calc)):
             for k in itertools.combinations(combos_consider_calc,len(combos_consider_calc)-j):
@@ -117,7 +119,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
         #%% COLLECTING AND STORING ALL INFO ON COMBINATIONS
         # IT IS NEEDED TO CALCULATE THE NPVs FOR THE COMBINATIONS
         #print("-------here,now----------------")
-        print("temp_combos_list",temp_combos_list)
+        #print("temp_combos_list",temp_combos_list)
         if len(temp_combos_list) > 0:
             #make the solar and demand info for all the combinations to calculate the NPVs
             df_solar_combo              = pd.DataFrame(data = None)
@@ -165,7 +167,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                 temp_names_comms_list = []
                 
                 for j in range(len(temp_combos_list[i])):
-                    print(temp_combos_list[i][j])
+                    #print(temp_combos_list[i][j])
                     try:
                         first_agent_non_pv +=1          #counter so that I know first building in combination has no pv previously installed
                         temp_bldg                       = temp_combos_list[i][j] 
@@ -244,7 +246,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 
                          #*existing individually installed PV is an option*
                         if temp_bldg[0] == 'P':
-                            print("case with PV existing")
+                            #print("case with PV existing")
                             if len(temp_combos_list[i]) != 2:
                                 #case in which new community is being formed with multiple new agents and an exisiting community.
                                 #***everyone installs solar on their roofs - all PROSUMERS***
@@ -253,10 +255,10 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')
                                 #temp_bldg_og_name_list.extend([temp_bldg_comm])
-                                print('temp_bldg_comm = ',temp_bldg_comm[0])
+                                #print('temp_bldg_comm = ',temp_bldg_comm[0])
                                 temp_bldg_og_name_list.append(temp_bldg_comm[0])
                                 temp_bldg_zones_list.extend(combos_consider.at[temp_bldg_comm[0],'zone_id'])
-                                print("temp_bldg in k = 1 = ", temp_bldg)
+                                #print("temp_bldg in k = 1 = ", temp_bldg)
                                 temp_bldg_name_edited           = str.strip(temp_bldg, 'PV_')
                                 temp_solar                      = temp_solar + df_solar[temp_bldg_name_edited]
                                 temp_demand                     = temp_demand + df_demand[temp_bldg_name_edited]
@@ -282,7 +284,7 @@ def community_combinations(data_og, same_plot_agents_positive_intention, distanc
                                 #case in which only the activated agent and an exisiting individually adopted agent is present
                                 #***agent will also install solar on his own roof - PROSUMER***
                                 temp_bldg                       = temp_combos_list[i][j] 
-                                print(temp_bldg)
+                                #print(temp_bldg)
                                 temp_bldg_comm_contain          = temp_combos_list[i][j] 
                                 temp_bldg_comm                  = temp_bldg_comm_contain.split(sep = '_')
                                 temp_bldg_comm.remove('PV')

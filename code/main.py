@@ -24,16 +24,16 @@ define all parameters here
 
 
 #initializing the weights used in the intention function 
-w_econ      = 0.30#0.30
-w_swn       = 0.30#0.31
-w_att       = 0.30#0.39
+#validation
+w_econ      = 0.90#0.30
+w_swn       = 0.90#0.31
+w_att       = 0.90#0.39
 w_subplot   = 0.1#0.1
-threshold   = 0.5
+threshold   = 0.1
 reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
 diff_prices = 1         #if demand >100 MWh then wholesale prices for them. If set to 0, then retail prices for all irrespective of demand
 ZEV         = 1         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
 peer_seed   = 1           #setting seed for the peer network calculations    
-
 no_closest_neighbors_consider = 4
 #%%
 """
@@ -44,15 +44,35 @@ Agent information read from excel, pickles etc...
 
 #path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
 path = r'C:\Users\no23sane\Dropbox (Personal)\Com_Paper\\'
-agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
-agent_list_final = agents_info.bldg_name
+
+#agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
+agents_info         = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
+agent_list_final    = agents_info.bldg_name
+
+'''
+ABM related inputs
+'''
+number  = len(agent_list_final) #number of agents
+years   = 1   #how long should the ABM run for - ideally, 18 years from 2018 - 2035. Or change it to start in 2020?
+
+#empty dictionaries to store results
+results_agentlevel      = {}
+results_emergent        = {}
+d_agents_info_runs      = {}
+d_combos_info_runs      = {}
+
+att_seed    = 3        #initial seed for the attitude gauss function. Used to reproduce results.  
+runs        = 2            #no of runs. 100 for a typical ABM simulation in this work
+randomseed  = 22     #initial seed used to set the order of shuffling of agents withing the scheduler
+
 
 #%%
 """
 NPV Calculation call from here - calculates the NPVs of individual buildings
 """
 #define the costs etc here which are read in the npv_ind file
-PV_price_baseline   = pd.read_excel(path + r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx')
+#check these during validation
+PV_price_baseline   = pd.read_excel(path + r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx') #2018 prices 
 fit_high            = 8.5/100   #CHF per kWH
 fit_low             = 4.45/100  #CHF per kWH
 ewz_high_large      = 6/100     #CHF per kWh
@@ -97,15 +117,10 @@ for single_date in (start_date + timedelta(n) for n in range(day_count)):
     for i in range (24):
         daylist.append(DayAsString)
     
-
-
-
-
 '''
 PV PRICES in the next years. Base PV price data from EnergieSchweiz.
 Projections Source = IEA Technology Roadmap 2014
 '''
-       
 PV_price_projection = pd.DataFrame(data = None, columns = ['Year'])
 PV_price_projection['Year'] = list(range(2018,2041))#years
 for i in list(PV_price_baseline.columns):
@@ -132,20 +147,6 @@ Agents_Peer_Network = swn.make_swn(distances, agents_info,peer_seed) #calls swn 
 
 
 #%%
-number = len(agent_list_final) #4919   #number of agents
-years = 18    #how long should the ABM run for - ideally, 18 years from 2018 - 2035
-
-#empty dictionaries to store results
-results_agentlevel = {}
-results_emergent = {}
-d_gini_correct = {}
-d_gini_model_correct = {}
-d_agents_info_runs_correct = {}
-d_combos_info_runs_correct = {}
-
-att_seed = 3        #initial seed for the attitude gauss function. Used to reproduce results.  
-runs = 1         #no of runs. 100 for a typical ABM simulation in this work
-randomseed = 22     #initial seed used to set the order of shuffling of agents withing the scheduler
 
 print("Did you change the name of the final pickle storage file?") #so that my results are not overwritten!
 from agent_model import *
@@ -168,11 +169,11 @@ for j in range(runs):
         #stores results across multiple Years and multiple runs
         t1 = pd.DataFrame.copy(agents_info)
         t2 = pd.DataFrame.copy(Combos_formed_Info) 
-        d_agents_info_runs_correct[temp_name_3] = t1#agents_info
-        d_combos_info_runs_correct[temp_name_4] = t2#Agents_Possibles_Combos
+        d_agents_info_runs[temp_name_3] = t1#agents_info
+        d_combos_info_runs[temp_name_4] = t2#Agents_Possibles_Combos
     
-    temp_name = "gini_" + str(j)
-    temp_name_2 = "gini_model_" + str(j)
+    temp_name = "run_" + str(j)
+    temp_name_2 = "run_model_" + str(j)
     agent_vars = test.datacollector.get_agent_vars_dataframe()
     model_vars = test.datacollector.get_model_vars_dataframe()
     

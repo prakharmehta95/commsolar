@@ -52,7 +52,7 @@ path = r'C:\Users\no23sane\Dropbox (Personal)\Com_Paper\\'
 #path = r'C:\Users\anunezji\Dropbox\Com_Paper\\'
 
 #CHECK - these might change!
-df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')
+df_demand   = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle')
 df_solar    = pd.read_pickle(path + r'\05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
 df_solar    = df_solar.copy()*0.97 #converting solar PV DC output to AC 
 
@@ -474,7 +474,7 @@ def stage2_decision(self,uid,idea):
                                                                                                                          PV_price_projection,list_hours, daylist,diff_prices)
                                                                                                                          
             if len(Combos_Info.index) != 0: #meaning that some community is formed
-                print('community possible, compare with individual')
+                #print('community possible, compare with individual')
                 #here compare with individual NPVs
                 
                 #keeping info of the community formed as it is needed later in case an agent wants to join a particular community
@@ -487,7 +487,7 @@ def stage2_decision(self,uid,idea):
                 
                 temp_comm_name = 'C_' + comm_name
                 
-                
+                #print(temp_comm_name)
                 if (Agents_Ind_NPVs.at[step_ctr,self.unique_id] < Combos_Info.at[temp_comm_name,'npv_share_en_champ']) and (Combos_Info.at[temp_comm_name,'npv_share_en_champ'] > reduction*Agents_Ind_Investment_Costs.at[step_ctr,self.unique_id]):
                     #form a community
                     #set the adoption as 1 for all the constituent  buildings

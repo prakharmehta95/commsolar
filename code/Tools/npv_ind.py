@@ -46,7 +46,7 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     
     #CHECK! - these files may need to be changed later...
     df_solar = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\01_PV_Disagg\CEA_Disaggregated_SolarPV_3Dec.pickle')
-    df_demand = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_3Dec.pickle')     
+    df_demand = pd.read_pickle(path + r'05_Data\01_CEA_Disaggregated\00_Demand_Disagg\CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle')     
     
     #multiply the solar PV data with an efficiency factor to convert to AC
     df_solar_AC = df_solar.copy()*0.97    
@@ -88,7 +88,7 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     Separate the high and low hours of the year as prices are different, and then calculate the savings for the year
     
     """
-    print("Prep for NPV Calculation")
+    print("Prep for NPV Calculation - Individual Buildings")
     #dataframes to filter high and low times
     df_HIGH = pd.DataFrame(data = None)        
     df_LOW  = pd.DataFrame(data = None)        
@@ -216,11 +216,6 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
     small PV = < 100kW (medium is betwwen 30 and 100)
     large PV = >= 100kW
     '''
-    
-    print("NPV Calculation")
-    
-    #disc_rate = 0.05 - NOW READ FROM THE MAIN FILE
-    
     Agents_NPVs                             = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
     Agents_NPVs['Installation_Year']        = list(range(2018,2036))
     Agents_PPs                              = pd.DataFrame(data = None, index = list(range(0,18)), columns = agent_list_final)
@@ -255,7 +250,6 @@ def npv_calc_individual(path,PV_price_baseline,disc_rate,
         
         disc_rate_npv = disc_rate
         
-        print(i)
         for install_year in range(18): # 0 = 2018, 17 = 2035
             #print(i)
             temp_pv_subsidy =  agents_info.at[i,'pv_subsidy']
