@@ -1,208 +1,182 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May  8 18:23:37 2019
+Current version: June, 2020
 
-@author: Prakhar Mehta
+@author: Prakhar Mehta, Alejandro Nuñez-Jimenez
 """
 
-#%%
+#%% IMPORT PACKAGES AND SCRIPTS
+
+# Import python packages
+import sys, os, re, json, glob, time, pickle, datetime
 import pandas as pd
 import numpy as np
-import time
+from time import gmtime, strftime                                                                             
+
+from random import seed
+
+# Import functions from own scripts
+from COSA_Tools.npv_ind import calculate_ind_npv
+from COSA_Tools.swn import make_swn
+
+# Import object classes for model and agents
+from COSA_Model.SolarAdoptionModel import SolarAdoptionModel
+from COSA_Agent.BuildingAgent import BuildingAgent
+
+# Record time of start of the program
 start = time.time()
-import pickle
-import random
-from datetime import timedelta
-import datetime 
-    
 
-from Tools import npv_ind, swn, comm_combos
-#%%
-"""
-define all parameters here
-"""
+#%% IMPORT SIMULATION PARAMETERS
 
+# Read current directory
+files_dir = os.path.dirname(os.path.abspath(__file__))
 
-#initializing the weights used in the intention function 
-#validation
-w_econ      = 0.90#0.30
-w_swn       = 0.90#0.31
-w_att       = 0.90#0.39
-w_subplot   = 0.1#0.1
-threshold   = 0.1
-reduction   = -0.05     #allows negative NPV to also install, as long as it -5% of investment cost
-diff_prices = 1         #if demand >100 MWh then wholesale prices for them. If set to 0, then retail prices for all irrespective of demand
-ZEV         = 1         #DEFAULT - ZEV formation not allowed. Binary variable to turn on/off whether to allow community formation
-peer_seed   = 1           #setting seed for the peer network calculations    
-no_closest_neighbors_consider = 4
-#%%
-"""
-Agent information read from excel, pickles etc...
+# Add current file's directory to path
+sys.path.append(files_dir)
 
-!!!!!!TEST EXCEL being read in now!!!!!!!!!!
-"""
+# Create a list with all the experiments to be simulated
+# each .JSON file will become one item of this list
+experiment_inputs = []
 
-#path = r'C:\Users\prakh\Dropbox\Com_Paper\\'
-path = r'C:\Users\no23sane\Dropbox (Personal)\Com_Paper\\'
+# Read all the JSON files in current directory
+# Note that changing the ending of the JSON file we can import experiment
+# input files for different purposes (e.g., "_cal.json" for calibration)
+for inputs_file in glob.glob('*_cal.json'):
 
-#agents_info = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info.xlsx')
-agents_info         = pd.read_excel(path + r'05_Data\01_CEA_Disaggregated\02_Buildings_Info\Bldgs_Info_ABM_Test.xlsx')
-agent_list_final    = agents_info.bldg_name
+    # Save their content as input values for different experiments
+    with open(inputs_file, "r") as myinputs:
+        experiment_inputs.append(json.loads(myinputs.read()))
 
-'''
-ABM related inputs
-'''
-number  = len(agent_list_final) #number of agents
-years   = 1   #how long should the ABM run for - ideally, 18 years from 2018 - 2035. Or change it to start in 2020?
+#%% IMPORT SIMULATION DATA
+print("Importing data")
 
-#empty dictionaries to store results
-results_agentlevel      = {}
-results_emergent        = {}
-d_agents_info_runs      = {}
-d_combos_info_runs      = {}
+# Define path to data files
+data_path = files_dir + "\\COSA_Data\\"
 
-att_seed    = 3        #initial seed for the attitude gauss function. Used to reproduce results.  
-runs        = 2            #no of runs. 100 for a typical ABM simulation in this work
-randomseed  = 22     #initial seed used to set the order of shuffling of agents withing the scheduler
+# Define file name for data inputs
+agents_info_file = "buildings_info_test.csv"
+distances_data_file = "distances_data.csv"
+solar_data_file = "CEA_Disaggregated_SolarPV_3Dec.pickle"
+demand_data_file = "CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle"
 
+# Import data about buildings (1 building = 1 agent)
+agents_info = pd.read_csv(data_path + agents_info_file)
 
-#%%
-"""
-NPV Calculation call from here - calculates the NPVs of individual buildings
-"""
-#define the costs etc here which are read in the npv_ind file
-#check these during validation
-PV_price_baseline   = pd.read_excel(path + r'05_Data\02_ABM_input_data\02_pv_prices\PV_Prices.xlsx') #2018 prices 
-fit_high            = 8.5/100   #CHF per kWH
-fit_low             = 4.45/100  #CHF per kWH
-ewz_high_large      = 6/100     #CHF per kWh
-ewz_low_large       = 5/100     #CHF per kWh
-ewz_high_small      = 24.3/100  #CHF per kWh
-ewz_low_small       = 14.4/100  #CHF per kWh
-ewz_solarsplit_fee  = 4/100     #CHF per kWH      
-diff_prices         = 1         #if = 1, then both wholesale and retail prices are applied where appropriate. Else, all retail prices
+# Set bldg_name as the index
+agents_info = agents_info.set_index('bldg_name', drop = False)
 
-#PV Panel Properties
-PV_lifetime         = 25        #years
-PV_degradation      = 0.994     #(0.6% every year)
-OM_Cost_rate        = 0.06      #CHF per kWh of solar PV production
+# Import data of distances between all buildings
+distances = pd.read_csv(data_path + distances_data_file)
 
-#discount rates 
-disc_rate           = 0.05      #discount rate for NPV Calculation
-pp_rate             = 0         #discount rate for payback period calculation is zero 
-# =============================================================================
-# keep it the same for all
-# disc_rate_homeown   = 0.05      #discount rate for NPV Calculation
-# disc_rate_firm      = 0.05      #discount rate for NPV Calculation
-# disc_rate_instn     = 0.05      #discount rate for NPV Calculation
-# disc_rate_landlord  = 0.05      #discount rate for NPV Calculation
-# =============================================================================
+# Import data of solar irradiation resource
+solar = pd.read_pickle(data_path + solar_data_file)
+# IMPORTANT THIS NEEDS TO BE CONVERTED TO AC
 
-#adding hours of the day to the demand and supply dataframes for npv calculation
-list_hours = []  
-ctr = 0  
-for i in range(8760):
-    if i % 24 == 0:
-        ctr = 0
-    list_hours.append(ctr)
-    ctr = ctr + 1
-    
-#adding day of the week to the demand and supply dataframes for npv calculation
-weekDays    = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
-day_count   = 365                                                               #1 year
-daylist     = []
-start_date  =  datetime.date(2005,1,1)                                          #reference year is 2005
-for single_date in (start_date + timedelta(n) for n in range(day_count)):
-    DayAsString = weekDays[single_date.weekday()]
-    for i in range (24):
-        daylist.append(DayAsString)
-    
-'''
-PV PRICES in the next years. Base PV price data from EnergieSchweiz.
-Projections Source = IEA Technology Roadmap 2014
-'''
-PV_price_projection = pd.DataFrame(data = None, columns = ['Year'])
-PV_price_projection['Year'] = list(range(2018,2041))#years
-for i in list(PV_price_baseline.columns):
-    fp_array = [PV_price_baseline.loc[0][i],PV_price_baseline.loc[0][i]/2]
-    y = np.interp([i for i in range(1,24)], [1,23],fp_array)
-    PV_price_projection[i] = ""
-    PV_price_projection[i] = y
-    
-#runs the NPV calculation code and calculates individual NPVs for the agents involved
-Agents_NPVs , Agents_SCRs, Agents_Investment_Costs, Agents_PPs_Norm =npv_ind.npv_calc_individual(path,PV_price_baseline,disc_rate,
-                                                                                         pp_rate, fit_high, fit_low,
-                                                                                         ewz_high_large,ewz_low_large,
-                                                                                         ewz_high_small, ewz_low_small,
-                                                                                         diff_prices, ewz_solarsplit_fee,
-                                                                                         PV_lifetime, PV_degradation,
-                                                                                         OM_Cost_rate, agents_info,agent_list_final,
-                                                                                         PV_price_projection,list_hours,daylist)
+# Import data of electricity demand profiles
+demand = pd.read_pickle(data_path + demand_data_file)
 
+#%% SIMULATE EXPERIMENTS
 
-#%%
-#Creation of Small World Network
-distances = pd.read_csv(path + r'07_GIS\DataVisualization_newData\distances_nearest_200bldgs_v1.csv') #all the distances to each building 
-Agents_Peer_Network = swn.make_swn(distances, agents_info,peer_seed) #calls swn function
+# Loop through experiments
+exp = 0
+for inputs in experiment_inputs:
 
+    # Print what experiment is currently running and how many are in the list
+    print("= Run exp "+str(exp+1)+" of "+str(len(experiment_inputs))+" =")
 
-#%%
+    # Read simulation parameters
+    sim_pars = inputs["simulation_parameters"]
+    print(strftime("%H:%M:%S", gmtime()))
+    ## Calculate individual NPVs
+    ind_npv_outputs = calculate_ind_npv(inputs, agents_info, solar, demand)
+    print(strftime("%H:%M:%S", gmtime()))
 
-print("Did you change the name of the final pickle storage file?") #so that my results are not overwritten!
-from agent_model import *
+    ## Create Small World Network
+    AgentsNetwork = make_swn(distances, agents_info.bldg_name, 
+                                sim_pars["n_peers"], sim_pars["peer_seed"])
 
-#main loop for the ABM simulation
-for j in range(runs):
-    print("run = ",j,"----------------------------------------------------------------")
-    randomseed = randomseed + j*642     #642 is just any number to change the seed for every run 
-    test = tpb(number,randomseed)       #initializes by calling the model from agent_model and setting up with the class init methods
-    att_seed = att_seed + j*10          #seed for attitude changes in a new run
+    #empty dictionaries to store results
+    results_agent = {}
+    results_model = {}
+    communities = {}
 
+    # Define random seed
+    randomseed = sim_pars["randomseed"]
 
-    for i in range(years):
-        seed(att_seed)                  #for the environmental attitude which remains constant for an agent in a particular run
-        print("YEAR:",i+1)
-        test.step()
-        temp_name_3 = "agents_info_" + str(j) + "_" + str(i)
-        temp_name_4 = "combos_info_" + str(j) + "_" + str(i)
+    #main loop for the ABM simulation
+    for j in range(sim_pars["runs"]):
+        print("Simulation run = ",j)
+        print(strftime("%H:%M:%S", gmtime()))
+
+        #642 is just any number to change the seed for every run 
+        randomseed = randomseed + j * 642
+
+        # Create one instantiation of the model
+        model = SolarAdoptionModel(BuildingAgent, inputs, randomseed,
+                                    ind_npv_outputs, AgentsNetwork, agents_info,
+                                    distances, solar, demand)
+
+        # seed for attitude changes in a new run
+        att_seed = sim_pars["att_seed"] + j * 10          
+
+        # Loop through the number of years to simulate
+        for i in range(sim_pars["years"]):
+
+            # Print current year of simulation
+            print("YEAR:",i+1)
+            print(strftime("%H:%M:%S", gmtime()))
+
+            #f or the environmental attitude which remains constant for
+            #  an agent in a particular run
+            seed(sim_pars["att_seed"])
+            
+            # CHECK HOW THIS WORKS BECAUSE NOW IN MODEL CLASS
+            Combos_formed_Info = model.step()
+            
+            # store communities formed
+            #lab_2 = "combos_info_{0}_{1}".format(str(j),str(i))
+            #communities[lab_2] = pd.DataFrame.copy(Combos_formed_Info)
         
-        #stores results across multiple Years and multiple runs
-        t1 = pd.DataFrame.copy(agents_info)
-        t2 = pd.DataFrame.copy(Combos_formed_Info) 
-        d_agents_info_runs[temp_name_3] = t1#agents_info
-        d_combos_info_runs[temp_name_4] = t2#Agents_Possibles_Combos
+        # Collect agent and model variables
+        agent_vars = model.datacollector.get_agent_vars_dataframe()
+        model_vars = model.datacollector.get_model_vars_dataframe()
+        com_formed = model.datacollector.get_table_dataframe("communities")
     
-    temp_name = "run_" + str(j)
-    temp_name_2 = "run_model_" + str(j)
-    agent_vars = test.datacollector.get_agent_vars_dataframe()
-    model_vars = test.datacollector.get_model_vars_dataframe()
+        #stores results across multiple runs
+        results_agent["run_" + str(j)] = agent_vars
+        results_model["run_" + str(j)] = model_vars
+        communities["run_" + str(j)] = com_formed
     
-    #stores results across multiple runs
-    results_agentlevel[temp_name] = agent_vars
-    results_emergent[temp_name_2] = model_vars
-    
+    print("==FIN==")
+    print(strftime("%H:%M:%S", gmtime()))
 
+#%% SAVE SIMULATION RESULTS
 
-#%% Export data to pickle to save it!
+# Define output directory
+out_dir = files_dir + "\\COSA_Outputs\\"
 
-#f = open("03June_ZEV_d_agents_info.pickle","wb") #enter name of the stored result file
-#pickle.dump(d_agents_info_runs_correct,f)
-#f.close()
+# Define a dictionary of names and data to export
+out_dict = {
+    "results_agent": results_agent,
+    "communities": communities,
+    "results_model": results_model
+    }
 
-#f = open("03June_ZEV_d_gini.pickle","wb") #enter name of the stored result file
-#pickle.dump(results_agentlevel,f)
-#f.close()
+# Loop through all the data to export
+for out_name, out_data in out_dict.items():
 
-#f = open("03June_ZEV_d_combos_info_runs.pickle","wb") #enter name of the stored result file
-#pickle.dump(d_combos_info_runs_correct,f)
-#f.close()
+        # Name the output files
+        out_file_label = '{0}_{1}_.csv'.format(start, out_name)
+        
+        # Transform dict data into dataframe
+        #out_data_df = pd.DataFrame(data=None)
+        out_data_df = pd.concat(out_data)
+        
+        # Save the output files into csv documents
+        out_data_df.to_csv(out_file_label, mode='w', sep=';')
 
-#f = open("03June_ZEV_d_gini_model.pickle","wb") #enter name of the stored result file
-#pickle.dump(results_emergent,f)
-#f.close()
-
-
-
+# Read end time
 end = time.time()
-print("Code Execution Time = ",end - start)
 
+# Print elapsed computation time to screen
+print("Code Execution Time = ",end - start)
