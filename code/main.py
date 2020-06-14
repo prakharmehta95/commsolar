@@ -173,7 +173,7 @@ for out_name, out_data in out_dict.items():
         out_data_df = pd.concat(out_data)
         
         # Save the output files into csv documents
-        out_data_df.to_csv(out_file_label, mode='w', sep=';')
+        out_data_df.to_csv(out_dir+out_file_label, mode='w', sep=';')
 
 # Read end time
 end = time.time()
