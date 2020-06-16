@@ -1,7 +1,7 @@
 {   "experiment_name": "test_model_building",
     "simulation_parameters": {
-        "years": 18,
-        "runs": 2,
+        "years": 2,
+        "runs": 3,
         "data_address": 1,
         "start_year": 2005,
         "end_year": 2035,
@@ -9,7 +9,7 @@
         "n_peers": 20,
         "n_closest_neighbors" : 4,
         "ZEV": "True",
-        "n_cores": 2
+        "n_cores": 3
     },
     "calibration_parameters":{
         "w_econ": 0.90,
@@ -18,14 +18,13 @@
         "w_subplot": 0.1,
         "threshold": 0.1,
         "reduction": -0.05,
-        "diff_prices": 1,
-        "peer_seed": 1,
         "no_closest_neighbors_consider": 4,
         "awareness_mean": 0.698,
         "awareness_stdev": 0.18,
         "awareness_minergie": 0.95
     },
     "economic_parameters":{
+        "diff_prices": 1,
         "min_ratio_sd": 0.1,
         "fit_high":0.085,
         "fit_low": 0.0445,
@@ -34,7 +33,6 @@
         "ewz_high_small": 0.243,
         "ewz_low_small": 0.144,
         "ewz_solarsplit_fee": 0.04,
-        "diff_prices": 1,
         "PV_lifetime": 25,
         "PV_degradation": 0,
         "OM_Cost_rate": 0.06,

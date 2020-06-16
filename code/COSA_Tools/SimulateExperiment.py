@@ -78,84 +78,100 @@ def import_data(files_dir):
 
     return agents_info, distances, solar, demand
 
-def create_scenario_inputs(inputs):
-    """
-    This function takes the inputs to the experiment and creates a list of
-    dictionaries of inputs, each containing a unique scenario (i.e. a unique
-    combination of input parameters).
+def run_experiment(inputs, BuildingAgent, SolarAdoptionModel, 
+        ind_npv_outputs, agents_info, distances, solar, demand):
 
-    Inputs
-        inputs = set of parameters for the experiment (dict)
-    Outputs
-        scenario_inputs = list of sets of parameters per scenario (list)
-    """
+    runs = inputs["simulation_parameters"]["runs"]
+    n_cores = inputs["simulation_parameters"]["n_cores"]
 
-
-def simulate_experiment_one_core(agent, model,
-    inputs, ind_npv_outputs, agents_info, distances, solar, demand):
-    
-    #empty dictionaries to store results
-    results_agent = {}
-    results_model = {}
-    communities = {}
-
-    #main loop for the ABM simulation
-    for run in range(inputs["simulation_parameters"]["runs"]):
-        print("Simulation run = ",run)
-        print(strftime("%H:%M:%S", gmtime()))
-
-        # Define random seed
-        randomseed = inputs["randomseed"][run]
-
-        # Create Small World Network
-        print(strftime("%H:%M:%S", gmtime()))
-        AgentsNetwork = make_swn(distances, agents_info.bldg_name, 
-            inputs["simulation_parameters"]["n_peers"], inputs["randomseed"][run])
-
-        # Create one instantiation of the model
-        sim_model = model(agent, inputs, randomseed, ind_npv_outputs, 
-                        AgentsNetwork, agents_info, distances, solar, demand)      
-
-        # Loop through the number of years to simulate
-        for sim_year in range(inputs["simulation_parameters"]["years"]):
-
-            # Print current year of simulation
-            print("YEAR:",sim_year)
-            print(strftime("%H:%M:%S", gmtime()))
-           
-            # Advance the model one step
-            sim_model.step()
-        
-        # Collect agent and model variables of the run
-        agent_vars = sim_model.datacollector.get_agent_vars_dataframe()
-        model_vars = sim_model.datacollector.get_model_vars_dataframe()
-        com_formed = sim_model.datacollector.get_table_dataframe("communities")
-    
-        #stores results across multiple runs
-        results_agent["run_" + str(run)] = agent_vars
-        results_model["run_" + str(run)] = model_vars
-        communities["run_" + str(run)] = com_formed
-    
-    # Define a dictionary of names and data to export
-    out_dict = {
-        "results_agent": results_agent,
-        "communities": communities,
-        "results_model": results_model
+    in_dict = {
+        "BuildingAgent": BuildingAgent, 
+        "SolarAdoptionModel":SolarAdoptionModel, 
+        "inputs":inputs,
+        "ind_npv_outputs":ind_npv_outputs, 
+        "agents_info":agents_info, 
+        "distances":distances, 
+        "solar":solar, 
+        "demand":demand
         }
-    return out_dict
+    
+    # Create run inputs
+    run_inputs = [[run, in_dict] for run in range(runs)]
 
-def simulate_experiment_multicore():
-    """
-    TO-DO
-    """
+    # Create an empty list to store the results from simulations
+    exp_results = []
 
-def save_results(out_dicts, files_dir, start):
+    if n_cores == 1:
+
+        #main loop for the ABM simulation
+        for run in range(runs):
+
+            print("Simulation run = ",run)
+            print(strftime("%H:%M:%S", gmtime()))
+            
+            # simulate the run
+            runs_dict = simulate_run(run, run_inputs[run][1])
+
+            # store the results in the experiment list
+            exp_results.append(runs_dict)
+
+    elif n_cores > 1:
+
+        # Run experiment with multiple cores
+        with Pool(n_cores) as p:
+            exp_results = p.starmap(simulate_run, run_inputs)
+
+            # Wait all processes to finish
+            p.join
+
+    return exp_results  
+
+def simulate_run(run, in_dict):
+
+    # Define random seed
+    randomseed = in_dict["inputs"]["randomseed"][run]
+    SolarAdoptionModel = in_dict["SolarAdoptionModel"]
+
+    # Create Small World Network
+    AgentsNetwork = make_swn(
+                        in_dict["distances"], 
+                        in_dict["agents_info"].bldg_name, 
+                        in_dict["inputs"]["simulation_parameters"]["n_peers"], 
+                        randomseed)
+
+    # Create one instantiation of the model
+    sim_model = SolarAdoptionModel(
+                            in_dict["BuildingAgent"], 
+                            in_dict["inputs"], 
+                            randomseed, 
+                            in_dict["ind_npv_outputs"], 
+                            AgentsNetwork, 
+                            in_dict["agents_info"], 
+                            in_dict["distances"], 
+                            in_dict["solar"], 
+                            in_dict["demand"])      
+
+    # Loop through the number of years to simulate
+    for yr in range(in_dict["inputs"]["simulation_parameters"]["years"]):
+        
+        # Advance the model one step
+        sim_model.step()
+    
+    # Collect agent and model variables of the run
+    run_out_dict = {
+        "agent_vars": sim_model.datacollector.get_agent_vars_dataframe(),
+        "model_vars": sim_model.datacollector.get_model_vars_dataframe(),
+        "com_formed": sim_model.datacollector.get_table_dataframe("communities"),
+    }
+
+    return run_out_dict
+
+def save_results(exp_results, files_dir, start):
     """
-    This function exports the dictionaries in out_dict to csv files in 
-    COSA_Outputs directory.
+    This function exports the simulation outputs of one experiment.
     
     Inputs
-        out_dicts = list of out_dict dictionarys (list)
+        exp_results = list of out_dict dictionarys (list)
         files_dir = directory of current file (str)
         start = start time of code execution (str)
     
@@ -166,22 +182,22 @@ def save_results(out_dicts, files_dir, start):
     # Define output directory
     out_dir = files_dir + "\\COSA_Outputs\\"
 
-    # If we have a list of out_dict dictionaries, loop through them
-    if isinstance(out_dicts, list):
+    # Create an empty dictionary to compile results from individual runs
+    compiler_out_dict = {}
 
-        compiler_out_dict = {"result_agents":0,"communities":0,"results_model":0}
+    # Loop through all the runs in the experiment
+    for run_dict in exp_results:
 
-        """
-        TO-DO
-        """
-        for out_dict in out_dicts:
-            for out_d_key, out_d_val in out_dict:
-                compiler_out_dict[out_d_key] = compiler_out_dict[out_d_key].append(out_d_val)
+        # Extract the results of each run
+        for key, val in run_dict.items():
+            
+            # If this is the first run, create a dataframe 
+            if len(compiler_out_dict) < len(run_dict.keys()):
+                compiler_out_dict[key] = val
 
-        # concatenate by dict type
-    else:
-        # If we have only one out_dict
-        compiler_out_dict = out_dicts
+            # Else, just concatenate the dataframes
+            else:
+                compiler_out_dict[key] = compiler_out_dict[key].append(val)                
 
     # Loop through all the data to export
     for out_name, out_data in compiler_out_dict.items():
@@ -189,8 +205,5 @@ def save_results(out_dicts, files_dir, start):
             # Name the output files
             out_file_label = '{0}_{1}_.csv'.format(start, out_name)
             
-            # Transform dict data into dataframe
-            out_data_df = pd.concat(out_data)
-            
             # Save the output files into csv documents
-            out_data_df.to_csv(out_dir+out_file_label, mode='w', sep=';')
+            out_data.to_csv(out_dir+out_file_label, mode='w', sep=';')

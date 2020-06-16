@@ -17,7 +17,7 @@ from time import gmtime, strftime
 from COSA_Tools.npv_ind import calculate_ind_npv
 from COSA_Tools.swn import make_swn
 from COSA_Tools.SimulateExperiment import (import_parameters, import_data,
-    save_results, simulate_experiment_one_core, simulate_experiment_multicore)
+    save_results, run_experiment)
 
 # Import object classes for model and agents
 from COSA_Model.SolarAdoptionModel import SolarAdoptionModel
@@ -58,22 +58,20 @@ if __name__ == '__main__':
         print(strftime("%H:%M:%S", gmtime()))
         ind_npv_outputs = calculate_ind_npv(inputs, agents_info, solar, demand)
 
-        # Simulate experiment with one core (e.g., for debugging)
-        out_dict = simulate_experiment_one_core(BuildingAgent, SolarAdoptionModel, 
-            inputs, ind_npv_outputs, agents_info, distances, solar, demand)
-
-        # # Simulate experiment with multiple cores
-        # out_dict = simulate_experiment_multicore(BuildingAgent, SolarAdoptionModel, 
-        #     inputs, ind_npv_outputs, AgentsNetwork, agents_info, distances, solar,
-        #     demand)
-
-        # Export results
-        save_results(out_dict, files_dir, start)
-
-        # Read end time
-        end = time.time()
-
-        # Print elapsed computation time to screen
-        print("Code Execution Time = ",end - start)
-        print("==FIN==")
+        # Simulate experiment
+        exp_results = run_experiment(inputs, BuildingAgent, SolarAdoptionModel, 
+            ind_npv_outputs, agents_info, distances, solar, demand)
+        
         print(strftime("%H:%M:%S", gmtime()))
+        print("save_results")
+        # Export results
+        save_results(exp_results, files_dir, start)
+        print(strftime("%H:%M:%S", gmtime()))
+
+    # Read end time
+    end = time.time()
+
+    # Print elapsed computation time to screen
+    print("Code Execution Time = ",end - start)
+    print("==FIN==")
+    print(strftime("%H:%M:%S", gmtime()))
