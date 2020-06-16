@@ -54,7 +54,7 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
     smp_dict = econ_pars["smart_meter_prices"]
 
     # Multiply the solar PV data with an efficiency factor to convert to AC
-    solar = solar.copy()*econ_pars["AC_conv_eff"] 
+    solar = solar * econ_pars["AC_conv_eff"] 
 
     # All hours of the year are "low" except from Mon-Sat from 6-21
     hour_price = econ_pars["hour_price"]
@@ -100,10 +100,10 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
         ## CASHFLOW CALCULATIONS
 
         # Define the buildings hourly electricity demand over one year
-        demand_ag = demand[i]
+        demand_ag = np.array(demand[i])
 
         # Define solar output AC for first year of PV lifetime in building
-        solar_building = solar[i] * econ_pars["AC_conv_eff"]
+        solar_building = np.array(solar[i]) * econ_pars["AC_conv_eff"]
 
         # Compute annual energy balances during operational life of PV
         lifetime_load_profile = compute_lifetime_load_profile(solar_building,
@@ -266,9 +266,10 @@ def compute_lifetime_load_profile(solar_building, demand_ag, PV_lifetime,
         # Compute hourly self-consumed electricity
         # For the hours of the year with solar generation: self-consume all
         # solar generation if less than demand (s) or up to demand (d)
-        s = np.array(solar_outputs)
-        d = np.array(demand_ag)
-        load_profile["sc"] = [min(s[i], d[i]) if s[i] > 0 else 0 for i in range(8760)]
+        s = solar_outputs
+        d = demand_ag
+        load_profile["sc"] = np.array([min(s[i], d[i]) 
+                                    if s[i] > 0 else 0 for i in range(8760)])
         
         # Compute annual energy balances regardless of hour prices
         for bal in ["solar", "demand", "net_demand", "excess_solar", "sc"]:
@@ -283,7 +284,8 @@ def compute_lifetime_load_profile(solar_building, demand_ag, PV_lifetime,
         # Compute year self-consumption rate
         load_profile_year["SCR"] = 0
         if load_profile_year["sc"] > 0:
-            load_profile_year["SCR"] = load_profile_year["sc"] / load_profile_year["solar"]
+            load_profile_year["SCR"] = np.divide(load_profile_year["sc"], 
+                                                    load_profile_year["solar"])
 
         # Store results in return dataframe
         lifetime_load_profile = pd.DataFrame(load_profile_year, index=[0])
