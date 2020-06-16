@@ -1,6 +1,4 @@
-# commsolar
-
-== Community solar adoption - Agent-based model (COSA - ABM) ==
+# Community solar adoption agent-based model (COSA-ABM)
 
 The code in this repertory uses the mesa python library for the formulation of
 an agent-based model of community solar adoption.
