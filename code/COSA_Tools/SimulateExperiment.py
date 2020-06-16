@@ -164,6 +164,10 @@ def simulate_run(run, in_dict):
         "com_formed": sim_model.datacollector.get_table_dataframe("communities"),
     }
 
+    # Add run info
+    for df in run_out_dict.values():
+        df["run"] = run
+
     return run_out_dict
 
 def save_results(exp_results, files_dir, start):
