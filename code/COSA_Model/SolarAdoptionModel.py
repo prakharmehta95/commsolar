@@ -113,9 +113,9 @@ class SolarAdoptionModel(Model):
             try:
                 pps_norm_years = ind_npv_outputs["Agents_PPs_Norm"][unique_id]
 
-            # If the agent is not found, then pp is always one (max_pp)
+            # If the agent is not found, then pp is always zero (max_pp)
             except KeyError:
-                pps_norm_years = [1] * inputs["simulation_parameters"]["years"]
+                pps_norm_years = [0] * inputs["simulation_parameters"]["years"]
 
             # Create instantiation of an agent and provide necessary inptus
             ag = agent(self,
