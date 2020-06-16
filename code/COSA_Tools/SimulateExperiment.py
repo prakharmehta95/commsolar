@@ -42,13 +42,17 @@ def import_data(files_dir):
     Inputs
         files_dir = directory of current file (str)
     Returns
-        agents_info
-        distances
-        solar
-        demand
-        TO-DO ADD DESCRIPTIONS
+        agents_info = attributes of each building (df, column = variable, 
+            index = building_ids)
+        distances = distances between buildings (df, columns have building_id
+            and dist_building_id where building_id column is a list of buildings
+            and dist_building_id the distance between the building_id heading 
+            the column and the one in the corresponding row)
+        solar = dataframe of hourly solar generation per building (df, 
+            columns = building_id, rows = 8760 hourly power demand)
+        demand = dataframe of hourly electricity demand per building (df,
+            columns = building id, rows = 8760 hourly power demand)
     """
-
     print("Importing data")
 
     # Define path to data files
@@ -80,10 +84,35 @@ def import_data(files_dir):
 
 def run_experiment(inputs, BuildingAgent, SolarAdoptionModel, 
         ind_npv_outputs, agents_info, distances, solar, demand):
+    """
+    This function runs one experiment of the model.
 
+    Inputs:
+        inputs = simulation and scenario inputs (dict)
+        BuildingAgent = object class for agents in model (class)
+        SolarAdoptionModel = object class for model (class)
+        ind_npv_outputs = individual economic evaluation variables (dict of dfs)
+        agents_info = attributes of each building (df, column = variable, 
+            index = building_ids)
+        distances = distances between buildings (df, columns have building_id
+            and dist_building_id where building_id column is a list of buildings
+            and dist_building_id the distance between the building_id heading 
+            the column and the one in the corresponding row)
+        solar = dataframe of hourly solar generation per building (df, 
+            columns = building_id, rows = 8760 hourly power demand)
+        demand = dataframe of hourly electricity demand per building (df,
+            columns = building id, rows = 8760 hourly power demand)
+    Returns:
+        exp_results = list of dictionaries with results per run (list)
+    """
+
+    # Define the number of runs for this experiment
     runs = inputs["simulation_parameters"]["runs"]
+
+    # Define the number of cores
     n_cores = inputs["simulation_parameters"]["n_cores"]
 
+    # Pack inputs into a dictionary
     in_dict = {
         "BuildingAgent": BuildingAgent, 
         "SolarAdoptionModel":SolarAdoptionModel, 
@@ -101,13 +130,11 @@ def run_experiment(inputs, BuildingAgent, SolarAdoptionModel,
     # Create an empty list to store the results from simulations
     exp_results = []
 
+    # Use single core computation
     if n_cores == 1:
 
         #main loop for the ABM simulation
         for run in range(runs):
-
-            print("Simulation run = ",run)
-            print(strftime("%H:%M:%S", gmtime()))
             
             # simulate the run
             runs_dict = simulate_run(run, run_inputs[run][1])
@@ -115,6 +142,7 @@ def run_experiment(inputs, BuildingAgent, SolarAdoptionModel,
             # store the results in the experiment list
             exp_results.append(runs_dict)
 
+    # Use multicore pool computing
     elif n_cores > 1:
 
         # Run experiment with multiple cores
@@ -127,6 +155,15 @@ def run_experiment(inputs, BuildingAgent, SolarAdoptionModel,
     return exp_results  
 
 def simulate_run(run, in_dict):
+    """
+    This function runs a single run of an experiment.
+
+    Input:
+        run = identifier of simulation run (int)
+        in_dict = dictionary containing inputs required by model (dict)
+    Returns:
+        run_out_dict = results for one simulation run (dict)
+    """
 
     # Define random seed
     randomseed = in_dict["inputs"]["randomseed"][run]
