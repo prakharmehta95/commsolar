@@ -66,7 +66,7 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
     # Loop through all agents
     for ag in range(len(agent_list_final)):
 
-        print("B = " + str(ag) + " of " + str(len(agent_list_final)))
+        #print("B = " + str(ag) + " of " + str(len(agent_list_final)))
 
         # Set building
         i = agent_list_final[ag]
@@ -201,8 +201,10 @@ def compute_lifetime_load_profile(solar_building, demand_ag, PV_lifetime,
             load_profile["excess_solar"] = load_profile.solar - load_profile.demand
 
             # Remove negative values by making them zero
-            load_profile["net_demand"].loc[load_profile["net_demand"] < 0] = 0
-            load_profile["excess_solar"].loc[load_profile["excess_solar"] < 0] = 0
+            load_profile["net_demand"] = np.array(
+                [x if x > 0 else 0 for x in load_profile["net_demand"]])
+            load_profile["excess_solar"] = np.array(
+                [x if x > 0 else 0 for x in load_profile["excess_solar"]])
 
             # Compute hourly self-consumed electricity
             # For the hours of the year with solar generation: self-consume all
@@ -260,8 +262,10 @@ def compute_lifetime_load_profile(solar_building, demand_ag, PV_lifetime,
         load_profile["excess_solar"] = load_profile.solar - load_profile.demand
 
         # Remove negative values by making them zero
-        load_profile["net_demand"].loc[load_profile["net_demand"] < 0] = 0
-        load_profile["excess_solar"].loc[load_profile["excess_solar"] < 0] = 0
+        load_profile["net_demand"] = np.array(
+            [x if x > 0 else 0 for x in load_profile["net_demand"]])
+        load_profile["excess_solar"] = np.array(
+            [x if x > 0 else 0 for x in load_profile["excess_solar"]])
 
         # Compute hourly self-consumed electricity
         # For the hours of the year with solar generation: self-consume all
