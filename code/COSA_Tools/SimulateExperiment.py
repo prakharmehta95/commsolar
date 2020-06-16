@@ -170,14 +170,15 @@ def simulate_run(run, in_dict):
 
     return run_out_dict
 
-def save_results(exp_results, files_dir, start):
+def save_results(exp_name, exp_results, files_dir, timestamp):
     """
     This function exports the simulation outputs of one experiment.
     
     Inputs
+        exp_name = name of experiment (str)
         exp_results = list of out_dict dictionarys (list)
         files_dir = directory of current file (str)
-        start = start time of code execution (str)
+        timestamp = start time of code execution (str)
     
     Returns
         None (it directly saves the exported csv files in the directory)
@@ -207,7 +208,7 @@ def save_results(exp_results, files_dir, start):
     for out_name, out_data in compiler_out_dict.items():
 
             # Name the output files
-            out_file_label = '{0}_{1}_.csv'.format(start, out_name)
+            out_label = '{0}_{1}_{2}_.csv'.format(timestamp, exp_name, out_name)
             
             # Save the output files into csv documents
-            out_data.to_csv(out_dir+out_file_label, mode='w', sep=';')
+            out_data.to_csv(out_dir + out_label, mode='w', sep=';')

@@ -23,20 +23,22 @@ from COSA_Tools.SimulateExperiment import (import_parameters, import_data,
 from COSA_Model.SolarAdoptionModel import SolarAdoptionModel
 from COSA_Agent.BuildingAgent import BuildingAgent
 
-#%% IMPORT SIMULATION PARAMETERS
-
 # Record time of start of the program
 start = time.time()
-
-# Read current directory
-files_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Add current file's directory to path
-sys.path.append(files_dir)
 
 #%% SIMULATE EXPERIMENTS
 
 if __name__ == '__main__':
+
+    # Read current directory
+    files_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Add current file's directory to path
+    sys.path.append(files_dir)
+
+    # Identifiy the time when the simulation was carried out -> timestamp
+    timestamp_format = "%Y-%m-%d-%H-%M-%S-%f"
+    timestamp = datetime.datetime.now().strftime(timestamp_format)
 
     # Import simulation parameters
     experiment_inputs = import_parameters(files_dir)
@@ -48,14 +50,14 @@ if __name__ == '__main__':
     exp = 0
     for inputs in experiment_inputs:
 
-        # Print what experiment is currently running and how many are in the list
+        # Print what experiment is running and how many are in the list
         print("= Run exp "+str(exp+1)+" of "+str(len(experiment_inputs))+" =")
+        print(strftime("%H:%M:%S", gmtime()))
 
         # Read simulation parameters
         sim_pars = inputs["simulation_parameters"]
         
         # Calculate individual NPVs
-        print(strftime("%H:%M:%S", gmtime()))
         ind_npv_outputs = calculate_ind_npv(inputs, agents_info, solar, demand)
 
         # Simulate experiment
@@ -65,7 +67,7 @@ if __name__ == '__main__':
         print(strftime("%H:%M:%S", gmtime()))
         print("save_results")
         # Export results
-        save_results(exp_results, files_dir, start)
+        save_results(inputs["exp_name"], exp_results, files_dir, timestamp)
 
     # Read end time
     end = time.time()
