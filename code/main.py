@@ -34,15 +34,15 @@ files_dir = os.path.dirname(os.path.abspath(__file__))
 # Add current file's directory to path
 sys.path.append(files_dir)
 
-# Import simulation parameters
-experiment_inputs = import_parameters(files_dir)
-
-# Import input data
-agents_info, distances, solar, demand = import_data(files_dir)
-
 #%% SIMULATE EXPERIMENTS
 
 if __name__ == '__main__':
+
+    # Import simulation parameters
+    experiment_inputs = import_parameters(files_dir)
+
+    # Import input data
+    agents_info, distances, solar, demand = import_data(files_dir)
         
     # Loop through experiments
     exp = 0
@@ -66,7 +66,6 @@ if __name__ == '__main__':
         print("save_results")
         # Export results
         save_results(exp_results, files_dir, start)
-        print(strftime("%H:%M:%S", gmtime()))
 
     # Read end time
     end = time.time()
@@ -74,4 +73,3 @@ if __name__ == '__main__':
     # Print elapsed computation time to screen
     print("Code Execution Time = ",end - start)
     print("==FIN==")
-    print(strftime("%H:%M:%S", gmtime()))
