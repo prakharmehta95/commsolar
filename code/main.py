@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
         # Initialize the scenario inputs
         sc_inputs, n_econ_scenarios = initialize_scenario_inputs(inputs)
-
+#%%
         # Compute the individual economic evaluations per scenario
         sc_ind_npvs = []
         if n_econ_scenarios == 1:  

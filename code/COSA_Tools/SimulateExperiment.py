@@ -140,11 +140,11 @@ def run_experiment(sc_inputs, BuildingAgent, SolarAdoptionModel,
     # Use single core computation
     if n_cores == 1:
 
-        #main loop for the ABM simulation
-        for run in range(runs):
+        # Loop through runs
+        for run_input in run_inputs:
             
             # simulate the run
-            runs_dict = simulate_run(run, run_inputs[run][1])
+            runs_dict = simulate_run(*run_input)
 
             # store the results in the experiment list
             exp_results.append(runs_dict)
@@ -209,9 +209,19 @@ def simulate_run(run, in_dict, sc_dict):
         "com_formed": sim_model.datacollector.get_table_dataframe("communities"),
     }
 
-    # Add run info
+    # Create labels for the scenario sim, cal, and eco parameters
+    sim_label = "_".join([str(x) for x in sc_dict["simulation_parameters"].values()])
+    cal_label = "_".join([str(x) for x in sc_dict["calibration_parameters"].values()])
+    # Avoid the three last values that correspond to "smart_meter_prices", "PV_price baseline" and "hour_price"
+    eco_pars = list(sc_dict["economic_parameters"].values())[:-3]
+    eco_label = "_".join([str(x) for x in eco_pars])
+
+    # Add run and scenario info
     for df in run_out_dict.values():
         df["run"] = run
+        df["sim_label"] = sim_label
+        df["cal_label"] = cal_label
+        df["eco_label"] = eco_label
 
     return run_out_dict
 
@@ -272,11 +282,13 @@ def initialize_scenario_inputs(inputs):
     # combination with all three different parameter types
     sc_dict_list = []
     for s_d in par_type_unique_dict_list[0]:
-        sc_d = {}
+
         for c_d in par_type_unique_dict_list[1]:
             for e_d in par_type_unique_dict_list[2]:
+
+                sc_d = {}
                 sc_d["simulation_parameters"] = s_d
-                sc_d["calibration_parameters"] = c_d
+                sc_d["calibration_parameters"] = c_d          
                 sc_d["economic_parameters"] = e_d
                 
                 # Add the variables in the forbidden list
@@ -284,13 +296,13 @@ def initialize_scenario_inputs(inputs):
                     sc_d["economic_parameters"][key] = inputs["economic_parameters"][key]
 
                 sc_dict_list.append(sc_d)
-    
+
     # Include inputs keys out of three parameter types
     out_inputs = ["exp_name", "randomseed"]
     for oi in out_inputs:
         for d in sc_dict_list:
             d[oi] = inputs[oi]
-
+            
     return sc_dict_list, n_econ_sc
 
 def save_results(exp_name, exp_results, files_dir, timestamp):
