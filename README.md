@@ -3,15 +3,11 @@
 The code in this repertory uses the mesa python library for the formulation of
 an agent-based model of community solar adoption.
 
-TO-DO:  (1) enable list as input for calibration_parameters so that within
-        one experient (i.e. one JSON file) several combinations of calibration
-        parameters can be run.
-                (1b) Add unique identification for each scenario in results
-        (2) modify input treatment to set "years" as function of start_year and
-        end_year.
-        (3) modify import data to allow for flexibly setting the n_agents as an
+TO-DO:  (1) modify import data to allow for flexibly setting the n_agents as an
         input and importing the required data but not more.
-        (4) create analysis code for:
+        (2) (desirable but not core) modify input treatment to set "years" as
+        function of start_year and end_year.
+        (3) create analysis code for:
             - calibration
             - sensitivity analysis
             - results
