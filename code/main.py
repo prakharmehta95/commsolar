@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Current version: June, 2020
-@author: Prakhar Mehta, Alejandro Nuñez-Jimenez
+@authors: Prakhar Mehta, Alejandro Nuñez-Jimenez
 """
 #%% IMPORT PACKAGES AND SCRIPTS
 
@@ -9,6 +9,7 @@ Current version: June, 2020
 import sys, os, re, json, glob, time, pickle, datetime
 import pandas as pd
 import numpy as np
+import itertools as it
 
 from multiprocessing import Pool
 from time import gmtime, strftime
@@ -17,7 +18,7 @@ from time import gmtime, strftime
 from COSA_Tools.npv_ind import calculate_ind_npv
 from COSA_Tools.swn import make_swn
 from COSA_Tools.SimulateExperiment import (import_parameters, import_data,
-    save_results, run_experiment)
+    save_results, run_experiment, initialize_scenario_inputs)
 
 # Import object classes for model and agents
 from COSA_Model.SolarAdoptionModel import SolarAdoptionModel
@@ -54,20 +55,40 @@ if __name__ == '__main__':
         print("= Run exp "+str(exp+1)+" of "+str(len(experiment_inputs))+" =")
         print(strftime("%H:%M:%S", gmtime()))
 
-        # Read simulation parameters
-        sim_pars = inputs["simulation_parameters"]
-        
-        # Calculate individual NPVs
-        ind_npv_outputs = calculate_ind_npv(inputs, agents_info, solar, demand)
+        # Initialize the scenario inputs
+        sc_inputs, n_econ_scenarios = initialize_scenario_inputs(inputs)
 
-        # Simulate experiment
-        exp_results = run_experiment(inputs, BuildingAgent, SolarAdoptionModel, 
-            ind_npv_outputs, agents_info, distances, solar, demand)
+        # Compute the individual economic evaluations per scenario
+        sc_ind_npvs = []
+        if n_econ_scenarios == 1:  
+
+            # Calculate individual NPVs
+            ind_npv_outputs = calculate_ind_npv(sc_inputs[0], agents_info, solar, demand)
+
+            # Store it in list
+            sc_ind_npvs.append(ind_npv_outputs)
+
+        else:
+            
+            # Loop through the scenarios
+            for sc_input in sc_inputs:
+
+                # Calculate individual NPVs
+                ind_npv_outputs = calculate_ind_npv(sc_input, agents_info, solar, demand)
+
+                # Store it in list
+                sc_ind_npvs.append(ind_npv_outputs)
+        
+        print("Finished individual NPVs")
+        print(strftime("%H:%M:%S", gmtime()))
+
+        # Run experiment
+        exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, sc_ind_npvs, agents_info, distances, solar, demand)
         
         print(strftime("%H:%M:%S", gmtime()))
         print("save_results")
         # Export results
-        save_results(inputs["exp_name"], exp_results, files_dir, timestamp)
+        save_results(sc_inputs[0]["exp_name"], exp_results, files_dir, timestamp)
 
     # Read end time
     end = time.time()

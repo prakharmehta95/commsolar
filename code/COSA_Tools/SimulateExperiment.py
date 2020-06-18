@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import itertools as it
 import sys, os, datetime, re, json, glob
 
 from time import gmtime, strftime
@@ -82,16 +83,16 @@ def import_data(files_dir):
 
     return agents_info, distances, solar, demand
 
-def run_experiment(inputs, BuildingAgent, SolarAdoptionModel, 
-        ind_npv_outputs, agents_info, distances, solar, demand):
+def run_experiment(sc_inputs, BuildingAgent, SolarAdoptionModel, 
+        sc_ind_npvs, agents_info, distances, solar, demand):
     """
     This function runs one experiment of the model.
 
     Inputs:
-        inputs = simulation and scenario inputs (dict)
+        sc_inputs = simulation and scenario inputs (list of dict)
         BuildingAgent = object class for agents in model (class)
         SolarAdoptionModel = object class for model (class)
-        ind_npv_outputs = individual economic evaluation variables (dict of dfs)
+        sc_ind_npvs = individual economic evaluation variables (list of dict of dfs)
         agents_info = attributes of each building (df, column = variable, 
             index = building_ids)
         distances = distances between buildings (df, columns have building_id
@@ -107,25 +108,31 @@ def run_experiment(inputs, BuildingAgent, SolarAdoptionModel,
     """
 
     # Define the number of runs for this experiment
-    runs = inputs["simulation_parameters"]["runs"]
+    runs = sc_inputs[0]["simulation_parameters"]["runs"]
 
     # Define the number of cores
-    n_cores = inputs["simulation_parameters"]["n_cores"]
+    n_cores = sc_inputs[0]["simulation_parameters"]["n_cores"]
 
     # Pack inputs into a dictionary
-    in_dict = {
-        "BuildingAgent": BuildingAgent, 
-        "SolarAdoptionModel":SolarAdoptionModel, 
-        "inputs":inputs,
-        "ind_npv_outputs":ind_npv_outputs, 
-        "agents_info":agents_info, 
-        "distances":distances, 
-        "solar":solar, 
-        "demand":demand
-        }
-    
+    in_dicts = []
+    for ind_npv_outputs in sc_ind_npvs:
+        in_dict = {
+            "BuildingAgent": BuildingAgent, 
+            "SolarAdoptionModel":SolarAdoptionModel,
+            "ind_npv_outputs":ind_npv_outputs, 
+            "agents_info":agents_info, 
+            "distances":distances, 
+            "solar":solar, 
+            "demand":demand
+            }
+        in_dicts.append(in_dict)
+   
     # Create run inputs
-    run_inputs = [[run, in_dict] for run in range(runs)]
+    run_inputs = []
+    for in_dict in in_dicts:
+        for sc_dict in sc_inputs:
+            for run in range(runs):
+                run_inputs.append([run, in_dict, sc_dict])
 
     # Create an empty list to store the results from simulations
     exp_results = []
@@ -154,32 +161,33 @@ def run_experiment(inputs, BuildingAgent, SolarAdoptionModel,
 
     return exp_results  
 
-def simulate_run(run, in_dict):
+def simulate_run(run, in_dict, sc_dict):
     """
     This function runs a single run of an experiment.
 
     Input:
         run = identifier of simulation run (int)
         in_dict = dictionary containing inputs required by model (dict)
+        sc_dict = dictionary with inputs for this scenario (dict)
     Returns:
         run_out_dict = results for one simulation run (dict)
     """
 
     # Define random seed
-    randomseed = in_dict["inputs"]["randomseed"][run]
+    randomseed = sc_dict["randomseed"][run]
     SolarAdoptionModel = in_dict["SolarAdoptionModel"]
 
     # Create Small World Network
     AgentsNetwork = make_swn(
                         in_dict["distances"], 
                         in_dict["agents_info"].bldg_name, 
-                        in_dict["inputs"]["simulation_parameters"]["n_peers"], 
+                        sc_dict["simulation_parameters"]["n_peers"], 
                         randomseed)
 
     # Create one instantiation of the model
     sim_model = SolarAdoptionModel(
                             in_dict["BuildingAgent"], 
-                            in_dict["inputs"], 
+                            sc_dict, 
                             randomseed, 
                             in_dict["ind_npv_outputs"], 
                             AgentsNetwork, 
@@ -189,7 +197,7 @@ def simulate_run(run, in_dict):
                             in_dict["demand"])      
 
     # Loop through the number of years to simulate
-    for yr in range(in_dict["inputs"]["simulation_parameters"]["years"]):
+    for yr in range(sc_dict["simulation_parameters"]["years"]):
         
         # Advance the model one step
         sim_model.step()
@@ -206,6 +214,84 @@ def simulate_run(run, in_dict):
         df["run"] = run
 
     return run_out_dict
+
+def initialize_scenario_inputs(inputs):
+    """
+    This function creates a list of unique input dictionaries for each scenario.
+    
+    Inputs:
+        inputs = inputs for experiment as taken from JSON file (dict)
+    Returns:
+        sc_dict_list = unique input dictionaries per scenario (list of dicts)
+    
+    Important - there is a list of forbidden inputs that require different 
+    experiments: "smart_meter_prices", "PV_price_baseline", "hour_price" all
+    in "economic_parameters".
+    """
+    # List of parameters that cannot be changed within one experiment
+    forbidden_list = ["smart_meter_prices", "PV_price_baseline", "hour_price"]
+
+    # Unpack parameters by type
+    sim_pars = inputs["simulation_parameters"]
+    cal_pars = inputs["calibration_parameters"]
+    eco_pars = {k:v for k,v in inputs["economic_parameters"].items()}
+
+    # Remove keys not allowed to be in combinations
+    for f_key in forbidden_list:
+        del eco_pars[f_key]
+
+    # Create list of parameter dictionaries
+    pars_d_list = [sim_pars, cal_pars, eco_pars]
+
+    # Create a list with three items (one per parameter dictionary type) that
+    # contains a list of tuples, each one with the values for a unique combination
+    combo_list = [list(it.product(*list(pars.values()))) for pars in pars_d_list]
+
+    # Create a list containing three lists (one per type of parameters), in which
+    # there is a list of unique dictionaries for each type of parameter
+    par_type_unique_dict_list = []
+
+    # Loop through the three types of original dictionaries of parameters
+    for par in range(len(pars_d_list)):
+
+        # Create a list of unique dictionaries per parameter type
+        list_dicts = [
+            # Create a unique dictionary
+            {key: combo_list[par][n_d][list(pars_d_list[par].keys()).index(key)] 
+            # by looping through the keys for this type of parameters
+            for key in pars_d_list[par].keys()} 
+            # for as many combinations as required
+            for n_d in range(len(combo_list[par]))]
+        
+        par_type_unique_dict_list.append(list_dicts)
+
+    # Define the number of economic scenarios
+    n_econ_sc = len(par_type_unique_dict_list[2])
+
+    # Create the output list containing a complete input dictionary per unique
+    # combination with all three different parameter types
+    sc_dict_list = []
+    for s_d in par_type_unique_dict_list[0]:
+        sc_d = {}
+        for c_d in par_type_unique_dict_list[1]:
+            for e_d in par_type_unique_dict_list[2]:
+                sc_d["simulation_parameters"] = s_d
+                sc_d["calibration_parameters"] = c_d
+                sc_d["economic_parameters"] = e_d
+                
+                # Add the variables in the forbidden list
+                for key in forbidden_list:
+                    sc_d["economic_parameters"][key] = inputs["economic_parameters"][key]
+
+                sc_dict_list.append(sc_d)
+    
+    # Include inputs keys out of three parameter types
+    out_inputs = ["exp_name", "randomseed"]
+    for oi in out_inputs:
+        for d in sc_dict_list:
+            d[oi] = inputs[oi]
+
+    return sc_dict_list, n_econ_sc
 
 def save_results(exp_name, exp_results, files_dir, timestamp):
     """
