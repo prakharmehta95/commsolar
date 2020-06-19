@@ -27,7 +27,7 @@ def import_parameters(files_dir):
     # Read all the JSON files in current directory
     # Note that changing the ending of the JSON file we can import experiment
     # input files for different purposes (e.g., "_cal.json" for calibration)
-    for inputs_file in glob.glob('*_cal.json'):
+    for inputs_file in glob.glob('*_COSA.json'):
 
         # Save their content as input values for different experiments
         with open(inputs_file, "r") as myinputs:
@@ -57,29 +57,31 @@ def import_data(files_dir):
     print("Importing data")
 
     # Define path to data files
-    data_path = files_dir + "\\COSA_Data\\"
+    data_path = os.path.join(files_dir,"COSA_Data")
 
     # Define file name for data inputs
-    agents_info_file = "buildings_info_test.csv"
+    agents_info_file = "buildings_info.csv"
     distances_data_file = "distances_data.csv"
     solar_data_file = "CEA_Disaggregated_SolarPV_3Dec.pickle"
     demand_data_file = "CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle"
 
     # Import data about buildings (1 building = 1 agent)
-    agents_info = pd.read_csv(data_path + agents_info_file)
+    agents_info_df = pd.read_csv(os.path.join(data_path,agents_info_file))
 
-    # Set bldg_name as the index
-    agents_info = agents_info.set_index('bldg_name', drop = False)
+    # Make agents ID the index
+    agents_info_df = agents_info_df.set_index('bldg_name', drop = False)
+
+    # Make it a dictionary for accessing it faster
+    agents_info = agents_info_df.to_dict('index')
 
     # Import data of distances between all buildings
-    distances = pd.read_csv(data_path + distances_data_file)
+    distances = pd.read_csv(os.path.join(data_path, distances_data_file))
 
     # Import data of solar irradiation resource
-    solar = pd.read_pickle(data_path + solar_data_file)
-    # IMPORTANT THIS NEEDS TO BE CONVERTED TO AC
+    solar = pd.read_pickle(os.path.join(data_path, solar_data_file))
 
     # Import data of electricity demand profiles
-    demand = pd.read_pickle(data_path + demand_data_file)
+    demand = pd.read_pickle(os.path.join(data_path, demand_data_file))
 
     return agents_info, distances, solar, demand
 
@@ -180,7 +182,7 @@ def simulate_run(run, in_dict, sc_dict):
     # Create Small World Network
     AgentsNetwork = make_swn(
                         in_dict["distances"], 
-                        in_dict["agents_info"].bldg_name, 
+                        list(in_dict["agents_info"].keys()), 
                         sc_dict["simulation_parameters"]["n_peers"], 
                         randomseed)
 
@@ -320,7 +322,7 @@ def save_results(exp_name, exp_results, files_dir, timestamp):
     """
 
     # Define output directory
-    out_dir = files_dir + "\\COSA_Outputs\\"
+    out_dir = os.path.join(files_dir,"COSA_Outputs")
 
     # Create an empty dictionary to compile results from individual runs
     compiler_out_dict = {}
@@ -346,4 +348,4 @@ def save_results(exp_name, exp_results, files_dir, timestamp):
             out_label = '{0}_{1}_{2}_.csv'.format(timestamp, exp_name, out_name)
             
             # Save the output files into csv documents
-            out_data.to_csv(out_dir + out_label, mode='w', sep=';')
+            out_data.to_csv(os.path.join(out_dir,out_label), mode='w', sep=';')

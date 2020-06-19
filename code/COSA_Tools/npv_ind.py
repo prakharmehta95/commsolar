@@ -10,7 +10,7 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
 
     Inputs
         inputs = simulation parameters (dict)
-        agents_info = data about the buildings (df)
+        agents_info = data about the buildings (dict)
         solar = hourly solar generation potential for each building in a year (df)
         demand = hourly electricity demand for each building in a year (df)
 
@@ -53,30 +53,20 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
     # Value = price per smart meter for than number of smart meters (int)
     smp_dict = econ_pars["smart_meter_prices"]
 
-    # Multiply the solar PV data with an efficiency factor to convert to AC
-    solar = solar * econ_pars["AC_conv_eff"] 
-
     # All hours of the year are "low" except from Mon-Sat from 6-21
     hour_price = econ_pars["hour_price"]
-
-    # Create list of agents
-    agent_list_final = agents_info.bldg_name
-    agents_info = agents_info.set_index('bldg_name')
     
     # Loop through all agents
-    for ag in range(len(agent_list_final)):
+    for ag in list(agents_info.keys()):
 
         #print("B = " + str(ag) + " of " + str(len(agent_list_final)))
-
-        # Set building
-        i = agent_list_final[ag]
 
         ## INVESTMENT COST CALCULATIONS
 
         ## COST OF SMART METERS
 
         # Read the number of smart meters for the agent's building
-        n_sm = agents_info.at[i,'num_smart_meters']
+        n_sm = agents_info[ag]['num_smart_meters']
 
         # Compute the investment cost of smart meters
         sm_inv = compute_smart_meters_inv(n_sm, smp_dict)
@@ -84,10 +74,10 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
         ## COST OF PV SYSTEM
 
         # Read the agent's PV size
-        pv_size = agents_info.at[i,'pv_size_kw']
+        pv_size = agents_info[ag]['pv_size_kw']
 
         # Read the subsidy the agent can access for the installation
-        pv_sub = agents_info.at[i,'pv_subsidy']
+        pv_sub = agents_info[ag]['pv_subsidy']
 
         # Compute the investment cost of the PV system for each year simulated
         pv_inv_years = compute_pv_inv_years(pv_size, pv_sub, PV_price_projection)
@@ -100,10 +90,10 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
         ## CASHFLOW CALCULATIONS
 
         # Define the buildings hourly electricity demand over one year
-        demand_ag = np.array(demand[i])
+        demand_ag = np.array(demand[ag])
 
         # Define solar output AC for first year of PV lifetime in building
-        solar_building = np.array(solar[i]) * econ_pars["AC_conv_eff"]
+        solar_building = np.array(solar[ag]) * econ_pars["AC_conv_eff"]
 
         # Compute annual energy balances during operational life of PV
         lifetime_load_profile = compute_lifetime_load_profile(solar_building,
@@ -139,19 +129,19 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
         pp_years_norm = [1 - (pp / max_pp) for pp in pp_years]
             
         # Store the results for this building/agent
-        if ag == 0:
-            Agents_NPVs = pd.DataFrame(data=npv_years, columns=[i])
+        if list(agents_info.keys()).index(ag) == 0:
+            Agents_NPVs = pd.DataFrame(data=npv_years, columns=[ag])
             Agents_SCRs = pd.DataFrame(lifetime_load_profile["SCR"],
-                                        columns=[i])
+                                        columns=[ag])
             Agents_Investment_Costs = pd.DataFrame(data=inv_years,
-                                        columns=[i])
+                                        columns=[ag])
             Agents_PPs_Norm = pd.DataFrame(data=pp_years_norm, 
-                                        columns=[i])
+                                        columns=[ag])
         else:
-            Agents_NPVs[i] = npv_years
-            Agents_SCRs[i] = lifetime_load_profile["SCR"]
-            Agents_Investment_Costs[i] = inv_years
-            Agents_PPs_Norm[i] = pp_years_norm
+            Agents_NPVs[ag] = npv_years
+            Agents_SCRs[ag] = lifetime_load_profile["SCR"]
+            Agents_Investment_Costs[ag] = inv_years
+            Agents_PPs_Norm[ag] = pp_years_norm
 
     # Put all outputs in one dictionary
     ind_npv_outputs = {"Agents_NPVs": Agents_NPVs, "Agents_SCRs": Agents_SCRs, 
