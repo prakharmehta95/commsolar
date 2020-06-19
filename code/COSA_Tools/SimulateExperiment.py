@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 import itertools as it
@@ -60,7 +61,7 @@ def import_data(files_dir):
     data_path = os.path.join(files_dir,"COSA_Data")
 
     # Define file name for data inputs
-    agents_info_file = "buildings_info.csv"
+    agents_info_file = "buildings_info_test.csv"
     distances_data_file = "distances_data.csv"
     solar_data_file = "CEA_Disaggregated_SolarPV_3Dec.pickle"
     demand_data_file = "CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle"
@@ -190,13 +191,13 @@ def simulate_run(run, in_dict, sc_dict):
     sim_model = SolarAdoptionModel(
                             in_dict["BuildingAgent"], 
                             sc_dict, 
-                            randomseed, 
                             in_dict["ind_npv_outputs"], 
                             AgentsNetwork, 
                             in_dict["agents_info"], 
                             in_dict["distances"], 
                             in_dict["solar"], 
-                            in_dict["demand"])      
+                            in_dict["demand"],
+                            seed=randomseed)
 
     # Loop through the number of years to simulate
     for yr in range(sc_dict["simulation_parameters"]["years"]):

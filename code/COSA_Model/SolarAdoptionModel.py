@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Apr  4 17:58:04 2019
-
-@author: Prakhar Mehta
+Current version: June, 2020
+@authors: Prakhar Mehta, Alejandro Nuñez-Jimenez
 """
 #%% IMPORT PACKAGES
 
 # Import python packages
-import random, itertools, sys
+import sys
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt 
-import networkx as nx
 
 # Import classes and functions from python packages
-from random import seed, gauss
 from mesa import Model
 from mesa.datacollection import DataCollector
 
@@ -29,8 +25,8 @@ class SolarAdoptionModel(Model):
     solar communities or not.
     '''    
     
-    def __init__(self, agent, inputs, randomseed, ind_npv_outputs, 
-        AgentsNetwork, agents_info, distances, solar, demand):
+    def __init__(self, agent, inputs, ind_npv_outputs, 
+        AgentsNetwork, agents_info, distances, solar, demand, seed):
         '''
         This method initializes the instantiation of the model class, and 
         creates the agents in it.
@@ -38,7 +34,7 @@ class SolarAdoptionModel(Model):
         Inputs:
             agent = Agent model taken as an input (class)
             inputs = all inputs for experiment simulation (dict)
-            randomseed = random seed for the model (int)
+            seed = random seed for the model (int)
             agents_info = data about buildings in the model (df).
             AgentsNetwork = peers of each agent (df)
             distances = distances between all buildings (df)
@@ -52,9 +48,6 @@ class SolarAdoptionModel(Model):
 
         # Make inputs a variable of the model
         self.inputs = inputs
-        
-        # Define the random seed used for this simulation
-        self.randomseed = randomseed
 
         # Define the small world network of the agents
         self.AgentsNetwork = AgentsNetwork
@@ -69,7 +62,7 @@ class SolarAdoptionModel(Model):
                                     stage_list = ['step_idea','step_decision'],
                                     shuffle = True, 
                                     shuffle_between_stages = True,
-                                    seed = self.randomseed)
+                                    seed = seed)
         
         # Define variable for simulation step and initialize to zero
         self.step_ctr = 0
@@ -104,8 +97,7 @@ class SolarAdoptionModel(Model):
         for unique_id in agents_info.keys():
             
             # Determine the agent's environmental attitude
-            ag_env_aw = self.determine_agent_env_aw(unique_id, agents_info,
-                                                                         inputs)
+            ag_env_aw = self.determine_agent_env_aw(unique_id, agents_info, inputs)
 
             # Define agents perceived profitability over simulated years
 
@@ -217,7 +209,8 @@ class SolarAdoptionModel(Model):
 
         Inputs
             unique_id = agent's name (str)
-            inputs = 
+            agents_info = contains information about buildings (dict)
+            inputs = simulation, calibration, and economic parameters (dict)
         Returns
             ag_env_aw = agent's environmental awareness (float)
         """
@@ -233,6 +226,6 @@ class SolarAdoptionModel(Model):
         # Otherwise, set the awareness following a truncated normal
         # distribution between 0 and 1
         else:
-            agent_env_awareness = max(min(gauss(a_mean,a_stdev),1),0)
+            agent_env_awareness = max(min(self.random.gauss(a_mean,a_stdev),1),0)
         
         return agent_env_awareness
