@@ -553,12 +553,10 @@ class BuildingAgent(Agent):
 
             # Compute solar generation potential of community by summing along
             # the rows the columns in solar of the agents in community
-            c_dict["solar"] = np.nansum([np.array(ag.solar) for ag in members],
-                                                                    axis=0)
+            c_dict["solar"] = np.nansum([ag.solar for ag in members], axis=0)
 
             # Compute demand of community
-            c_dict["demand"] = np.nansum([np.array(ag.demand) for ag in members],
-                                                                    axis=0)
+            c_dict["demand"] = np.nansum([ag.demand for ag in members], axis=0)
 
             # IMPORTANT: if there is any agent with PV already:
             # (1) PV investment is the sum of agents with no prior PV
@@ -718,15 +716,15 @@ class BuildingAgent(Agent):
         c_export_dict["community_id"] = c_name
 
         # Define community solar generation potential
-        c_export_dict["solar"] = sum(c_dict["solar"])
+        c_export_dict["solar"] = np.nansum(c_dict["solar"])
 
         # Define community electricity demand
-        c_export_dict["demand"] = sum(c_dict["demand"])
+        c_export_dict["demand"] = np.nansum(c_dict["demand"])
 
         # Define community self-consumed electricity
         c_s = np.array(c_dict["solar"])
         c_d = np.array(c_dict["demand"])
-        c_export_dict["SC"] = sum([min(c_s[i], c_d[i])
+        c_export_dict["SC"] = np.nansum([min(c_s[i], c_d[i])
                                      if c_s[i] > 0 else 0 for i in range(8760)])
 
         # Define community self-consumption ratio

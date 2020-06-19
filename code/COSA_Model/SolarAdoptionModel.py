@@ -101,7 +101,7 @@ class SolarAdoptionModel(Model):
         self.combos_formed_info = pd.DataFrame(data=None)
 
         ## CREATE AGENTS
-        for unique_id in agents_info.bldg_name:
+        for unique_id in agents_info.keys():
             
             # Determine the agent's environmental attitude
             ag_env_aw = self.determine_agent_env_aw(unique_id, agents_info,
@@ -120,17 +120,17 @@ class SolarAdoptionModel(Model):
             # Create instantiation of an agent and provide necessary inptus
             ag = agent(self,
                 unique_id = unique_id,
-                bldg_type = agents_info.loc[unique_id]['bldg_type'],
-                bldg_own = agents_info.loc[unique_id]['bldg_owner'],
-                bldg_zone = agents_info.loc[unique_id]['zone_id'],
-                bldg_plot = agents_info.loc[unique_id]['plot_id'],
+                bldg_type = agents_info[unique_id]['bldg_type'],
+                bldg_own = agents_info[unique_id]['bldg_owner'],
+                bldg_zone = agents_info[unique_id]['zone_id'],
+                bldg_plot = agents_info[unique_id]['plot_id'],
                 attitude = ag_env_aw,
-                pv_size = agents_info.loc[unique_id]['pv_size_kw'],
-                pv_possible = agents_info.at[unique_id,'can_install_pv'],
+                pv_size = agents_info[unique_id]['pv_size_kw'],
+                pv_possible = agents_info[unique_id]['can_install_pv'],
                 peers= self.AgentsNetwork.loc[:,unique_id],
-                n_sm = agents_info.at[unique_id,'num_smart_meters'],
-                solar = solar[unique_id] * inputs["economic_parameters"]["AC_conv_eff"],
-                demand = demand[unique_id],
+                n_sm = agents_info[unique_id]['num_smart_meters'],
+                solar = np.array(solar[unique_id]) * inputs["economic_parameters"]["AC_conv_eff"],
+                demand = np.array(demand[unique_id]),
                 npv_ind_years = list(ind_npv_outputs["Agents_NPVs"][unique_id].values),
                 inv_ind_years = list(ind_npv_outputs["Agents_Investment_Costs"][unique_id].values),
                 pps_norm_years = pps_norm_years,
@@ -227,7 +227,7 @@ class SolarAdoptionModel(Model):
         a_stdev = inputs["calibration_parameters"]["awareness_stdev"]
 
         # If the agent has a minergie label set the awareness to 0.95
-        if agents_info.loc[unique_id]['minergie'] == 1:
+        if agents_info[unique_id]['minergie'] == 1:
             agent_env_awareness = a_minergie
 
         # Otherwise, set the awareness following a truncated normal
