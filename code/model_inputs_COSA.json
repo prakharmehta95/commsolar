@@ -1,18 +1,16 @@
 {   "exp_name": "test_model_building",
     "simulation_parameters": {
-        "years": [2],
         "runs": [2],
-        "data_address": [1],
-        "start_year": [2005],
+        "start_year": [2018],
         "end_year": [2035],
-        "n_agents": [1],
+        "n_agents": [200],
         "n_peers": [20],
         "n_closest_neighbors" : [4],
         "ZEV": ["True"],
-        "n_cores": [3]
+        "n_cores": [2]
     },
     "calibration_parameters":{
-        "w_econ": [0.90, 0.91],
+        "w_econ": [0.90],
         "w_swn": [0.90],
         "w_att": [0.90],
         "w_subplot": [0.1],
@@ -36,7 +34,7 @@
         "PV_degradation": [0],
         "OM_Cost_rate": [0.06],
         "disc_rate": [0.05],
-        "discount_pp": [false],
+        "discount_pp": ["False"],
         "AC_conv_eff": [0.97],
         "max_payback_period": [15],
         "demand_price_threshold": [100000],
