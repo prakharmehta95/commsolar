@@ -61,7 +61,7 @@ def import_data(files_dir):
     data_path = os.path.join(files_dir,"COSA_Data")
 
     # Define file name for data inputs
-    agents_info_file = "buildings_info_test.csv"
+    agents_info_file = "buildings_info.csv"
     distances_data_file = "distances_data.csv"
     solar_data_file = "CEA_Disaggregated_SolarPV_3Dec.pickle"
     demand_data_file = "CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle"
@@ -200,7 +200,8 @@ def simulate_run(run, in_dict, sc_dict):
                             seed=randomseed)
 
     # Loop through the number of years to simulate
-    for yr in range(sc_dict["simulation_parameters"]["years"]):
+    years = (sc_dict["simulation_parameters"]["end_year"] - sc_dict["simulation_parameters"]["start_year"]) + 1
+    for yr in range(years):
         
         # Advance the model one step
         sim_model.step()
@@ -225,6 +226,7 @@ def simulate_run(run, in_dict, sc_dict):
         df["sim_label"] = sim_label
         df["cal_label"] = cal_label
         df["eco_label"] = eco_label
+        df["random_seed"] = sim_model._seed
 
     return run_out_dict
 

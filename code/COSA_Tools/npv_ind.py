@@ -57,7 +57,8 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
     hour_price = econ_pars["hour_price"]
     
     # Loop through all agents
-    for ag in list(agents_info.keys()):
+    n_agents = min(inputs["simulation_parameters"]["n_agents"], len(agents_info.keys()))
+    for ag in list(agents_info.keys())[:n_agents]:
 
         #print("B = " + str(ag) + " of " + str(len(agent_list_final)))
 
@@ -107,7 +108,8 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
 
         # Compute net-present value per year simulated
         npv_years = []
-        for yr in range(inputs["simulation_parameters"]["years"]):
+        years = (inputs["simulation_parameters"]["end_year"] - inputs["simulation_parameters"]["start_year"])+1
+        for yr in range(years):
             npv_years.append(compute_npv(inv_years[yr], lifetime_cashflows, 
                                             disc_rate))
 

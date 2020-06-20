@@ -55,7 +55,7 @@ class SolarAdoptionModel(Model):
         ## INITIALIZE SIMULATION PARAMETERS
         
         # Define number of agents
-        self.num_agents = inputs['simulation_parameters']["n_agents"]
+        self.n_agents = min(inputs['simulation_parameters']["n_agents"], len(agents_info.keys()))
 
         # Define activator method used and steps in the model
         self.schedule = StagedActivation_random(self,
@@ -94,7 +94,7 @@ class SolarAdoptionModel(Model):
         self.combos_formed_info = pd.DataFrame(data=None)
 
         ## CREATE AGENTS
-        for unique_id in agents_info.keys():
+        for unique_id in list(agents_info.keys())[:self.n_agents]:
             
             # Determine the agent's environmental attitude
             ag_env_aw = self.determine_agent_env_aw(unique_id, agents_info, inputs)
@@ -107,7 +107,8 @@ class SolarAdoptionModel(Model):
 
             # If the agent is not found, then pp is always zero (max_pp)
             except KeyError:
-                pps_norm_years = [0] * inputs["simulation_parameters"]["years"]
+                years = (inputs["simulation_parameters"]["end_year"] - inputs["simulation_parameters"]["start_year"])+1
+                pps_norm_years = [0] * years
 
             # Create instantiation of an agent and provide necessary inptus
             ag = agent(self,
