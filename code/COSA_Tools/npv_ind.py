@@ -339,7 +339,7 @@ def compute_lifetime_cashflows(econ_pars, lifetime_load_profile, PV_lifetime):
 
         # Read year excess solar
         ex_solar_h = lifetime_load_profile["excess_solar_high"][yr]
-        ex_solar_l = lifetime_load_profile["excess_solar_high"][yr]
+        ex_solar_l = lifetime_load_profile["excess_solar_low"][yr]
         
         # Compute the revenues from feeding solar electricity to the grid
         fit_h = econ_pars["fit_high"]
