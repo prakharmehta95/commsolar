@@ -15,7 +15,7 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
         demand = hourly electricity demand for each building in a year (df)
 
     Returns
-        ind_npv_outputs = contains a dictioanry of dataframes with results:
+        ind_npv_outputs = contains a dictionary of dataframes with results:
             "Agents_NPVs" = NPV per agent per year of simulation (df)
             "Agents_Investment_Costs" = total inv cost per sim year per agent (df) 
             "Agents_PPs_Norm" = normalized pp per sim year per agent (df)
