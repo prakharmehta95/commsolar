@@ -56,34 +56,16 @@ if __name__ == '__main__':
         print(strftime("%H:%M:%S", gmtime()))
 
         # Initialize the scenario inputs
-        sc_inputs, n_econ_scenarios = initialize_scenario_inputs(inputs)
+        sc_inputs = initialize_scenario_inputs(inputs)
 
-        # Compute the individual economic evaluations per scenario
-        sc_ind_npvs = []
-        if n_econ_scenarios == 1:  
-
-            # Calculate individual NPVs
-            ind_npv_outputs = calculate_ind_npv(sc_inputs[0], agents_info, solar, demand)
-
-            # Store it in list
-            sc_ind_npvs.append(ind_npv_outputs)
-
-        else:
-            
-            # Loop through the scenarios
-            for sc_input in sc_inputs:
-
-                # Calculate individual NPVs
-                ind_npv_outputs = calculate_ind_npv(sc_input, agents_info, solar, demand)
-
-                # Store it in list
-                sc_ind_npvs.append(ind_npv_outputs)
+        # Calculate individual NPVs
+        ind_npv_outputs = calculate_ind_npv(sc_inputs[0], agents_info, solar, demand)
         
         print("Finished individual NPVs")
         print(strftime("%H:%M:%S", gmtime()))
 
         # Run experiment
-        exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, sc_ind_npvs, agents_info, distances, solar, demand)
+        exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, ind_npv_outputs, agents_info, distances, solar, demand)
         
         print(strftime("%H:%M:%S", gmtime()))
         print("save_results")

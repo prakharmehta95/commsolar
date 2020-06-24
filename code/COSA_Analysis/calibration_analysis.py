@@ -46,11 +46,9 @@ for key, val in out_dict.items():
             val[label] = feather.read_dataframe(input_file)
 
 # List of parameters included in the scenario labels
-sim_pars = ["runs", "start_year", "end_year", "n_agents", "n_peers", "n_closest_neighbors", "ZEV", "n_cores"]
 cal_pars = ["w_econ","w_swn","w_att","w_subplot","threshold","reduction","awareness_mean","awareness_stdev","awareness_minergie"]
-eco_pars = ["diff_prices","min_ratio_sd","fit_high","fit_low","ewz_high_large","ewz_low_large","ewz_high_small","ewz_low_small","ewz_solarsplit_fee","PV_lifetime","PV_degradation","OM_Cost_rate","disc_rate","discount_pp","AC_conv_eff","max_payback_period","demand_price_threshold","n_communities_npv"]
 
-pars_d = {"sim_label": sim_pars, "cal_label":cal_pars, "eco_label":eco_pars}
+pars_d = {"cal_label":cal_pars}
 
 # Rename second column in analysed files to "variable"
 for key, df in out_dict["model_vars_"].items():
@@ -61,16 +59,16 @@ model_df = pd.concat(out_dict["model_vars_"])
 communities_df = pd.concat(out_dict["com_formed_"])
 agents_df = pd.concat(out_dict["agent_vars_"])
 
-# # Rename first column in summaries of calibration results
-# for df in [model_df, communities_df, agents_df]:
+# Rename first column in summaries of calibration results
+for df in [model_df, communities_df, agents_df]:
 
-#     # Create new columns with values of scenario parameters
-#     for ix in range(len(cal_pars)):
+    # Create new columns with values of scenario parameters
+    for ix in range(len(cal_pars)):
 
-#         df[cal_pars[ix]] = df["cal_label"].str.split('_').str[ix]
+        df[cal_pars[ix]] = df["cal_label"].str.split('_').str[ix]
 
-#         # Make numerical parameters float
-#         df[cal_pars[ix]] = pd.to_numeric(df[cal_pars[ix]])
+        # Make numerical parameters float
+        df[cal_pars[ix]] = pd.to_numeric(df[cal_pars[ix]])
 
 # Import agents info
 agents_info = pd.read_csv(input_dir+'buildings_info.csv', sep=",")
@@ -83,12 +81,12 @@ fig_inst, ax_inst = plt.subplots(1,1)
 
 for run in list(set(model_df["run"])):
     
-    run_df = model_df.loc[(model_df["run"]==run) & (model_df["eco_label"]=='1_0.1_0.085_0.0445_0.06_0.05_0.243_0.144_0.04_25_0_0.06_0.05_False_0.97_15_100000_3_Firm')]
+    run_df = model_df.loc[(model_df["run"]==run)]
 
-    y = run_df["Comm_PV_Installed_CAP"].values[:18]
+    y = run_df["Comm_PV_Installed_CAP"].values
     ax_inst.plot(y, color='blue')
 
-    y = run_df["Ind_PV_Installed_CAP"].values[:18]
+    y = run_df["Ind_PV_Installed_CAP"].values
     ax_inst.plot(y, color='red')
 
     # Set vertical axis label
