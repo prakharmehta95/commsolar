@@ -137,6 +137,7 @@ class SolarAdoptionModel(Model):
         # Define data collection
         self.datacollector = DataCollector(
             model_reporters = {
+                "sim_year":"step_ctr",
                 "Ind_solar_number": dc_functions.functions.cumulate_solar_ind,
                 "Ind_PV_Installed_CAP": dc_functions.functions.cumulate_solar_ind_sizes,
                 "Comm_solar_number": dc_functions.functions.cumulate_solar_comm,
@@ -164,8 +165,10 @@ class SolarAdoptionModel(Model):
                 "Num_SINGLE_RES" :dc_functions.functions.agent_type_single_res
             },
             
-            # Define agent reporters that are not inputs and/or change over time
+            # Define agent reporters that are not inputs and change over time
             agent_reporters = {
+                "building_id":"unique_id",
+                "sim_year":"model.step_ctr",
                 "intention":"intention",
                 "attitude":"attitude",
                 "pp":"pp",
