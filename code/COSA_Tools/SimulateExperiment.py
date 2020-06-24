@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import itertools as it
-import sys, os, datetime, re, json, glob
+import sys, os, datetime, re, json, glob, feather
 
 from time import gmtime, strftime
 from multiprocessing import Pool
@@ -300,7 +300,13 @@ def initialize_scenario_inputs(inputs):
                 for key in forbidden_list:
                     sc_d["economic_parameters"][key] = inputs["economic_parameters"][key]
 
-                sc_dict_list.append(sc_d)
+                # Check the sum of ideation weights
+                weights = ["w_econ", "w_swn", "w_att", "w_subplot"]
+                sum_w = np.sum([c_d[w] for w in weights])
+
+                # Add scenario dictionary if weights sum up to 1
+                if sum_w == 1:
+                    sc_dict_list.append(sc_d)
 
     # Include inputs keys out of three parameter types
     out_inputs = ["exp_name", "randomseed"]
@@ -348,7 +354,9 @@ def save_results(exp_name, exp_results, files_dir, timestamp):
     for out_name, out_data in compiler_out_dict.items():
 
             # Name the output files
-            out_label = '{0}_{1}_{2}_.csv'.format(timestamp, exp_name, out_name)
+            #out_label = '{0}_{1}_{2}_.csv'.format(timestamp, exp_name, out_name)
+            out_label = '{0}_{1}_{2}_.feather'.format(timestamp, exp_name, out_name)
             
             # Save the output files into csv documents
-            out_data.to_csv(os.path.join(out_dir,out_label), mode='w', sep=';')
+            #out_data.to_csv(os.path.join(out_dir,out_label), mode='w', sep=';')
+            feather.write_dataframe(out_data, os.path.join(out_dir,out_label))

@@ -6,6 +6,7 @@ Current version: June, 2020
 #%% IMPORT REQUIRED PACKAGES
 
 import sys, os, glob, json
+import feather
 
 from os.path import join
 from matplotlib import colors
@@ -20,7 +21,9 @@ files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
 data_subfolder = 'code\\COSA_Outputs\\'
+input_subfolder = 'code\\COSA_Data\\'
 data_dir = files_dir[:files_dir.rfind('code')] + data_subfolder
+input_dir = files_dir[:files_dir.rfind('code')] + input_subfolder
 
 # Create container dictionaries to import simulation results
 model_files = {}
@@ -32,14 +35,15 @@ out_dict = {"model_vars_":model_files, "com_formed_":com_files,"agent_vars_":ag_
 
 # Loop through container dictionaries
 for key, val in out_dict.items():
-    for input_file in glob.glob(join(data_dir,'*'+key+'.csv')):
+    for input_file in glob.glob(join(data_dir,'*'+key+'.feather')):
 
         # Create a label from the name of the experiment that created the data
         label = "_".join(input_file.split("_")[4:7])
         
         # Read data and store it in the container dictionary
         with open(input_file, "r") as mydata:
-            val[label] = pd.read_csv(input_file, sep=';')
+            # val[label] = pd.read_csv(input_file, sep=';')
+            val[label] = feather.read_dataframe(input_file)
 
 # List of parameters included in the scenario labels
 sim_pars = ["runs", "start_year", "end_year", "n_agents", "n_peers", "n_closest_neighbors", "ZEV", "n_cores"]
@@ -52,48 +56,46 @@ pars_d = {"sim_label": sim_pars, "cal_label":cal_pars, "eco_label":eco_pars}
 for key, df in out_dict["model_vars_"].items():
     df.rename(columns={"Unnamed: 0":'sim_year'}, inplace=True)
 
-# Rename first column in summaries of calibration results
-for dictionary in out_dict.values():
-    for key, df in dictionary.items():
-
-        # Create new columns with values of scenario parameters
-        for pars_label, pars_list in pars_d.items():
-            for ix in range(len(pars_list)):
-                df[pars_list[ix]] = df[pars_label].str.split('_').str[ix]
-
-            # Make numerical parameters float
-            for par in pars_list:
-                try: 
-                    df[par] = pd.to_numeric(df[par])
-                except:
-                    pass
-
-        # Create column to identify experiment
-        df["experiment"] = key
-
 # Put all data frames into one
 model_df = pd.concat(out_dict["model_vars_"])
 communities_df = pd.concat(out_dict["com_formed_"])
 agents_df = pd.concat(out_dict["agent_vars_"])
+
+# # Rename first column in summaries of calibration results
+# for df in [model_df, communities_df, agents_df]:
+
+#     # Create new columns with values of scenario parameters
+#     for ix in range(len(cal_pars)):
+
+#         df[cal_pars[ix]] = df["cal_label"].str.split('_').str[ix]
+
+#         # Make numerical parameters float
+#         df[cal_pars[ix]] = pd.to_numeric(df[cal_pars[ix]])
+
+# Import agents info
+agents_info = pd.read_csv(input_dir+'buildings_info.csv', sep=",")
+
+# Make agent id the index
+agents_info = agents_info.set_index("bldg_name")
 
 #%% PLOT INSTALLED CAPACITIES
 fig_inst, ax_inst = plt.subplots(1,1)
 
 for run in list(set(model_df["run"])):
     
-    run_df = model_df.loc[model_df["run"]==run]
+    run_df = model_df.loc[(model_df["run"]==run) & (model_df["eco_label"]=='1_0.1_0.085_0.0445_0.06_0.05_0.243_0.144_0.04_25_0_0.06_0.05_False_0.97_15_100000_3_Firm')]
 
-    y = run_df["Comm_PV_Installed_CAP"].values
+    y = run_df["Comm_PV_Installed_CAP"].values[:18]
     ax_inst.plot(y, color='blue')
 
-    y = run_df["Ind_PV_Installed_CAP"].values
+    y = run_df["Ind_PV_Installed_CAP"].values[:18]
     ax_inst.plot(y, color='red')
 
     # Set vertical axis label
     ax_inst.set_ylabel("Installed capacity [kWp]")
 
     # Set horizontal axis tick labels
-    xlabels= np.arange(2017,2036, 2)
+    xlabels= np.arange(2018,2036, 2)
     ax_inst.set_xticks(np.arange(0,19, 2))
     ax_inst.set_xticklabels(xlabels)
 

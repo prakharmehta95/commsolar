@@ -6,7 +6,7 @@ Current version: June, 2020
 #%% IMPORT PACKAGES AND SCRIPTS
 
 # Import python packages
-import sys, os, re, json, glob, time, pickle, datetime
+import sys, os, re, json, glob, time, pickle, datetime, feather
 import pandas as pd
 import numpy as np
 import itertools as it
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     # Import input data
     agents_info, distances, solar, demand = import_data(files_dir)
-        
+    
     # Loop through experiments
     exp = 0
     for inputs in experiment_inputs:
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
         # Initialize the scenario inputs
         sc_inputs, n_econ_scenarios = initialize_scenario_inputs(inputs)
-#%%
+
         # Compute the individual economic evaluations per scenario
         sc_ind_npvs = []
         if n_econ_scenarios == 1:  
