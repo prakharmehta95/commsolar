@@ -39,14 +39,14 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
     # Define maximum payback period
     max_pp = econ_pars["max_payback_period"]
 
-    # Set PV prices baseline
-    PV_price_baseline = econ_pars["PV_price_baseline"]
+    # Create a projection of PV prices based on price for 10 kWp system
+    pv_p_start = econ_pars["hist_pv_prices"]["2018"]
+    pv_p_change = econ_pars["pv_price_change"]
+    PV_price_projection = [pv_p_start * (1 + pv_p_change) ** y for y in range(18)]
 
-    # Create PV price projections
-    PV_price_projection = {}
-
-    for key, value in PV_price_baseline.items():
-        PV_price_projection[key] = np.interp(list(range(1,24)), [1,23],[value,value/2])
+    # Define the parameters of scale effects
+    pv_scale_alpha = econ_pars["pv_scale_alpha"]
+    pv_scale_beta = econ_pars["pv_scale_beta"]
 
     # Define a dictionary of smart meter prices
     # Key = limit of smart meters for price category (string) (e.g., "12")
@@ -81,7 +81,7 @@ def calculate_ind_npv(inputs, agents_info, solar, demand):
         pv_sub = agents_info[ag]['pv_subsidy']
 
         # Compute the investment cost of the PV system for each year simulated
-        pv_inv_years = compute_pv_inv_years(pv_size, pv_sub, PV_price_projection)
+        pv_inv_years = compute_pv_inv_years(pv_size, pv_sub, PV_price_projection, pv_scale_alpha, pv_scale_beta)
 
         ## TOTAL INVESTMENT COST
 
@@ -338,8 +338,8 @@ def compute_lifetime_cashflows(econ_pars, lifetime_load_profile, PV_lifetime):
     for yr in range(PV_lifetime):
 
         # Read year excess solar
-        ex_solar_h = lifetime_load_profile["excess_solar_high"][yr]
-        ex_solar_l = lifetime_load_profile["excess_solar_low"][yr]
+        ex_solar_h = np.array(lifetime_load_profile["excess_solar_high"][yr])
+        ex_solar_l = np.array(lifetime_load_profile["excess_solar_low"][yr])
         
         # Compute the revenues from feeding solar electricity to the grid
         fit_h = econ_pars["fit_high"]
@@ -347,8 +347,8 @@ def compute_lifetime_cashflows(econ_pars, lifetime_load_profile, PV_lifetime):
         cashflows_year["FIT"] = ex_solar_h * fit_h + ex_solar_l * fit_l
 
         # Read avoided consumption from the grid (i.e. self-consumption)
-        sc_h = lifetime_load_profile["sc_high"][yr]
-        sc_l = lifetime_load_profile["sc_low"][yr]
+        sc_h = np.array(lifetime_load_profile["sc_high"][yr])
+        sc_l = np.array(lifetime_load_profile["sc_low"][yr])
 
         # Compute the savings from self-consuming solar electricity
         cashflows_year["savings"] = sc_h * ewz_high + sc_l * ewz_low
@@ -358,7 +358,7 @@ def compute_lifetime_cashflows(econ_pars, lifetime_load_profile, PV_lifetime):
 
         # Compute O&M costs
         om_cost = econ_pars["OM_Cost_rate"]
-        cashflows_year["O&M"] = lifetime_load_profile["solar"][yr] * om_cost
+        cashflows_year["O&M"] = np.array(lifetime_load_profile["solar"][yr]) * om_cost
 
         # Compute net cashflows to the agent
         cashflows_year["net_cf"] = (cashflows_year["FIT"] 
@@ -407,7 +407,8 @@ def compute_smart_meters_inv(n_sm, smp_dict):
 
     return sm_inv
 
-def compute_pv_inv_years(pv_size, pv_sub, PV_price_projection):
+def compute_pv_inv_years(pv_size, pv_sub, PV_price_projection, 
+    pv_scale_alpha, pv_scale_beta):
     """
     This function calculates the investment cost of the PV system based on 
     its size, and the price for that size category for each year with 
@@ -418,6 +419,9 @@ def compute_pv_inv_years(pv_size, pv_sub, PV_price_projection):
         pv_sub = subsidy for the installation applicable to the building (float)
         PV_price_projection = projection of PV prices per size category (dict)
             (key = size category, value = list of prices per year)
+        pv_scale_alpha, pv_scale_beta = parameters of the scale effects in the
+            price of PV systems, following the relation calculated from    
+            empirical data in Switzerland: alpha * pv_size ^ beta
 
     Returns
         pv_inv_years = investment cost of PV system per year (list)
@@ -425,20 +429,14 @@ def compute_pv_inv_years(pv_size, pv_sub, PV_price_projection):
     # TO DO 
     # Create version for a single year
 
-    # Convert the keys in PV_price_baseline into a list of integers that
-    # indicate the maximum pv_size to receive that price
-    pvp_cats = [int(x) for x in list(PV_price_projection.keys())]
+    # Calculate the scale effects for this agent's PV system
+    scale_effect = pv_scale_alpha * pv_size ** pv_scale_beta
 
-    # Try to find a price category that requires a size larger than
-    # pv_size. If you don't find any, use lowest price (i.e. >150 kW)
-    try:
-        pvp_ix = next(ix for ix, v in enumerate(pvp_cats) if v > pv_size)
-    except StopIteration:
-        pvp_ix = len(pvp_cats)
+    # Compute the prices for this system based on projection for ref size
+    pv_prices = [pv_price * scale_effect for pv_price in PV_price_projection]
 
     # Estimate investment cost of PV system
-    prices_size = PV_price_projection[str(pvp_cats[pvp_ix - 1])]
-    pv_inv_years = [pv_size * p for p in prices_size]
+    pv_inv_years = [pv_size * p for p in pv_prices]
 
     # Apply subsidy for installations between 2018 and 2030
     # ASSUMPTION YEAR = 0 = 2018; YEAR = 12 = 2030
@@ -596,14 +594,14 @@ def calculate_com_npv(inputs, c_dict, year):
     # Define discount rate
     disc_rate = econ_pars["disc_rate"]
 
-    # Set PV prices baseline
-    PV_price_baseline = econ_pars["PV_price_baseline"]
+    # Create a projection of PV prices based on price for 10 kWp system
+    pv_p_start = econ_pars["hist_pv_prices"]["2018"]
+    pv_p_change = econ_pars["pv_price_change"]
+    PV_price_projection = [pv_p_start * (1 + pv_p_change) ** y for y in range(18)]
 
-    # Create PV price projections
-    PV_price_projection = {}
-
-    for key, val in PV_price_baseline.items():
-        PV_price_projection[key] = np.interp(list(range(1,24)), [1,23],[val,val/2])
+    # Define the parameters of scale effects
+    pv_scale_alpha = econ_pars["pv_scale_alpha"]
+    pv_scale_beta = econ_pars["pv_scale_beta"]
     
     # Define a dictionary of smart meter prices
     # Key = limit of smart meters for price category (string) (e.g., "12")
@@ -629,7 +627,7 @@ def calculate_com_npv(inputs, c_dict, year):
         pv_subsidy =  1400 + 300*pv_size
     
     # Compute the investment cost of the PV system for each year simulated
-    pv_inv_years = compute_pv_inv_years(pv_size, pv_subsidy, PV_price_projection)
+    pv_inv_years = compute_pv_inv_years(pv_size, pv_subsidy, PV_price_projection, pv_scale_alpha, pv_scale_beta)
 
     # Select the PV investment cost for the current simulation year
     pv_inv = pv_inv_years[year]
