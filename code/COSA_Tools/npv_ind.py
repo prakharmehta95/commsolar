@@ -430,7 +430,10 @@ def compute_pv_inv_years(pv_size, pv_sub, PV_price_projection,
     # Create version for a single year
 
     # Calculate the scale effects for this agent's PV system
-    scale_effect = pv_scale_alpha * pv_size ** pv_scale_beta
+    if pv_size > 1:
+        scale_effect = pv_scale_alpha * pv_size ** pv_scale_beta
+    else:
+        scale_effect = 2
 
     # Compute the prices for this system based on projection for ref size
     pv_prices = [pv_price * scale_effect for pv_price in PV_price_projection]
