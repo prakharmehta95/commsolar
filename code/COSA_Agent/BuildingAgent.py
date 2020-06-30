@@ -86,7 +86,7 @@ class BuildingAgent(Agent):
         # Define dataframe with two columns for distance to each building
         self.distances = distances
 
-        # INITIALIZE AGENT VARIABLES *NOT* FROM MODEL INITIALIZATION              
+        # INITIALIZE AGENT VARIABLES *NOT* FROM MODEL INITIALIZATION
 
         # Initialize the intention to adopt to zero
         self.intention = 0
@@ -733,14 +733,5 @@ class BuildingAgent(Agent):
         # Define PV size and profitability values
         for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv"]:
             c_export_dict[v] = c_dict[v]
-
-        # Store results in return dataframe
-        # if len(self.model.combos_formed_info.index) == 0:
-        #     # If it is the first community formed
-        #     self.model.combos_formed_info = pd.DataFrame(c_export_dict, index=[0])
-        # else:
-        #     # Append the dictionary containing the results of this community
-        #     self.model.combos_formed_info = self.model.combos_formed_info.append(
-        #                                 c_export_dict, ignore_index=True)
         
         self.model.datacollector.add_table_row("communities", c_export_dict)
