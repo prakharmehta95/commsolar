@@ -1,4 +1,4 @@
-{   "exp_name": "test_cal_1",
+{   "exp_name": "test_cal_2",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2018,
@@ -13,7 +13,7 @@
         "w_econ": [0, 0.25, 0.5, 0.75],
         "w_swn": [0, 0.25, 0.5, 0.75],
         "w_att": [0, 0.25, 0.5, 0.75],
-        "w_subplot": [0, 0.25, 0.5],
+        "w_subplot": [0.25],
         "threshold": [0.5],
         "reduction": [-0.05],
         "awareness_mean": [0.698],

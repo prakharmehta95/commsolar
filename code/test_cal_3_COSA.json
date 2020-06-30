@@ -1,4 +1,4 @@
-{   "exp_name": "test_cal_1",
+{   "exp_name": "test_cal_3",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2018,
@@ -10,10 +10,10 @@
         "n_cores": 48
     },
     "calibration_parameters":{
-        "w_econ": [0, 0.25, 0.5, 0.75],
-        "w_swn": [0, 0.25, 0.5, 0.75],
-        "w_att": [0, 0.25, 0.5, 0.75],
-        "w_subplot": [0, 0.25, 0.5],
+        "w_econ": [0.1, 0.2, 0.3],
+        "w_swn": [0.3, 0.4],
+        "w_att": [0, 0.1, 0.2],
+        "w_subplot": [0, 0.1, 0.2],
         "threshold": [0.5],
         "reduction": [-0.05],
         "awareness_mean": [0.698],
