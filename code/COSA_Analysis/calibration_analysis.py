@@ -31,7 +31,7 @@ com_files = {}
 ag_files = {}
 
 # Create a dictionary of file name and container dict
-out_dict = {"model_vars_":model_files, "com_formed_":com_files,#"agent_vars_":ag_files
+out_dict = {"model_vars_":model_files, "com_formed_":com_files,"agent_vars_":ag_files
 }
 
 # Loop through container dictionaries
@@ -43,7 +43,6 @@ for key, val in out_dict.items():
         
         # Read data and store it in the container dictionary
         with open(input_file, "r") as mydata:
-            # val[label] = pd.read_csv(input_file, sep=';')
             val[label] = feather.read_dataframe(input_file)
 
 # List of parameters included in the scenario labels
@@ -58,11 +57,11 @@ for key, df in out_dict["model_vars_"].items():
 # Put all data frames into one
 model_df = pd.concat(out_dict["model_vars_"])
 communities_df = pd.concat(out_dict["com_formed_"])
-#agents_df = pd.concat(out_dict["agent_vars_"])
+agents_df = pd.concat(out_dict["agent_vars_"])
 
 # Rename first column in summaries of calibration results
-#for df in [model_df, communities_df, agents_df]:
-for df in [model_df, communities_df]:
+for df in [model_df, communities_df, agents_df]:
+#for df in [model_df, communities_df]:
 
     # Create new columns with values of scenario parameters
     for ix in range(len(cal_pars)):
@@ -159,6 +158,22 @@ ax_inst.plot(cal_data['inst_cum_ZH_wiedikon_cal'], color="k", linestyle="--")
 ax_inst.set_ylabel("Installed capacity [kWp]")
 ax_inst.set_xticks(np.arange(0,len(x),2))
 ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,2))
+
+#%%
+
+#var = "ideation_total"
+#var = "pp"
+#var = "ind_inv"
+#var = "neighbor_influence"
+#var = "peer_effect"
+#var = "ind_scr"
+var = "ind_npv"
+var = "intention"
+
+fig_h, ax_h = plt.subplots(1,1)
+
+ax_h.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)])), bins=100, color="blue", alpha=0.5)
+ax_h.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)])), bins=100, color="red", alpha=0.5)
 
 #%% PLOT NUMBER OF INSTALLATIONS
 
