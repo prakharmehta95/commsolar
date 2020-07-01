@@ -6,7 +6,7 @@
         "n_agents": 500,
         "n_peers": 20,
         "n_closest_neighbors" : 4,
-        "ZEV": "True",
+        "com_year":2019,
         "n_cores": 2
     },
     "calibration_parameters":{
@@ -15,13 +15,12 @@
         "w_att": [0.4],
         "w_subplot": [0.25],
         "threshold": [0.5],
-        "reduction": [-0.05],
+        "reduction": [0],
         "awareness_mean": [0.698],
         "awareness_stdev": [0.18],
         "awareness_minergie": [0.95]
     },
     "economic_parameters":{
-        "diff_prices": 1,
         "min_ratio_sd": 0.1,
         "fit_high": 0.085,
         "fit_low": 0.0445,

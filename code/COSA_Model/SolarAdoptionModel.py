@@ -93,8 +93,11 @@ class SolarAdoptionModel(Model):
 
         # INITIALIZE POLICY PARAMETERS
 
-        # Determine if communities are allowed
-        self.com_allowed = inputs["simulation_parameters"]["ZEV"]
+        # Initialize model without allowing for solar communities
+        self.com_allowed = False
+
+        # Define year communities become allowed
+        self.com_allowed_year = inputs["simulation_parameters"]["com_year"]
 
         # Define if FIT is available
         self.fit_on = True
@@ -253,6 +256,9 @@ class SolarAdoptionModel(Model):
         '''
         This method advances the model one step (i.e. one simulation year).
         '''
+        # Allow communities or not depending on year
+        if self.com_allowed_year <= self.sim_year:
+            self.com_allowed == True
 
         # Update PV price
         if self.sim_year < 2019 :
