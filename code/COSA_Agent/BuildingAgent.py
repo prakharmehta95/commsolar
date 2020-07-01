@@ -106,7 +106,7 @@ class BuildingAgent(Agent):
 
         # Define the agent's perceived profitability
         # Initialize to maximum payback period
-        self.pp = self.model.max_pp
+        self.pp = 1
 
         # Establish reason for adoption
         self.reason_adoption = None
@@ -114,11 +114,20 @@ class BuildingAgent(Agent):
         # Compute the agent's lifetime load profile
         self.lifetime_load_profile = self.compute_lifetime_load_profile(self.solar, self.demand, self.model.pv_lifetime,self.model.deg_rate, self.model.hour_price)
 
+        # Compute the agent's self-consumption ratio for ind adoption
+        self.ind_scr = self.lifetime_load_profile["SCR"][0]
+
         # Compute the agent's smart meters investment
         self.sm_inv = self.compute_smart_meters_inv(self.n_sm, self.model.smp_dict)
 
         # Define the agent's electricity tariff
         self.el_tariff = tariff
+
+        # Initialize individual investment to zero
+        self.ind_inv = 0
+
+        # Initialize individual npv
+        self.ind_npv = 0
         
     def step_idea(self):
         '''
@@ -134,9 +143,8 @@ class BuildingAgent(Agent):
         if self.adopt_comm == 1 or self.adopt_ind == 1:
             self.intention = 0
 
-        # If the agent has not adopted solar PV, update its attributes and 
-        # evaluate whether it develops the intention in this step                        
-        else:
+        # If the agent has not adopted solar PV and not developed the intention before, then, update its attributes and evaluate whether it develops the intention in this step                        
+        elif (self.adopt_comm == 0) and (self.adopt_ind == 0) and (self.intention != 1):
 
             # Evaluate the influence of peers
             self.peer_effect = self.check_peers()
@@ -284,7 +292,7 @@ class BuildingAgent(Agent):
         # Only agents with the intention and possibility to adopt enter this
         # step, who are not year part of a solar community
         if self.intention == 1 and self.pv_possible and self.adopt_comm == 0:
-            
+
             # Create a list containing all the agents in the plot with the
             # idea to adopt PV or that already have PV, who are not in community
             potential_partners = [ag for ag in self.model.schedule.agents if (
@@ -333,6 +341,9 @@ class BuildingAgent(Agent):
                     # Read NPVs for individual adoption
                     npv_ind = self.compute_npv(self.ind_inv,self.lifetime_cashflows, self.model.disc_rate)
 
+                    # Store value
+                    self.ind_npv = npv_ind
+
                     # If NPV community is larger than NPV individual
                     if npv_ind < npv_com:
                         
@@ -353,15 +364,21 @@ class BuildingAgent(Agent):
                     # Calculate individual adoption NPV 
                     npv_ind = self.compute_npv(self.ind_inv, self.lifetime_cashflows, self.model.disc_rate)
 
+                    # Store value
+                    self.ind_npv = npv_ind
+
                     # Go for individual adoption
                     self.consider_individual_adoption(self.ind_inv, npv_ind, self.model.reduction, self.model.sim_year)
                         
             
             # If no agents in plot with intention and no individual solar yet
-            elif len(potential_partners) == 0 and self.adopt_ind != 1:
+            elif ((len(potential_partners) == 0) or (self.model.com_allowed == False)) and self.adopt_ind == 0:
 
                 # Calculate individual adoption NPV 
                 npv_ind = self.compute_npv(self.ind_inv, self.lifetime_cashflows, self.model.disc_rate)
+
+                # Store value
+                self.ind_npv = npv_ind
 
                 # Go for individual adoption
                 self.consider_individual_adoption(self.ind_inv, npv_ind, self.model.reduction, self.model.sim_year)
@@ -1140,6 +1157,9 @@ class BuildingAgent(Agent):
 
         # Apply subsidy for installation
         pv_inv = pv_inv - pv_sub
+        
+        if pv_inv < 0:
+            print("PROBLEMO WITH SUBSIDIES")
 
         return pv_inv
 
@@ -1183,11 +1203,11 @@ class BuildingAgent(Agent):
         """
 
         # Sum up the cashflows over the lifetime of the installation
-        cf = np.nansum(lifetime_cashflows["net_cf"])
+        cf = lifetime_cashflows["net_cf"][0]
 
         # Compute payback period
         if cf > 0:
-            pp = inv / cf
+            pp = min(inv / cf, max_pp)
         else:
             pp = max_pp
 
@@ -1312,6 +1332,9 @@ class BuildingAgent(Agent):
         # In law: https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html#app6ahref3 
         # RS 730.03 Annexe 2.1
 
+        # Initialize subsidy to zero
+        pv_sub = 0
+
         if (sim_year > 2013) and (sim_year <= 2030):
 
             # Chapter 4 art 36 https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html
@@ -1339,7 +1362,5 @@ class BuildingAgent(Agent):
                         pv_sub = min(base_d.values()) + min(pot_30_d.values()) * 30 + min(pot_100_d.values()) * 70 + min(pot_100_plus_d.values()) * (pv_size - 100)
                 else:
                     pv_sub = 0
-        else:
-            pv_sub = 0
 
         return pv_sub

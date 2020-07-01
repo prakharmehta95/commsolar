@@ -241,7 +241,10 @@ class SolarAdoptionModel(Model):
                 "adopt_comm":"adopt_comm",
                 "adopt_year":"adopt_year",
                 "en_champ":"en_champ",
-                "reason_adoption":"reason_adoption"
+                "reason_adoption":"reason_adoption",
+                "ind_inv":"ind_inv",
+                "ind_scr":"ind_scr",
+                "ind_npv":"ind_npv"
             },
             tables = {
                 "communities": ["year", "community_id", "solar", "demand",
