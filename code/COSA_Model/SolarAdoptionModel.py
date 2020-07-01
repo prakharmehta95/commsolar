@@ -25,8 +25,7 @@ class SolarAdoptionModel(Model):
     solar communities or not.
     '''    
     
-    def __init__(self, agent, inputs, ind_npv_outputs, 
-        AgentsNetwork, agents_info, distances, solar, demand, seed):
+    def __init__(self, agent, inputs, AgentsNetwork, agents_info, distances, solar, demand, seed):
         '''
         This method initializes the instantiation of the model class, and 
         creates the agents in it.
@@ -67,10 +66,14 @@ class SolarAdoptionModel(Model):
         # Define variable for simulation step and initialize to zero
         self.step_ctr = 0
 
-        ## INITIALIZE CALIBRATION / SCENARIO PARAMETERS
+        # Define start and end years
+        self.start_year = inputs["simulation_parameters"]["start_year"]
+        self.end_year = inputs["simulation_parameters"]["end_year"]
 
-        # Determine if communities are allowed
-        self.com_allowed = inputs["simulation_parameters"]["ZEV"]
+        # Define initial year as first simulated year
+        self.sim_year = self.start_year
+
+        ## INITIALIZE CALIBRATION / SCENARIO PARAMETERS
 
         # Define ideation step weighting parameters and threshold
         self.w_att = inputs["calibration_parameters"]["w_att"]
@@ -88,6 +91,90 @@ class SolarAdoptionModel(Model):
         # Determine the number of closest neighbors to consider for communities
         self.n_closest_neighbors = inputs["simulation_parameters"]["n_closest_neighbors"]
 
+        # INITIALIZE POLICY PARAMETERS
+
+        # Determine if communities are allowed
+        self.com_allowed = inputs["simulation_parameters"]["ZEV"]
+
+        # Define if FIT is available
+        self.fit_on = True
+
+        # Define the feed-in tariff for high and low electricity price hours
+        self.fit_high = inputs["economic_parameters"]["fit_high"]
+        self.fit_low = inputs["economic_parameters"]["fit_low"]
+
+        # Define the historical FIT per system size since 2010
+        self.hist_fit = inputs["economic_parameters"]["hist_fit"]
+
+        # Define if investment subsidies are available
+        self.sub_on = True
+
+        # Define base investment subsidy
+        self.base_d = inputs["economic_parameters"]["base_d"]
+
+        # Define volumetric (potence) terms for first 30 kW, 100 kW, etc
+        self.pot_30_d = inputs["economic_parameters"]["pot_30_d"]
+        self.pot_100_d = inputs["economic_parameters"]["pot_100_d"]
+        self.pot_100_plus_d = inputs["economic_parameters"]["pot_100_plus_d"]
+
+        ## INITIALIZE ECONOMIC PARAMETERS
+        
+        # Define PV lifetime (in years)
+        self.pv_lifetime = inputs["economic_parameters"]["PV_lifetime"]
+
+        # Define degradation rate of PV output
+        self.deg_rate = inputs["economic_parameters"]["PV_degradation"]
+
+        # Define discount rate
+        self.disc_rate = inputs["economic_parameters"]["disc_rate"]
+
+        # Defime maximum payback period
+        self.max_pp = inputs["economic_parameters"]["max_payback_period"]
+
+        # Define scale effects parameters
+        self.pv_scale_alpha = inputs["economic_parameters"]["pv_scale_alpha"]
+        self.pv_scale_beta = inputs["economic_parameters"]["pv_scale_beta"]
+
+        # Define dictionary of smart meter prices        
+        # Key = limit of smart meters for price category (string) (e.g., "12")
+        # Value = price per smart meter for than number of smart meters (int)
+        self.smp_dict = inputs["economic_parameters"]["smart_meter_prices"]
+
+        # Define TOU hours in a year
+        # All hours of the year are "low" except from Mon-Sat from 6-21
+        self.hour_price = inputs["economic_parameters"]["hour_price"]
+
+        # Define if simple or discounted payback period
+        self.discount_pp = inputs["economic_parameters"]["discount_pp"]
+
+        # Define initial PV price
+        self.pv_price = inputs["economic_parameters"]["hist_pv_prices"][str(self.start_year)]
+
+        # Define rate of PV price reduction 
+        self.pv_price_change = inputs["economic_parameters"]["pv_price_change"]
+
+        # Define Operation & Maintenance costs
+        self.om_cost = inputs["economic_parameters"]["OM_Cost_rate"]
+
+        # Define electricity tariff names
+        self.el_tariff_names = ["COSA_R1","COSA_R2","COSA_R3","COSA_R4","COSA_R5","COSA_R6","COSA_C1","COSA_C2","COSA_C3","COSA_C4","COSA_C5"]
+
+        # Define initial electricity prices
+        # Index is sim_year - 2010 because historical data starts in 2010
+        self.el_price = {tariff:inputs["economic_parameters"]["hist_el_prices"][tariff][self.sim_year-2010] for tariff in self.el_tariff_names}
+
+        # Define rate of electricity prices change
+        self.el_price_change = inputs["economic_parameters"]["el_price_change"]
+
+        # Define demand limits for electricity tariff type
+        self.el_tariff_demands = inputs["economic_parameters"]["el_tariff_demand"]
+
+        # Define ratio between high and low TOU electricity price
+        self.ratio_high_low = inputs["economic_parameters"]["ratio_high_low"]
+
+        # Define surcharge for smart metering within communities
+        self.solar_split_fee = inputs["economic_parameters"]["ewz_solarsplit_fee"]
+
         ## DEFINE AGENTS VARIABLES
 
         # Create a dataframe to store communities formed
@@ -99,16 +186,8 @@ class SolarAdoptionModel(Model):
             # Determine the agent's environmental attitude
             ag_env_aw = self.determine_agent_env_aw(unique_id, agents_info, inputs)
 
-            # Define agents perceived profitability over simulated years
-
-            # Try to read the pp in the pre-calculated data
-            try:
-                pps_norm_years = ind_npv_outputs["Agents_PPs_Norm"][unique_id]
-
-            # If the agent is not found, then pp is always zero (max_pp)
-            except KeyError:
-                years = (inputs["simulation_parameters"]["end_year"] - inputs["simulation_parameters"]["start_year"])+1
-                pps_norm_years = [0] * years
+            # Assign an electricity tariff to the agent
+            ag_tariff = self.assign_electricity_tariff(unique_id, demand,agents_info, self.el_tariff_demands, inputs["economic_parameters"]["av_hh_size"])
 
             # Create instantiation of an agent and provide necessary inptus
             ag = agent(self,
@@ -124,11 +203,8 @@ class SolarAdoptionModel(Model):
                 n_sm = agents_info[unique_id]['num_smart_meters'],
                 solar = np.array(solar[unique_id]) * inputs["economic_parameters"]["AC_conv_eff"],
                 demand = np.array(demand[unique_id]),
-                npv_ind_years = list(ind_npv_outputs["Agents_NPVs"][unique_id].values),
-                inv_ind_years = list(ind_npv_outputs["Agents_Investment_Costs"][unique_id].values),
-                pps_norm_years = pps_norm_years,
-                ind_scr = ind_npv_outputs["Agents_SCRs"][unique_id].values,
-                distances = distances[[unique_id, "dist_"+unique_id]]
+                distances = distances[[unique_id, "dist_"+unique_id]],
+                tariff = ag_tariff
                 )
 
             # Add agent to model schedule
@@ -137,32 +213,15 @@ class SolarAdoptionModel(Model):
         # Define data collection
         self.datacollector = DataCollector(
             model_reporters = {
-                "sim_year":"step_ctr",
-                "Ind_solar_number": dc_functions.functions.cumulate_solar_ind,
-                "Ind_PV_Installed_CAP": dc_functions.functions.cumulate_solar_ind_sizes,
-                "Comm_solar_number": dc_functions.functions.cumulate_solar_comm,
-                "Num_of_Comms": dc_functions.functions.cumulate_solar_champions,
-                "Comm_PV_Installed_CAP":dc_functions.functions.cumulate_solar_comm_sizes,
-                "GYM_PV_CAP":dc_functions.functions.agent_type_gym_CAP,
-                "HOSPITAL_PV_CAP":dc_functions.functions.agent_type_hospital_CAP,
-                "HOTEL_PV_CAP":dc_functions.functions.agent_type_hotel_CAP,
-                "INDUSTRIAL_PV_CAP" :dc_functions.functions.agent_type_industrial_CAP,
-                "LIBRARY_PV_CAP" :dc_functions.functions.agent_type_library_CAP,
-                "MULTI_RES_PV_CAP" :dc_functions.functions.agent_type_multi_res_CAP,
-                "OFFICE_PV_CAP":dc_functions.functions.agent_type_office_CAP,
-                "PARKING_PV_CAP":dc_functions.functions.agent_type_parking_CAP,
-                "SCHOOL_PV_CAP":dc_functions.functions.agent_type_school_CAP,
-                "SINGLE_RES_PV_CAP":dc_functions.functions.agent_type_single_res_CAP,
-                "Num_GYM" :dc_functions.functions.agent_type_gym,
-                "Num_HOSPITAL":dc_functions.functions.agent_type_hospital,
-                "Num_HOTEL":dc_functions.functions.agent_type_hotel,
-                "Num_INDUSTRIAL":dc_functions.functions.agent_type_industrial,
-                "Num_LIBRARY" :dc_functions.functions.agent_type_library,
-                "Num_MULTI_RES":dc_functions.functions.agent_type_multi_res,
-                "Num_OFFICE":dc_functions.functions.agent_type_office,
-                "Num_PARKING" :dc_functions.functions.agent_type_parking,
-                "Num_SCHOOL":dc_functions.functions.agent_type_school,
-                "Num_SINGLE_RES" :dc_functions.functions.agent_type_single_res
+                "sim_step":"step_ctr",
+                "sim_year":"sim_year",
+                "pv_price":"pv_price",
+                #"buildings_ind": [ag.unique_id if ag.adopt_ind == 1 for ag in self.model.schedule.agents],
+                "n_ind": dc_functions.functions.cumulate_solar_ind,
+                "inst_cum_ind": dc_functions.functions.cumulate_solar_ind_sizes,
+                "n_com": dc_functions.functions.cumulate_solar_comm,
+                "n_champions": dc_functions.functions.cumulate_solar_champions,
+                "inst_cum_com":dc_functions.functions.cumulate_solar_comm_sizes,
             },
             
             # Define agent reporters that are not inputs and change over time
@@ -189,12 +248,25 @@ class SolarAdoptionModel(Model):
             )
                                     
         self.running = True
-        
     
     def step(self):
         '''
         This method advances the model one step (i.e. one simulation year).
         '''
+
+        # Update PV price
+        if self.sim_year < 2019 :
+            self.pv_price = self.inputs["economic_parameters"]["hist_pv_prices"][str(self.sim_year)]
+        else:
+            self.pv_price *= (1 + self.pv_price_change)
+
+        # Update electricity price
+        if self.sim_year < 2019:
+            # Historical data always starts in 2010
+            self.el_price = {tariff:self.inputs["economic_parameters"]["hist_el_prices"][tariff][self.sim_year-2010] for tariff in self.el_tariff_names}
+        else:
+            for tariff in self.el_tariff_names:
+                self.el_price[tariff] *= (1 + self.el_price_change)
         
         # Loop through all agents using the scheduler
         self.schedule.step()
@@ -204,6 +276,9 @@ class SolarAdoptionModel(Model):
         
         # Increase time counter by one
         self.step_ctr += 1
+
+        # Update simulation year
+        self.sim_year += 1
 
         return self.combos_formed_info
     
@@ -233,3 +308,64 @@ class SolarAdoptionModel(Model):
             agent_env_awareness = max(min(self.random.gauss(a_mean,a_stdev),1),0)
         
         return agent_env_awareness
+    
+    def assign_electricity_tariff(self, unique_id, demand, agents_info, el_tariff_demands, av_hh_size):
+        """
+        This method assigns an electricity tariff to each agent depending on (1) the type of use of the building (residential, commercial), and the
+        (2) annual electricity consunption.
+
+        Inputs:
+            unique_id = name of the building (str)
+            demand = list of hourly demand for each building over a year (d)
+            agents_info = dictionary with info on buildings (d)
+            el_tariff_demands = list of max annual demand for each tariff (d)
+            av_hh_size = average household size in Switzerland (float)
+        Returns:
+            el_tariff = name of electricity tariff (str)
+        """
+
+        # Read building type
+        building_type = agents_info[unique_id]["bldg_type"]
+        
+
+        # Classify building into commercial or residential eletricity tariffs
+        if (building_type != "MULTI_RES") or (building_type != "SINGLE_RES"):
+            
+            # Define type of tariff
+            t_type = "commercial"
+
+            # Read demand for building
+            demand_yr = np.sum(demand[unique_id])
+
+
+        else:
+            
+            # Define type of tariff
+            t_type = "residential"
+
+            # Average household 2.2 (2018)
+            # https://www.bfs.admin.ch/bfs/en/home/statistics/regional-statistics/regional-portraits-key-figures/cantons/zurich.html
+
+            # Compute the number of households in the building
+            n_households = agents_info[unique_id]["total_persons"] / av_hh_size
+
+            # Define average consumption of households in building
+            if n_households > 1:
+                demand_yr = np.sum(demand[unique_id]) / n_households
+            else:
+                demand_yr = np.sum(demand[unique_id])
+        
+        # List max demands for each tariff category
+        t_ds = sorted(list(el_tariff_demands[t_type].values()))
+
+        # Find the index of the category whose demnad limit is higher than the annual demand of the building
+        try:
+            t_ix = next(ix for ix,v in enumerate(t_ds) if v > demand_yr)
+        except:
+            t_ix = len(t_ds)
+
+        # Read the label of the tariff and return it
+        # Note: we can only do this because demand limits and tariff names can be sorted alphabetically and by value, otherwise this is wrong!
+        ag_tariff = sorted(list(el_tariff_demands[t_type].keys()))[t_ix]
+
+        return ag_tariff
