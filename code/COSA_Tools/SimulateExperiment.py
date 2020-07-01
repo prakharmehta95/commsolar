@@ -87,7 +87,7 @@ def import_data(files_dir):
     return agents_info, distances, solar, demand
 
 def run_experiment(sc_inputs, BuildingAgent, SolarAdoptionModel, 
-        ind_npv_outputs, agents_info, distances, solar, demand):
+        agents_info, distances, solar, demand):
     """
     This function runs one experiment of the model.
 
@@ -95,7 +95,6 @@ def run_experiment(sc_inputs, BuildingAgent, SolarAdoptionModel,
         sc_inputs = simulation and scenario inputs (list of dict)
         BuildingAgent = object class for agents in model (class)
         SolarAdoptionModel = object class for model (class)
-        ind_npvs_outputs = individual economic evaluation variables (dict of dfs)
         agents_info = attributes of each building (df, column = variable, 
             index = building_ids)
         distances = distances between buildings (df, columns have building_id
@@ -120,7 +119,6 @@ def run_experiment(sc_inputs, BuildingAgent, SolarAdoptionModel,
     in_dict = {
         "BuildingAgent": BuildingAgent, 
         "SolarAdoptionModel":SolarAdoptionModel,
-        "ind_npv_outputs":ind_npv_outputs, 
         "agents_info":agents_info, 
         "distances":distances, 
         "solar":solar, 
@@ -186,8 +184,7 @@ def simulate_run(run, in_dict, sc_dict):
     # Create one instantiation of the model
     sim_model = SolarAdoptionModel(
                             in_dict["BuildingAgent"], 
-                            sc_dict, 
-                            in_dict["ind_npv_outputs"], 
+                            sc_dict,
                             AgentsNetwork, 
                             in_dict["agents_info"], 
                             in_dict["distances"], 
