@@ -144,12 +144,12 @@ for sc in set(sc_results_analysed.index):
 
         cond_var = plot_df["variable"]==var
 
-        ax_inst.fill_between(x, plot_df["p05"].loc[cond_var].values / 1000, plot_df["p95"].loc[cond_var].values / 1000, alpha=0.25, color=color_d[var])
+        ax_inst.fill_between(x, plot_df["p05"].loc[cond_var].values, plot_df["p95"].loc[cond_var].values, alpha=0.25, color=color_d[var])
 
         for run in set(model_df["run"]):
             ax_inst.plot(plot_df[run].loc[cond_var].values, color=color_d[var], alpha=0.5)
 
-        ax_inst.plot(plot_df["p50"].loc[cond_var].values / 1000, color=color_d[var])
+        ax_inst.plot(plot_df["p50"].loc[cond_var].values, color=color_d[var])
 
         print(plot_df["p50"].loc[cond_var].values[0])
 
@@ -161,19 +161,65 @@ ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_ye
 
 #%%
 
-#var = "ideation_total"
+var = "ideation_total"
 #var = "pp"
 #var = "ind_inv"
 #var = "neighbor_influence"
 #var = "peer_effect"
 #var = "ind_scr"
-var = "ind_npv"
-var = "intention"
+#var = "ind_npv"
 
 fig_h, ax_h = plt.subplots(1,1)
 
-ax_h.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)])), bins=100, color="blue", alpha=0.5)
-ax_h.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)])), bins=100, color="red", alpha=0.5)
+# Only for payback period
+# plot_var_0 = [15*(1-x) for x in list(set(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)]))]
+# plot_var_8 = [15*(1-x) for x in list(set(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)]))]
+
+plot_var_0 = list(set(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)]))
+plot_var_8 = list(set(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)]))
+
+ax_h.hist(plot_var_0, bins=100, color="blue", alpha=0.5)
+ax_h.hist(plot_var_8, bins=100, color="red", alpha=0.5)
+ax_h.set_xlabel(var)
+ax_h.set_ylabel("Number of agents")
+
+#%%
+new_df = pd.DataFrame(None)
+new_df["attitude"] = agents_df["attitude"].loc[agents_df["run"]==0]
+new_df["pp"] = agents_df["pp"].loc[agents_df["run"]==0]
+
+activated_ags = {}
+for k_a in np.arange(0.4, 0.51, 0.01):
+    
+    for k_p in np.arange(0.1, 0.21, 0.01):
+        
+        label = str(k_a)+"_"+str(k_p)
+
+        new_df[label] = np.array(new_df["pp"]) * k_p + np.array(new_df["attitude"]) * k_a
+
+        activated_ags[label] = (np.array(new_df[label]) > 0.5).sum()
+
+chosen = {k:activated_ags[k] for k in list(activated_ags.keys()) if ((activated_ags[k] > 0) and (activated_ags[k] < 1000))}
+
+#%% PLOT IDEATION VARIABLES
+
+ax_d = {"pp":(0,0), "neighbor_influence":(1,0), "peer_effect":(1,1), "attitude":(0,1)}
+
+fig_idea, axes_idea = plt.subplots(nrows=2,ncols=2,figsize=(6.5,6.5))
+
+for var in ["pp", "neighbor_influence", "peer_effect", "attitude"]:
+
+    # Select subplot
+    ax = axes_idea[ax_d[var][0], ax_d[var][1]]
+
+
+    ax.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)])), bins=100, color="blue", alpha=0.5)
+
+    ax.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)])), bins=100, color="red", alpha=0.5)
+
+    ax.set_xlabel(var)
+
+    ax.set_xlim(0,1)
 
 #%% PLOT NUMBER OF INSTALLATIONS
 
@@ -194,12 +240,12 @@ for sc in set(sc_results_analysed.index):
 
         cond_var = plot_df["variable"]==var
 
-        ax_inst.fill_between(x, plot_df["p05"].loc[cond_var].values / 1000, plot_df["p95"].loc[cond_var].values / 1000, alpha=0.25, color=color_d[var])
+        ax_inst.fill_between(x, plot_df["p05"].loc[cond_var].values, plot_df["p95"].loc[cond_var].values, alpha=0.25, color=color_d[var])
 
         for run in set(model_df["run"]):
             ax_inst.plot(plot_df[run].loc[cond_var].values, color=color_d[var], alpha=0.5)
 
-        ax_inst.plot(plot_df["p50"].loc[cond_var].values / 1000, color=color_d[var])
+        ax_inst.plot(plot_df["p50"].loc[cond_var].values, color=color_d[var])
 
         print(plot_df["p50"].loc[cond_var].values[0])
 
