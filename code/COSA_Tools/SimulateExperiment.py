@@ -280,12 +280,16 @@ def initialize_scenario_inputs(inputs):
         # Add scenario dictionary if weights sum up to 1
         if sum_w == 1:
             sc_dict_list.append(sc_d)
-
+        
     # Include inputs keys out of three parameter types
     out_inputs = ["exp_name", "randomseed"]
     for oi in out_inputs:
-        for d in sc_dict_list:
-            d[oi] = inputs[oi]
+
+        try:
+            for d in sc_dict_list:
+                d[oi] = inputs[oi]
+        except:
+            print("--No calibration combination meets sum to 1 condition--")
             
     return sc_dict_list
 
