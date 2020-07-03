@@ -15,7 +15,6 @@ from multiprocessing import Pool
 from time import gmtime, strftime
 
 # Import functions from own scripts
-from COSA_Tools.npv_ind import calculate_ind_npv
 from COSA_Tools.swn import make_swn
 from COSA_Tools.SimulateExperiment import (import_parameters, import_data,
     save_results, run_experiment, initialize_scenario_inputs)
