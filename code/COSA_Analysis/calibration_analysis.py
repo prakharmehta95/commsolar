@@ -8,13 +8,15 @@ Current version: June, 2020
 import sys, os, glob, json
 import feather
 
-from os.path import join
-from matplotlib import colors
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
+
+from os.path import join
+from matplotlib import colors
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 #%% IMPORT DATA
 files_dir = os.path.dirname(__file__)
@@ -31,7 +33,7 @@ com_files = {}
 ag_files = {}
 
 # Create a dictionary of file name and container dict
-out_dict = {"model_vars_":model_files, "com_formed_":com_files,"agent_vars_":ag_files
+out_dict = {"model_vars_":model_files, "com_formed_":com_files,#"agent_vars_":ag_files
 }
 
 # Loop through container dictionaries
@@ -57,11 +59,11 @@ for key, df in out_dict["model_vars_"].items():
 # Put all data frames into one
 model_df = pd.concat(out_dict["model_vars_"])
 communities_df = pd.concat(out_dict["com_formed_"])
-agents_df = pd.concat(out_dict["agent_vars_"])
+#agents_df = pd.concat(out_dict["agent_vars_"])
 
 # Rename first column in summaries of calibration results
-for df in [model_df, communities_df, agents_df]:
-#for df in [model_df, communities_df]:
+#for df in [model_df, communities_df, agents_df]:
+for df in [model_df, communities_df]:
 
     # Create new columns with values of scenario parameters
     for ix in range(len(cal_pars)):
@@ -125,39 +127,212 @@ for cal_lab in list(set(model_df["cal_label"])):
 
 sc_results_analysed = pd.concat(sc_results.values(), keys=sc_results.keys(), names=["scenario"]).reset_index(level=1, drop=True)
 
-#%% PLOT INSTALLED CAPACITIES
+#%% CALIBRATION ANALYSIS
 
-color_d = {"inst_cum_ind":"blue", "inst_cum_com":"red"}
+# Create new variables to store detail analysis resuls and summary
+cal_analysis = {}
+cal_summary = 0
 
-fig_inst, ax_inst = plt.subplots(1,1, figsize=(6.5,4))
+# Loop through all calibration combinations
+for sc, sc_df in sc_results.items():
 
-for sc in set(sc_results_analysed.index):
+    data_df = sc_df.loc[sc_df["variable"]=="inst_cum_ind"]
+
+    # Add calibration series
+    data_df["inst_cum_ind_cal"] = cal_data["inst_cum_ZH_wiedikon_cal"]
+
+    # Loop through each simulation run and compute square-root error to cal
+    for run in range(50):
+        data_df["diff_"+str(run)] = ((np.array(data_df[run]) - np.array(cal_data["inst_cum_ZH_wiedikon_cal"])) ** 2) ** 0.5
+
+    # Analyse errors
+    col_labs = ["diff_"+str(nrun) for nrun in range(50)]
+    data_df["diff_sum"] = np.sum(data_df[col_labs].values, axis=1)
+    data_df["diff_median"] = np.median(data_df[col_labs].values, axis=1)
+    data_df["diff_av"] = np.average(data_df[col_labs].values, axis=1)
+    data_df["diff_p05"] = np.quantile(data_df[col_labs].values, axis=1, q=0.05)
+    data_df["diff_p95"] = np.quantile(data_df[col_labs].values, axis=1, q=0.95)
+
+    # Store results per scenario
+    cal_analysis[sc] = data_df
+
+    # Summarize results and store them
+    if type(cal_summary) == int:
+        vars = ["diff_"+x for x in ["sum", "median", "av", "p05", "p95"]]
+        cal_summary = pd.DataFrame(data_df[vars].sum(axis=0), columns=[sc])
+    
+    else:
+        cal_summary[sc] = data_df[vars].sum(axis=0).values
+
+# Transpose and order the summary of results by "diff_sum"
+cal_summary = cal_summary.transpose().sort_values(by="diff_median")
+
+# Add calibration parameter columns
+ix = cal_summary.index.values
+cal_summary["w_e"] = pd.to_numeric(pd.Series(ix).str.split("_").str[0]).values
+cal_summary["w_p"] = pd.to_numeric(pd.Series(ix).str.split("_").str[1]).values
+cal_summary["w_a"] = pd.to_numeric(pd.Series(ix).str.split("_").str[2]).values
+
+#%% PLOT ERROR HEATMAP
+
+# Create error figure
+fig_err, ax_err = plt.subplots(1,1, figsize=(6.5,4))
+
+# Plot error bubbles
+errors = ax_err.scatter(x=cal_summary["w_e"], y=cal_summary["w_a"], s=cal_summary["w_p"]*1000, c=cal_summary["diff_median"], cmap="RdYlGn_r")
+
+# Add axes labels
+ax_err.set_xlabel("$w_{e}$")
+ax_err.set_ylabel("$w_{a}$")
+
+# Create axis for colorbar
+cbar_ax = fig_err.add_axes([0.92, 0.1, 0.02, 0.8])
+
+# Add color bar
+fig_err.colorbar(errors, cax=cbar_ax,label="Median error [kW]")
+
+#%% PLOT INDIVIDUAL CAL PARAMETER ERROR
+
+# Define calibration parameters and labels
+pars = ["w_e", "w_p", "w_a"]
+pars_labs = {"w_e":"$w_{e}$", "w_p":"$w_{p}$", "w_a":"$w_{a}$"}
+
+# Create error figure
+fig_err, axes_err = plt.subplots(1,3, figsize=(6.5,4), sharey=True)
+
+# Remove space between subplots
+plt.subplots_adjust(wspace=0, hspace=0)
+
+for par in pars:
+
+    # Select subplot
+    ax = axes_err[pars.index(par)]
+
+    # Plot error bubbles
+    errors = ax.scatter(x=cal_summary[par], y=cal_summary["diff_median"]/1000, c=cal_summary["w_e"]+cal_summary["w_a"], cmap="RdYlGn_r", edgecolor="k", linewidth=0.5)
+
+    # Add axes labels
+    ax.set_xlabel(pars_labs[par])
+
+# Add vertical axis label
+axes_err[0].set_ylabel("Median error [GW]")
+
+
+#%% PLOT INSTALLED CAPACITIES PER SCENARIO
+
+# Create figure
+fig_cal, ax_cal = plt.subplots(1,1, figsize=(6.5,4))
+
+# Colormap
+col = plt.cm.RdYlGn_r(np.linspace(0,1,5))
+
+# for sc in set(sc_results_analysed.index):
+for sc in list(cal_summary.index)[:5]:
 
     # Select data
     plot_df = sc_results_analysed.loc[sc,:]
 
+    # Define time variable
     x = range(len(set(plot_df["sim_year"])))
 
-    print(sc)
+    # Define scenario label
+    v = sc.split("_")[:4]
+    sc_lab = "$w_{e}=$"+str(v[0])+", $w_{p}=$"+str(v[1])+", $w_{a}=$"+str(v[2])
 
-    for var in color_d.keys():
+    # Define variable to plot
+    cond_var = plot_df["variable"]=="inst_cum_ind"
 
-        cond_var = plot_df["variable"]==var
+    # Plot median
+    ax_cal.plot(plot_df["p50"].loc[cond_var].values, label=sc_lab,
+    color=col[list(cal_summary.index).index(sc)])
 
-        ax_inst.fill_between(x, plot_df["p05"].loc[cond_var].values, plot_df["p95"].loc[cond_var].values, alpha=0.25, color=color_d[var])
+# Plot calibration data
+zh_col = (36/255,139/255,204/255)
+cal = cal_data['inst_cum_ZH_wiedikon_cal']
+ax_cal.plot(cal[:10], color="k", linestyle="--", label="Wiedikon (estimated)")
+proj = [np.nan]*9
+proj.extend(cal[-6:])
+ax_cal.plot(proj, color="red", linestyle="--", label="Wiedikon (15% growht)")
 
-        for run in set(model_df["run"]):
-            ax_inst.plot(plot_df[run].loc[cond_var].values, color=color_d[var], alpha=0.5)
+# Set Y-axis limits
+ax_cal.set_ylim(0, 6000)
 
-        ax_inst.plot(plot_df["p50"].loc[cond_var].values, color=color_d[var])
+# Add labels to axes
+ax_cal.set_ylabel("Cumulative installed capacity [kWp]")
+#ax_cal.set_xlabel("Simulation year")
 
-        print(plot_df["p50"].loc[cond_var].values[0])
+# Arrange X-axis ticks and labels
+ax_cal.set_xticks(np.arange(0,len(x),2))
+ax_cal.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,2))
 
-ax_inst.plot(cal_data['inst_cum_ZH_wiedikon_cal'], color="k", linestyle="--")
+# Add legend
+ax_cal.legend(loc='upper left', ncol=1, frameon=False, fontsize=8)
+#%% EXPORT FIGURE
+fig_cal.savefig(files_dir +"\\calibration_cal.svg", format="svg")
+fig_cal.savefig(files_dir +"\\calibration_cal.png", format="png", bbox_inches="tight", dpi=210)
+#%% PLOT INSTALLED CAPACITIES OF BEST CALIBRATION
 
-ax_inst.set_ylabel("Installed capacity [kWp]")
-ax_inst.set_xticks(np.arange(0,len(x),2))
-ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,2))
+zh_col = (36/255,139/255,204/255)
+
+fig_best, ax_best = plt.subplots(1,1, figsize=(6.5,4))
+
+# Select best calibration
+sc = list(cal_summary.index)[0]
+
+# Define scenario label
+v = sc.split("_")[:4]
+sc_lab = "$w_{e}=$"+str(v[0])+", $w_{p}=$"+str(v[1])+", $w_{a}=$"+str(v[2])
+
+# Select data
+plot_df = sc_results_analysed.loc[sc,:]
+
+# Define time variable
+x = range(len(set(plot_df["sim_year"])))
+
+cond_var = plot_df["variable"]=="inst_cum_ind"
+
+ax_best.fill_between(x, plot_df["p05"].loc[cond_var].values, plot_df["p95"].loc[cond_var].values, alpha=0.25, color="cornflowerblue")
+
+for run in set(model_df["run"]):
+    ax_best.plot(plot_df[run].loc[cond_var].values, color=zh_col, alpha=0.1)
+
+ax_best.plot(plot_df["p50"].loc[cond_var].values, color=zh_col)
+
+# Plot calibration data
+zh_col = (36/255,139/255,204/255)
+cal = cal_data['inst_cum_ZH_wiedikon_cal']
+ax_best.plot(cal[:10], color="k", linestyle="--")
+proj = [np.nan]*9
+proj.extend(cal[-6:])
+ax_best.plot(proj, color="red", linestyle="--")
+
+ax_best.set_ylabel("Cumulative installed capacity [kWp]")
+ax_best.set_xticks(np.arange(0,len(x),2))
+ax_best.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,2))
+
+ax_best.set_ylim(0,10000)
+ax_best.set_title(sc_lab)
+
+# Add legend
+leg_elements = [
+    Line2D([0], [0], color=zh_col, lw=1),
+    Line2D([0], [0], color='cornflowerblue', lw=4, alpha=0.25),
+    Line2D([0], [0], color=zh_col, lw=1, alpha=0.1),
+    Line2D([0], [0], color='k', lw=1, linestyle="--"),
+    Line2D([0], [0], color='red', lw=1, linestyle="--"),]
+leg_labels = [
+    "Median 50 simulations",
+    "90% Confidence interval",
+    "Individual run",
+    "Wiedikon (estimated)",
+    "Wiedikon (15% growht)"
+    ]
+ax_best.legend(handles = leg_elements , labels=leg_labels,loc='upper left', 
+             ncol=1, frameon=False)
+
+#%% EXPORT FIGURE
+fig_best.savefig(files_dir +"\\calibration_best.svg", format="svg")
+fig_best.savefig(files_dir +"\\calibration_best.png", format="png", bbox_inches="tight", dpi=210)
 
 #%%
 
@@ -213,9 +388,9 @@ for var in ["pp", "neighbor_influence", "peer_effect", "attitude"]:
     ax = axes_idea[ax_d[var][0], ax_d[var][1]]
 
 
-    ax.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)])), bins=100, color="blue", alpha=0.5)
+    ax.hist(list(agents_df[var].loc[(agents_df["sim_year"]==0) & (agents_df["run"]==0)]), bins=100, color="blue", alpha=0.5)
 
-    ax.hist(list(set(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)])), bins=100, color="red", alpha=0.5)
+    ax.hist(list(agents_df[var].loc[(agents_df["sim_year"]==8) & (agents_df["run"]==0)]), bins=100, color="red", alpha=0.5)
 
     ax.set_xlabel(var)
 
@@ -249,6 +424,6 @@ for sc in set(sc_results_analysed.index):
 
         print(plot_df["p50"].loc[cond_var].values[0])
 
-ax_inst.set_ylabel("Installed capacity [kWp]")
+ax_inst.set_ylabel("Number of individual adopters")
 ax_inst.set_xticks(np.arange(0,len(x),2))
 ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,2))
