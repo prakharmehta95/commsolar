@@ -10,10 +10,10 @@
         "n_cores": 48
     },
     "calibration_parameters":{
-        "w_econ": [0.12],
-        "w_swn": [0.25],
-        "w_att": [0.4],
-        "w_subplot": [0.23],
+        "w_econ": [0.1, 0.2],
+        "w_swn": [0.1, 0.2, 0.3],
+        "w_att": [0.3,0.4,0.5],
+        "w_subplot": [0.1, 0.2, 0.3],
         "threshold": [0.5],
         "reduction": [0],
         "awareness_mean": [0.698],
