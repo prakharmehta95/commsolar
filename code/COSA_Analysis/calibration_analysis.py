@@ -101,7 +101,11 @@ for cal_lab in list(set(model_df["cal_label"])):
         for run in range(n_runs):
             cond = (model_df["cal_label"]==cal_lab) & (model_df["run"]==run)
             
-            sc_results[cal_lab][var][run] = model_df[var].loc[cond].values
+            sc_results[cal_lab][var][run] = model_df[var].loc[cond].values[:15]
+
+            """
+            Take care of duplicated runs
+            """
 
             sc_results[cal_lab][var][run] = pd.to_numeric(sc_results[cal_lab][var][run])
         
@@ -179,7 +183,7 @@ cal_summary["w_a"] = pd.to_numeric(pd.Series(ix).str.split("_").str[2]).values
 fig_err, ax_err = plt.subplots(1,1, figsize=(6.5,4))
 
 # Plot error bubbles
-errors = ax_err.scatter(x=cal_summary["w_e"], y=cal_summary["w_a"], s=cal_summary["w_p"]*1000, c=cal_summary["diff_median"], cmap="RdYlGn_r")
+errors = ax_err.scatter(x=cal_summary["w_e"], y=cal_summary["w_a"], s=20, c=cal_summary["diff_median"], cmap="RdYlGn_r", vmin=0, vmax=100000, alpha=0.5)
 
 # Add axes labels
 ax_err.set_xlabel("$w_{e}$")
@@ -190,7 +194,31 @@ cbar_ax = fig_err.add_axes([0.92, 0.1, 0.02, 0.8])
 
 # Add color bar
 fig_err.colorbar(errors, cax=cbar_ax,label="Median error [kW]")
+#%%
+from mpl_toolkits.mplot3d import Axes3D
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+fig = plt.figure(figsize=(6.5,6))
+ax = fig.add_subplot(111, projection='3d')
+
+xs = cal_summary["w_e"]
+ys = cal_summary["w_p"]
+zs = cal_summary["w_a"]
+ax.scatter(xs, ys, zs, s=100, c=cal_summary["diff_median"], cmap="RdYlGn_r", edgecolor="k")
+
+ax.set_xlabel("$w_{e}$")
+ax.set_ylabel("$w_{p}$")
+ax.set_zlabel("$w_{a}$")
+
+plt.show()
+
+# Create axis for colorbar
+cbar_ax = fig.add_axes([0.92, 0.1, 0.02, 0.8])
+
+# Add color bar
+fig.colorbar(errors, cax=cbar_ax,label="Median error [kW]")
 #%% PLOT INDIVIDUAL CAL PARAMETER ERROR
 
 # Define calibration parameters and labels
@@ -209,14 +237,21 @@ for par in pars:
     ax = axes_err[pars.index(par)]
 
     # Plot error bubbles
-    errors = ax.scatter(x=cal_summary[par], y=cal_summary["diff_median"]/1000, c=cal_summary["w_e"]+cal_summary["w_a"], cmap="RdYlGn_r", edgecolor="k", linewidth=0.5)
+    errors = ax.scatter(x=cal_summary[par], y=cal_summary["diff_median"]/1000, c=cal_summary["w_e"]+cal_summary["w_a"], cmap="RdYlGn_r", edgecolor="k", linewidth=0.5, alpha=0.5)
 
     # Add axes labels
     ax.set_xlabel(pars_labs[par])
 
+    ax.set_yscale("log")
+
 # Add vertical axis label
 axes_err[0].set_ylabel("Median error [GW]")
 
+# Create axis for colorbar
+cbar_ax = fig_err.add_axes([0.92, 0.1, 0.02, 0.8])
+
+# Add color bar
+fig_err.colorbar(errors, cax=cbar_ax,label="Sum $w_{e}+w_{a}$")
 
 #%% PLOT INSTALLED CAPACITIES PER SCENARIO
 
