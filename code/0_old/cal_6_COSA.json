@@ -1,19 +1,19 @@
-{   "exp_name": "cal_1",
+{   "exp_name": "cal_6",
     "simulation_parameters": {
-        "runs": 2,
+        "runs": 50,
         "start_year": 2010,
-        "end_year": 2035,
+        "end_year": 2024,
         "n_agents": 5000,
         "n_peers": 20,
         "n_closest_neighbors" : 4,
-        "com_year":2019,
-        "n_cores": 2
+        "com_year":2050,
+        "n_cores": 48
     },
     "calibration_parameters":{
-        "w_econ": [0.12],
-        "w_swn": [0.25],
-        "w_att": [0.4],
-        "w_subplot": [0.23],
+        "w_econ": [0.13],
+        "w_swn": [0.34, 0.35, 0.36],
+        "w_att": [0.39, 0.4, 0.41],
+        "w_subplot": [0.13, 0.14, 0.15, 0.16],
         "threshold": [0.5],
         "reduction": [0],
         "awareness_mean": [0.698],
