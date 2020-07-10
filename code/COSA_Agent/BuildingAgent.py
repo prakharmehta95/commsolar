@@ -123,6 +123,9 @@ class BuildingAgent(Agent):
         # Define the agent's electricity tariff
         self.el_tariff = tariff
 
+        # Initialize individual investment subsidy to zero
+        self.ind_inv_sub = 0
+
         # Initialize individual investment to zero
         self.ind_inv = 0
 
@@ -152,8 +155,11 @@ class BuildingAgent(Agent):
             # Evaluate the persuasion effect from neighbors
             self.neighbor_influence = self.check_neighbors_influence()
 
+            # Evaluate investment subsidy
+            self.ind_inv_sub = self.compute_pv_sub(self.pv_size, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
+
             # Update investment cost for this year
-            self.ind_inv = self.sm_inv + self.compute_pv_inv(self.pv_size, self.model.pv_price, self.model.pv_scale_alpha, self.model.pv_scale_beta, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
+            self.ind_inv = self.sm_inv + self.compute_pv_inv(self.pv_size, self.ind_inv_sub, self.model.pv_price, self.model.pv_scale_alpha, self.model.pv_scale_beta)
 
             # Update lifetime cashflows for this year
             self.lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, self.pv_size, self.lifetime_load_profile, self.model.deg_rate, self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="ind")
@@ -287,8 +293,7 @@ class BuildingAgent(Agent):
 
         The agent takes the option with the best NPV, and adopts only if it
         is positive or if the economic lossses are acceptable.
-        """
-           
+        """          
         # Only agents with the intention and possibility to adopt enter this
         # step, who are not year part of a solar community
         if self.intention == 1 and self.pv_possible and self.adopt_comm == 0:
@@ -321,8 +326,7 @@ class BuildingAgent(Agent):
                 self.remove_communities_below_min_ratio_sd(
                                     self.model.min_ratio_sd, combinations_dict)
                 
-                # Compare the possibility to join a community with individual
-                # adoption of solar (if there is any combination to consider)                                                                        
+                # Compare community vs individual (if there are combinations)
                 if len(combinations_dict) > 0:
 
                     # Pick the community with highest NPV among all possible
@@ -356,7 +360,7 @@ class BuildingAgent(Agent):
                     elif npv_ind > npv_com:
                     
                         # Go for individual adoption
-                        self.consider_individual_adoption(self.ind_inv, npv_ind, self.model.reduction, self.model.sim_year)
+                        self.consider_individual_adoption(self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
                 
                 # If there are no possible solar communities
                 else:
@@ -368,7 +372,7 @@ class BuildingAgent(Agent):
                     self.ind_npv = npv_ind
 
                     # Go for individual adoption
-                    self.consider_individual_adoption(self.ind_inv, npv_ind, self.model.reduction, self.model.sim_year)
+                    self.consider_individual_adoption(self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
                         
             
             # If no agents in plot with intention and no individual solar yet
@@ -381,10 +385,10 @@ class BuildingAgent(Agent):
                 self.ind_npv = npv_ind
 
                 # Go for individual adoption
-                self.consider_individual_adoption(self.ind_inv, npv_ind, self.model.reduction, self.model.sim_year)
+                self.consider_individual_adoption(self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
 
     
-    def consider_individual_adoption(self, ind_inv, npv_ind, reduction, sim_year):
+    def consider_individual_adoption(self, ind_inv, npv_ind, ind_inv_sub, reduction, sim_year):
         """
         This method determines if the agent adopts solar PV as an individual.
 
@@ -392,6 +396,7 @@ class BuildingAgent(Agent):
             self = agent (obj)
             ind_inv = investment for individual adoption (float)
             npv_ind = net-present value of individual adoption (float)
+            ind_inv_sub = investment subsidy for individual adoption (float)
             reduction = fraction of inv agent tolerates to lose (float)
             sim_year = year in the simualtion (int)
         Returns
@@ -413,6 +418,9 @@ class BuildingAgent(Agent):
 
             # Record agent's reason for adoption
             self.reason_adoption = "only_ind"
+
+            # Increase policy cost
+            self.model.pol_cost_sub_ind += ind_inv_sub
 
     def consider_community_adoption(self, c_max_npv, c_max_npv_dict, reduction,sim_year):
         """
@@ -454,6 +462,9 @@ class BuildingAgent(Agent):
             self.en_champ = 1
             self.adopt_comm = 1
             self.adopt_ind = 0
+
+            # Increase policy cost
+            self.model.pol_cost_sub_com += c_max_npv_dict["pv_sub"]
 
             # Loop through all the agents in the community
             for com_ag in c_max_npv_dict["members"]:
@@ -615,9 +626,11 @@ class BuildingAgent(Agent):
             # Following this paragraph: "As a rule, [the tariff used to compute the price charged to members of the solar community] does not correspond to the external electricity product that the community actually purchases (Art. 16 (1) (b) EnV), since the community, as the larger consumer, is no longer considered a household customer." (EnergieSchweiz, Leitfaden Eigenverbrauch, 2019, p.18). We consider communities enter the commercial tariffs and we assign them one depending on their size. This forces us to use two electricity prices -> one to compute the cost of the electricity bought from the grid *as a community* and one to compute the savings with the electricity tariff the agents had *as individual consumers*.
             c_dict["tariff"] = self.assign_community_tariff(np.sum(c_dict["demand"]), model.el_tariff_demands)
 
-            # Compute NPV of the community
-            c_dict["npv"] = self.calculate_com_npv(model.inputs, c_dict, 
+            # Compute NPV and pv_sub of the community
+            npv_c, pv_sub_c = self.calculate_com_npv(model.inputs, c_dict, 
                                                 model.sim_year)
+            c_dict["npv"] = npv_c
+            c_dict["pv_sub"] = pv_sub_c
             
             """
             TO BE SOLVED: 
@@ -1132,16 +1145,16 @@ class BuildingAgent(Agent):
 
         return sm_inv
 
-    def compute_pv_inv(self, pv_size, pv_price, pv_scale_alpha, pv_scale_beta, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d):
+    def compute_pv_inv(self, pv_size, pv_sub, pv_price, pv_scale_alpha, pv_scale_beta):
         """
         This function calculates the investment cost of the PV system based on 
         its size, and the price for that size category for the current year.
 
         Inputs
             pv_size = size of the installation (float)
+            pv_sub = investment subsidy for the installation (float)
             pv_price = PV price for ref size (float)
             pv_scale_alpha, pv_scale_beta = parameters of the scale effects in the price of PV systems, following the relation calculated from empirical data in Switzerland: alpha * pv_size ^ beta
-            sim_year = year in the simulation (int)
 
         Returns
             pv_inv = investment cost of PV system (float)
@@ -1157,9 +1170,6 @@ class BuildingAgent(Agent):
 
         # Estimate investment cost of PV system
         pv_inv = pv_size * pv_price_size
-
-        # Compute investment subsidy for the agent
-        pv_sub = self.compute_pv_sub(pv_size, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d)
 
         # Apply subsidy for installation
         pv_inv = pv_inv - pv_sub
@@ -1275,12 +1285,8 @@ class BuildingAgent(Agent):
             year = simulation year (int)
 
         Returns
-            com_npv_outputs = contains a dictioanry of dataframes with results:
-                "Agents_NPVs" = NPV per agent per year of simulation (df)
-                "Agents_Investment_Costs" = total inv cost per sim year per agent (df) 
-                "Agents_PPs_Norm" = normalized pp per sim year per agent (df)
-                "Agents_SCRs" = self-consumption rate per agent per operation year
-                    of PV system in the building (df)       
+            npv_com = community system NPV (float)
+            pv_sub = investment subsidy for installation (float)
         '''
         # DEFINE ECONOMIC PARAMETERS
 
@@ -1308,9 +1314,12 @@ class BuildingAgent(Agent):
 
         # Compute hte cashflows of the installation throughout its lifetime
         lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, pv_size, lifetime_load_profile, self.model.deg_rate,self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="com", com_tariff=com_tariff)
+
+        # Compute the investment subsidy
+        pv_sub = self.compute_pv_sub(self.pv_size, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
         
         # Compute the investment cost of the PV system
-        pv_inv = self.compute_pv_inv(pv_size, self.model.pv_price, self.model.pv_scale_alpha, self.model.pv_scale_beta, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
+        pv_inv = self.compute_pv_inv(pv_size, pv_sub, self.model.pv_price, self.model.pv_scale_alpha, self.model.pv_scale_beta)
         
         # Compute the investment cost of smart meters
         sm_inv = self.compute_smart_meters_inv(n_sm, self.model.smp_dict)
@@ -1324,7 +1333,7 @@ class BuildingAgent(Agent):
         # Compute the community's NPV
         npv_com = self.compute_npv(inv, lifetime_cashflows, self.model.disc_rate, self.model.sim_year)
 
-        return npv_com
+        return npv_com, pv_sub
     
     def compute_pv_sub(self, pv_size, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d):
         """

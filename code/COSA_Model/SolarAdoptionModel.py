@@ -85,7 +85,7 @@ class SolarAdoptionModel(Model):
         # Determine threshold of losses agents accept
         self.reduction = inputs["calibration_parameters"]["reduction"]
 
-        # Determine the minimum solar generation ratio to demand for communities
+        # Determine minimum solar generation ratio to demand for communities
         self.min_ratio_sd = inputs["economic_parameters"]["min_ratio_sd"]
         
         # Determine the number of closest neighbors to consider for communities
@@ -119,6 +119,10 @@ class SolarAdoptionModel(Model):
         self.pot_30_d = inputs["economic_parameters"]["pot_30_d"]
         self.pot_100_d = inputs["economic_parameters"]["pot_100_d"]
         self.pot_100_plus_d = inputs["economic_parameters"]["pot_100_plus_d"]
+
+        # Initialize policy cost of investment subsidies
+        self.pol_cost_sub_ind = 0
+        self.pol_cost_sub_com = 0
 
         ## INITIALIZE ECONOMIC PARAMETERS
         
@@ -163,7 +167,7 @@ class SolarAdoptionModel(Model):
         self.el_tariff_names = ["COSA_R1","COSA_R2","COSA_R3","COSA_R4","COSA_R5","COSA_R6","COSA_C1","COSA_C2","COSA_C3","COSA_C4","COSA_C5"]
 
         # Define initial electricity prices
-        # Index is sim_year - 2010 because historical data starts in 2010
+        # Index is (sim_year - 2010) because historical data starts in 2010
         self.el_price = {tariff:inputs["economic_parameters"]["hist_el_prices"][tariff][self.sim_year-2010] for tariff in self.el_tariff_names}
 
         # Define rate of electricity prices change
@@ -225,6 +229,8 @@ class SolarAdoptionModel(Model):
                 "n_com": dc_functions.functions.cumulate_solar_comm,
                 "n_champions": dc_functions.functions.cumulate_solar_champions,
                 "inst_cum_com":dc_functions.functions.cumulate_solar_comm_sizes,
+                "pol_cost_sub_ind":"pol_cost_sub_ind",
+                "pol_cost_sub_com":"pol_cost_sub_com",
             },
             
             # Define agent reporters that are not inputs and change over time
@@ -260,8 +266,8 @@ class SolarAdoptionModel(Model):
         This method advances the model one step (i.e. one simulation year).
         '''
         # Allow communities or not depending on year
-        if self.com_allowed_year <= self.sim_year:
-            self.com_allowed == True
+        if self.sim_year >= self.com_allowed_year:
+            self.com_allowed = True
 
         # Update PV price
         if self.sim_year < 2019 :
