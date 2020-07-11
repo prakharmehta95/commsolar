@@ -3,11 +3,7 @@
 The code in this repertory uses the mesa python library for the formulation of
 an agent-based model of community solar adoption.
 
-TO-DO:  (1) create analysis code for:
-            - calibration
-            - sensitivity analysis
-            - results
-        (2) add agents with PV already installed
+TO-DO:  (see file "updates_before_submission")
 
 Terms:  - experiment = simulation and scenarios inputs in JSON file.
         - scenario = unique combination of simulation, calibration, and 
