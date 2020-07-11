@@ -124,6 +124,12 @@ class SolarAdoptionModel(Model):
         self.pol_cost_sub_ind = 0
         self.pol_cost_sub_com = 0
 
+        # Allow or not direct marketing of self-produced electricity
+        self.direct_market = inputs["economic_parameters"]["direct_market"]
+
+        # Establish annual consumption to allow direct marketing
+        self.direct_market_th = inputs["economic_parameters"]["direct_market_th"]
+
         ## INITIALIZE ECONOMIC PARAMETERS
         
         # Define PV lifetime (in years)
@@ -151,6 +157,9 @@ class SolarAdoptionModel(Model):
         # All hours of the year are "low" except from Mon-Sat from 6-21
         self.hour_price = inputs["economic_parameters"]["hour_price"]
 
+        # Define relation of hourly price to annual average for spot market
+        self.hour_to_average = np.array(inputs["economic_parameters"]["hour_to_average"])
+
         # Define if simple or discounted payback period
         self.discount_pp = inputs["economic_parameters"]["discount_pp"]
 
@@ -170,8 +179,12 @@ class SolarAdoptionModel(Model):
         # Index is (sim_year - 2010) because historical data starts in 2010
         self.el_price = {tariff:inputs["economic_parameters"]["hist_el_prices"][tariff][self.sim_year-2010] for tariff in self.el_tariff_names}
 
-        # Define rate of electricity prices change
+        self.wholesale_el_price = inputs["economic_parameters"]["hist_wholesale_el_prices"][self.sim_year-2010]
+
+        # Define rate of electricity prices change for tariffs and wholesale
         self.el_price_change = inputs["economic_parameters"]["el_price_change"]
+
+        self.wholesale_el_price_change = inputs["economic_parameters"]["wholesale_el_price_change"]
 
         # Define demand limits for electricity tariff type
         self.el_tariff_demands = inputs["economic_parameters"]["el_tariff_demand"]
@@ -279,9 +292,13 @@ class SolarAdoptionModel(Model):
         if self.sim_year < 2019:
             # Historical data always starts in 2010
             self.el_price = {tariff:self.inputs["economic_parameters"]["hist_el_prices"][tariff][self.sim_year-2010] for tariff in self.el_tariff_names}
+
+            self.wholesale_el_price = self.inputs["economic_parameters"]["hist_wholesale_el_prices"][self.sim_year-2010]
         else:
             for tariff in self.el_tariff_names:
                 self.el_price[tariff] *= (1 + self.el_price_change)
+            
+            self.wholesale_el_price *= (1 + self.wholesale_el_price_change)
         
         # Loop through all agents using the scheduler
         self.schedule.step()
