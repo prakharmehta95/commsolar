@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D
 files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
-data_subfolder = 'code\\COSA_Outputs\\'
+data_subfolder = 'code\\COSA_Outputs\\1_calibration'
 input_subfolder = 'code\\COSA_Data\\'
 data_dir = files_dir[:files_dir.rfind('code')] + data_subfolder
 input_dir = files_dir[:files_dir.rfind('code')] + input_subfolder
@@ -180,45 +180,56 @@ cal_summary["w_a"] = pd.to_numeric(pd.Series(ix).str.split("_").str[2]).values
 #%% PLOT ERROR HEATMAP
 
 # Create error figure
-fig_err, ax_err = plt.subplots(1,1, figsize=(6.5,4))
+fig_err_heatmap, ax_err_heatmap = plt.subplots(1,2, figsize=(6.5,4))
 
 # Plot error bubbles
-errors = ax_err.scatter(x=cal_summary["w_e"], y=cal_summary["w_a"], s=20, c=cal_summary["diff_median"], cmap="RdYlGn_r", vmin=0, vmax=100000, alpha=0.5)
+errors = ax_err_heatmap[0].scatter(x=cal_summary["w_e"], y=cal_summary["w_a"], s=20, marker="s", c=cal_summary["diff_median"]/1000, cmap="RdYlGn_r", vmin=0, vmax=100, alpha=0.5)
+
+# Plot zoom into calibration region
+ax_err_heatmap[1].scatter(x=cal_summary["w_e"], y=cal_summary["w_a"], s=100, marker="s", c=cal_summary["diff_median"]/1000, cmap="RdYlGn_r", vmin=0, vmax=100, alpha=0.5, edgecolor="k")
+
+# Set limits of zoom-in
+ax_err_heatmap[1].set_ylim(0.34,0.44)
+ax_err_heatmap[1].set_xlim(0.08,0.21)
 
 # Add axes labels
-ax_err.set_xlabel("$w_{e}$")
-ax_err.set_ylabel("$w_{a}$")
+ax_err_heatmap[0].set_xlabel("$w_{e}$")
+ax_err_heatmap[0].set_ylabel("$w_{a}$")
+ax_err_heatmap[1].set_xlabel("$w_{e}$")
 
 # Create axis for colorbar
-cbar_ax = fig_err.add_axes([0.92, 0.1, 0.02, 0.8])
+cbar_ax = fig_err_heatmap.add_axes([0.92, 0.1, 0.02, 0.8])
 
 # Add color bar
-fig_err.colorbar(errors, cax=cbar_ax,label="Median error [kW]")
-#%%
+fig_err_heatmap.colorbar(errors, cax=cbar_ax,label="Median error [GW]")
+#%% EXPORT FIGURE
+fig_err_heatmap.savefig(files_dir +"\\cal_err_heatmap.svg", format="svg")
+fig_err_heatmap.savefig(files_dir +"\\cal_err_heatmap.png", format="png", bbox_inches="tight", dpi=210)
+
+#%% PLOT HEATMAP IN 3D
 from mpl_toolkits.mplot3d import Axes3D
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-fig = plt.figure(figsize=(6.5,6))
-ax = fig.add_subplot(111, projection='3d')
+fig_err_3d = plt.figure(figsize=(8,6))
+ax_3d = fig_err_3d.add_subplot(111, projection='3d')
 
 xs = cal_summary["w_e"]
 ys = cal_summary["w_p"]
 zs = cal_summary["w_a"]
-ax.scatter(xs, ys, zs, s=100, c=cal_summary["diff_median"], cmap="RdYlGn_r", edgecolor="k")
+errors = ax_3d.scatter(xs, ys, zs, s=50, c=cal_summary["diff_median"]/1000,cmap="RdYlGn_r", edgecolor="k", vmin=0, vmax=100)
 
-ax.set_xlabel("$w_{e}$")
-ax.set_ylabel("$w_{p}$")
-ax.set_zlabel("$w_{a}$")
+ax_3d.set_xlabel("$w_{e}$")
+ax_3d.set_ylabel("$w_{p}$")
+ax_3d.set_zlabel("$w_{a}$")
 
-plt.show()
-
-# Create axis for colorbar
-cbar_ax = fig.add_axes([0.92, 0.1, 0.02, 0.8])
+ax_3d.tick_params(axis='both', which='major', labelsize=8)
 
 # Add color bar
-fig.colorbar(errors, cax=cbar_ax,label="Median error [kW]")
+cb = plt.colorbar(errors, label="Median error [GW]")
+
+plt.show()
+#%% EXPORT FIGURE
+fig_err_3d.savefig(files_dir +"\\cal_err_3d.svg", format="svg")
+fig_err_3d.savefig(files_dir +"\\cal_err_3d.png", format="png", bbox_inches="tight", dpi=210)
 #%% PLOT INDIVIDUAL CAL PARAMETER ERROR
 
 # Define calibration parameters and labels
@@ -226,33 +237,53 @@ pars = ["w_e", "w_p", "w_a"]
 pars_labs = {"w_e":"$w_{e}$", "w_p":"$w_{p}$", "w_a":"$w_{a}$"}
 
 # Create error figure
-fig_err, axes_err = plt.subplots(1,3, figsize=(6.5,4), sharey=True)
+fig_ind_err, axes_ind_err = plt.subplots(1,3, figsize=(6.5,4), sharey=True)
 
 # Remove space between subplots
 plt.subplots_adjust(wspace=0, hspace=0)
 
+# Loop through the variables
 for par in pars:
 
     # Select subplot
-    ax = axes_err[pars.index(par)]
+    ax = axes_ind_err[pars.index(par)]
 
     # Plot error bubbles
-    errors = ax.scatter(x=cal_summary[par], y=cal_summary["diff_median"]/1000, c=cal_summary["w_e"]+cal_summary["w_a"], cmap="RdYlGn_r", edgecolor="k", linewidth=0.5, alpha=0.5)
+    errors = ax.scatter(x=cal_summary[par], y=cal_summary["diff_median"]/1000, c=cal_summary["diff_median"]/1000, cmap="RdYlGn_r", #edgecolor="k",
+    linewidth=0.5, alpha=0.5, vmin=0, vmax=100)
+
+    # Compute median and 50% confidence interval of errors
+    median = []
+    p25 = []
+    p75 = []
+    for xvar in sorted(list(set(cal_summary[par]))):
+        median.append(np.median(cal_summary["diff_median"].loc[cal_summary[par]==xvar])/1000)
+        p25.append(np.percentile(cal_summary["diff_median"].loc[cal_summary[par]==xvar],q=25)/1000)
+        p75.append(np.percentile(cal_summary["diff_median"].loc[cal_summary[par]==xvar],q=75)/1000)
+    
+    # Plot median error
+    ax.plot(sorted(list(set(cal_summary[par]))),median, color="gray")
+    
+    # Plot 50% confidence interval
+    ax.fill_between(sorted(list(set(cal_summary[par]))),p25,p75, color="gray", alpha=0.5)
 
     # Add axes labels
     ax.set_xlabel(pars_labs[par])
 
-    ax.set_yscale("log")
+    # Set x-axis limit
+    ax.set_xlim(-0.1, .55)
 
 # Add vertical axis label
-axes_err[0].set_ylabel("Median error [GW]")
+axes_ind_err[0].set_ylabel("Median error [GW]")
 
 # Create axis for colorbar
-cbar_ax = fig_err.add_axes([0.92, 0.1, 0.02, 0.8])
+cbar_ax = fig_ind_err.add_axes([0.92, 0.1, 0.02, 0.8])
 
 # Add color bar
-fig_err.colorbar(errors, cax=cbar_ax,label="Sum $w_{e}+w_{a}$")
-
+fig_ind_err.colorbar(errors, cax=cbar_ax,label="Median error [GW]")
+#%% EXPORT FIGURE
+fig_ind_err.savefig(files_dir +"\\ind_cal_par_errors.svg", format="svg")
+fig_ind_err.savefig(files_dir +"\\ind_cal_par_errors.png", format="png", bbox_inches="tight", dpi=210)
 #%% PLOT INSTALLED CAPACITIES PER SCENARIO
 
 # Create figure
@@ -287,7 +318,7 @@ cal = cal_data['inst_cum_ZH_wiedikon_cal']
 ax_cal.plot(cal[:10], color="k", linestyle="--", label="Wiedikon (estimated)")
 proj = [np.nan]*9
 proj.extend(cal[-6:])
-ax_cal.plot(proj, color="red", linestyle="--", label="Wiedikon (15% growht)")
+ax_cal.plot(proj, color="red", linestyle="--", label="Wiedikon (15% growth)")
 
 # Set Y-axis limits
 ax_cal.set_ylim(0, 6000)
@@ -360,7 +391,7 @@ leg_labels = [
     "90% Confidence interval",
     "Individual run",
     "Wiedikon (estimated)",
-    "Wiedikon (15% growht)"
+    "Wiedikon (15% growth)"
     ]
 ax_best.legend(handles = leg_elements , labels=leg_labels,loc='upper left', 
              ncol=1, frameon=False)
