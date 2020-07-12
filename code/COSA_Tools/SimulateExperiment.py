@@ -236,6 +236,7 @@ def initialize_scenario_inputs(inputs):
     # Unpack parameters by type
     sim_pars = inputs["simulation_parameters"]
     cal_pars = inputs["calibration_parameters"]
+    pol_pars = inputs["policy_parameters"]
     eco_pars = inputs["economic_parameters"]
 
     # Create list of parameter dictionaries
@@ -271,6 +272,7 @@ def initialize_scenario_inputs(inputs):
         sc_d = {}
         sc_d["simulation_parameters"] = sim_pars
         sc_d["calibration_parameters"] = c_d
+        sc_d["policy_parameters"] = pol_pars
         sc_d["economic_parameters"] = eco_pars
 
         # Check the sum of ideation weights

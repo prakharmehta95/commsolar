@@ -97,7 +97,7 @@ class SolarAdoptionModel(Model):
         self.com_allowed = False
 
         # Define year communities become allowed
-        self.com_allowed_year = inputs["simulation_parameters"]["com_year"]
+        self.com_allowed_year = inputs["policy_parameters"]["com_year"]
 
         # Define if FIT is available
         self.fit_on = True
@@ -125,10 +125,10 @@ class SolarAdoptionModel(Model):
         self.pol_cost_sub_com = 0
 
         # Allow or not direct marketing of self-produced electricity
-        self.direct_market = inputs["economic_parameters"]["direct_market"]
+        self.direct_market = inputs["policy_parameters"]["direct_market"]
 
         # Establish annual consumption to allow direct marketing
-        self.direct_market_th = inputs["economic_parameters"]["direct_market_th"]
+        self.direct_market_th = inputs["policy_parameters"]["direct_market_th"]
 
         ## INITIALIZE ECONOMIC PARAMETERS
         
@@ -236,7 +236,6 @@ class SolarAdoptionModel(Model):
                 "sim_step":"step_ctr",
                 "sim_year":"sim_year",
                 "pv_price":"pv_price",
-                #"buildings_ind": [ag.unique_id if ag.adopt_ind == 1 for ag in self.model.schedule.agents],
                 "n_ind": dc_functions.functions.cumulate_solar_ind,
                 "inst_cum_ind": dc_functions.functions.cumulate_solar_ind_sizes,
                 "n_com": dc_functions.functions.cumulate_solar_comm,
@@ -244,6 +243,9 @@ class SolarAdoptionModel(Model):
                 "inst_cum_com":dc_functions.functions.cumulate_solar_comm_sizes,
                 "pol_cost_sub_ind":"pol_cost_sub_ind",
                 "pol_cost_sub_com":"pol_cost_sub_com",
+                "direct_market_th":"direct_market_th",
+                "direct_market":"direct_market",
+                "com_year":"com_allowed_year"
             },
             
             # Define agent reporters that are not inputs and change over time
@@ -263,7 +265,7 @@ class SolarAdoptionModel(Model):
                 "reason_adoption":"reason_adoption",
                 "ind_inv":"ind_inv",
                 "ind_scr":"ind_scr",
-                "ind_npv":"ind_npv"
+                "ind_npv":"ind_npv",
             },
             tables = {
                 "communities": ["year", "community_id", "solar", "demand",
