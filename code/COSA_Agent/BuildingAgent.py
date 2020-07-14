@@ -661,7 +661,8 @@ class BuildingAgent(Agent):
         com_tariff = sorted(list(el_tariff_demands["commercial"].keys()))[t_ix]
 
         # If the community consumes more than 100 MWh/yr - it can sell/buy electricity in the wholesale electricity market. Then, assign the wholesale price
-        if self.model.direct_market:
+        if self.model.direct_market == True:
+            print(self.model.direct_market)
             if demand_yr > self.model.direct_market_th:
                 com_tariff = "wholesale"
                 print(com_tariff)
@@ -1133,6 +1134,7 @@ class BuildingAgent(Agent):
             if sys == "ind":
                 cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["O&M"])
                 cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["O&M"])
+                # THIS NEEDS TO INCLUDE SMART METER COSTS
 
             elif sys == "com":
                 cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"])
