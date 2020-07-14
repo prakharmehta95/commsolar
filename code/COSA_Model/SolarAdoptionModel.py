@@ -16,7 +16,6 @@ from mesa.datacollection import DataCollector
 
 # Import classes and functions from own scripts
 from COSA_Tools.scheduler import StagedActivation_random
-from COSA_Tools import dc_functions
         
 class SolarAdoptionModel(Model):
     '''
@@ -236,11 +235,10 @@ class SolarAdoptionModel(Model):
                 "sim_step":"step_ctr",
                 "sim_year":"sim_year",
                 "pv_price":"pv_price",
-                "n_ind": dc_functions.functions.cumulate_solar_ind,
-                "inst_cum_ind": dc_functions.functions.cumulate_solar_ind_sizes,
-                "n_com": dc_functions.functions.cumulate_solar_comm,
-                "n_champions": dc_functions.functions.cumulate_solar_champions,
-                "inst_cum_com":dc_functions.functions.cumulate_solar_comm_sizes,
+                "n_ind": lambda m: np.sum([ag.adopt_ind for ag in m.schedule.agents]),
+                "inst_cum_ind": lambda m: np.sum([ag.pv_size for ag in m.schedule.agents if ag.adopt_ind == 1]),
+                "n_com": lambda m: np.sum([ag.adopt_comm for ag in m.schedule.agents]),
+                "inst_cum_com":lambda m: np.sum([ag.pv_size for ag in m.schedule.agents if ag.adopt_comm == 1]),
                 "pol_cost_sub_ind":"pol_cost_sub_ind",
                 "pol_cost_sub_com":"pol_cost_sub_com",
                 "direct_market_th":"direct_market_th",
