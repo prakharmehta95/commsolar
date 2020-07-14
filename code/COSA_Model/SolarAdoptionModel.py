@@ -270,7 +270,7 @@ class SolarAdoptionModel(Model):
             tables = {
                 "communities": ["year", "community_id", "solar", "demand",
                     "SC", "SCR", "pv_size", "pv_size_added", "n_sm",
-                    "n_sm_added", "npv"],
+                    "n_sm_added", "npv", "tariff"],
             }
             )
                                     
