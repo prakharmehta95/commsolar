@@ -1,4 +1,4 @@
-{   "exp_name": "com_2019_no_dm_el2yr",
+{   "exp_name": "com_2019_dm_100_el2yr",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2010,
@@ -10,9 +10,9 @@
     },
     "calibration_parameters":{
         "w_econ": [0.14],
-        "w_swn": [0.32],
+        "w_swn": [0.3],
         "w_att": [0.38],
-        "w_subplot": [0.16],
+        "w_subplot": [0.18],
         "threshold": [0.5],
         "reduction": [0],
         "awareness_mean": [0.698],
@@ -21,7 +21,7 @@
     },
     "policy_parameters":{
         "direct_market_th":100000,
-        "direct_market":"False",
+        "direct_market":"True",
         "com_year":2019        
     },
     "economic_parameters":{

@@ -1,18 +1,18 @@
-{   "exp_name": "com_2019_dm_100_el2yr",
+{   "exp_name": "cal_20",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2010,
-        "end_year": 2035,
+        "end_year": 2024,
         "n_agents": 5000,
         "n_peers": 20,
         "n_closest_neighbors" : 4,
         "n_cores": 48
     },
     "calibration_parameters":{
-        "w_econ": [0.14],
-        "w_swn": [0.32],
-        "w_att": [0.38],
-        "w_subplot": [0.16],
+        "w_econ": [0.13],
+        "w_swn": [0.3, 0.31, 0.32, 0.33, 0.34],
+        "w_att": [0.38, 0.39],
+        "w_subplot": [0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19],
         "threshold": [0.5],
         "reduction": [0],
         "awareness_mean": [0.698],
@@ -22,7 +22,7 @@
     "policy_parameters":{
         "direct_market_th":100000,
         "direct_market":"True",
-        "com_year":2019        
+        "com_year":2050        
     },
     "economic_parameters":{
         "min_ratio_sd": 0.1,

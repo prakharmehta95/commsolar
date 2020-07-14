@@ -1,8 +1,8 @@
-{   "exp_name": "cal_20",
+{   "exp_name": "cal_21",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2010,
-        "end_year": 2035,
+        "end_year": 2024,
         "n_agents": 5000,
         "n_peers": 20,
         "n_closest_neighbors" : 4,
@@ -22,7 +22,7 @@
     "policy_parameters":{
         "direct_market_th":100000,
         "direct_market":"True",
-        "com_year":2019        
+        "com_year":2050        
     },
     "economic_parameters":{
         "min_ratio_sd": 0.1,
