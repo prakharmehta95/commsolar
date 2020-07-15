@@ -333,10 +333,6 @@ class BuildingAgent(Agent):
 
                 # Evaluate the characteristics of each possible community
                 self.update_combinations_available(self.model, combinations_dict)
-
-                # Remove combinations that do not meet the min criteria of
-                # solar generation potential to electricity demand
-                self.remove_communities_below_min_ratio_sd(self.model.min_ratio_sd, combinations_dict)
                 
                 # Compare community vs individual (if there are combinations)
                 if len(combinations_dict) > 0:
@@ -543,11 +539,19 @@ class BuildingAgent(Agent):
                 # Create a distances dataframe only of the agents in community
                 d_df = distances[distances[uid].isin(com_ag_ids)]
 
-                # Set the names of the buildings as the index
-                d_df = d_df.set_index(uid)
+                # Check if the dataframe is empty
+                if len(d_df) == 0:
+                    
+                    # If empty dataframe, pick the first agent
+                    agents_to_consider.extend([ag for ag in self.model.schedule.agents if ag.unique_id == com_ag_ids[0]])
 
-                # Find closest agent in community and append to list
-                agents_to_consider.extend([ag for ag in self.model.schedule.agents if ag.unique_id == d_df.idxmin().values[0]])
+                else:
+
+                    # Set the names of the buildings as the index
+                    d_df = d_df.set_index(uid)
+
+                    # Find closest agent in community and append to list
+                    agents_to_consider.extend([ag for ag in self.model.schedule.agents if ag.unique_id == d_df.idxmin().values[0]])
         
         # Check if more options to consider than limit
         if len(agents_to_consider) > n_closest_neighbors:
