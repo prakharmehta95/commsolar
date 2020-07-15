@@ -98,6 +98,15 @@ class BuildingAgent(Agent):
         # initialize adoption year to zero
         self.adopt_year = 0
 
+        # Initialize PV system tracker
+        self.pv_installation = False
+
+        # Initialize year of pv installation
+        self.pv_installation_year = 0
+
+        # Initialize pv installation investment cost at time of adoption
+        self.pv_installation_cost = 0
+
         # initialize attribute as energy chamption to zero
         self.en_champ = 0
 
@@ -298,33 +307,38 @@ class BuildingAgent(Agent):
         # step, who are not year part of a solar community
         if self.intention == 1 and self.pv_possible and self.adopt_comm == 0:
 
-            # Create a list containing all the agents in the plot with the
-            # idea to adopt PV or that already have PV, who are not in community
+            # Create a list containing all the agents in the plot with the idea to adopt PV or that already have PV, who are not in community
             potential_partners = [ag for ag in self.model.schedule.agents if (
                                     (ag.bldg_plot == self.bldg_plot) and (
                                     (ag.intention == 1) or (ag.adopt_ind == 1))
-                                    and (ag.adopt_comm == 0))]
+                                    and (ag.adopt_comm == 0) and (ag.unique_id != self.unique_id))]
+
+            # Create a list of formed communities the agent could join
+            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_comm==1) and (ag.unique_id != self.unique_id))]))
+
+            # Compute the number of community options
+            if self.model.join_com == True:
+                n_com_options = len(potential_partners) + len(potential_communities)
+            else:
+                n_com_options = len(potential_partners)
                 
             # If agents in plot with idea to install and communities allowed
-            if len(potential_partners) > 1 and self.model.com_allowed:
+            if (n_com_options > 1) and (self.model.com_allowed == True):
 
-                # Define what available communities the agent considers
-                # Important: neighbors in communities are discarded as potential
-                # partners, which means an agent cannot join existing community
-                partners_to_consider = self.define_partners_to_consider(
-                            potential_partners, self.model.n_closest_neighbors)
+                # Define what community options the agent considers
+                agents_to_consider = self.define_agents_to_consider(potential_partners, potential_communities, self.unique_id, self.distances, self.model.n_closest_neighbors)
+                #partners_to_consider = self.define_partners_to_consider(potential_partners, self.model.n_closest_neighbors)
 
                 # Define what possible communities could be formed
-                combinations_dict = self.define_possible_communities(
-                                                        partners_to_consider)
+                #combinations_dict = self.define_possible_communities(partners_to_consider)
+                combinations_dict = self.define_possible_coms(agents_to_consider)
 
                 # Evaluate the characteristics of each possible community
                 self.update_combinations_available(self.model, combinations_dict)
 
                 # Remove combinations that do not meet the min criteria of
                 # solar generation potential to electricity demand
-                self.remove_communities_below_min_ratio_sd(
-                                    self.model.min_ratio_sd, combinations_dict)
+                self.remove_communities_below_min_ratio_sd(self.model.min_ratio_sd, combinations_dict)
                 
                 # Compare community vs individual (if there are combinations)
                 if len(combinations_dict) > 0:
@@ -422,6 +436,15 @@ class BuildingAgent(Agent):
             # Increase policy cost
             self.model.pol_cost_sub_ind += ind_inv_sub
 
+            # Define pv_installation as true
+            self.pv_installation = True
+
+            # Record installation year
+            self.pv_installation_year = sim_year
+
+            # Record the cost of the installation
+            self.pv_installation_cost = ind_inv
+
     def consider_community_adoption(self, c_max_npv, c_max_npv_dict, reduction,sim_year):
         """
         This method determines if the agent joins a solar community, by first
@@ -460,8 +483,6 @@ class BuildingAgent(Agent):
 
             # Update this agent's attributes as the energy chamption
             self.en_champ = 1
-            self.adopt_comm = 1
-            self.adopt_ind = 0
 
             # Increase policy cost
             self.model.pol_cost_sub_com += c_max_npv_dict["pv_sub"]
@@ -477,9 +498,24 @@ class BuildingAgent(Agent):
                         
                 # Record the year of installation
                 com_ag.adopt_year = sim_year
+
+                # Record the name of the community
+                com_ag.com_name = c_max_npv
                 
                 # Record agent's variables in info dataframe
-                self.reason_adoption = "Comm>Ind"
+                com_ag.reason_adoption = "Comm>Ind"
+
+                # Update PV insallation if necessary
+                if com_ag.pv_installation == False:
+                    
+                    # Set PV installation true
+                    com_ag.pv_installation = True
+
+                    # Record year of insallation
+                    com_ag.pv_installation_year = sim_year
+
+                    # Set cost of installation
+                    com_ag.pv_installation_cost = c_max_npv_dict["inv_new"]
 
             # Save data about formed community
             self.save_formed_community(c_max_npv, c_max_npv_dict)              
@@ -513,8 +549,8 @@ class BuildingAgent(Agent):
             # Note - column name for list of buildings in distance dataframe
             # is the unique_id of the active agent
 
-            # Short buildings by distance to active agent
-            d_df.sort_values(by = ['dist_' + uid])
+            # Sort buildings by distance to active agent
+            d_df.sort_values(by = ['dist_' + uid], inplace=True)
 
             # List the n_closest_neighbors as the closest potential partners
             closest_pps = np.array(d_df[uid].iloc[:(n_closest_neighbors + 1)].values)
@@ -529,114 +565,203 @@ class BuildingAgent(Agent):
 
         return partners_to_consider
 
-    def define_possible_communities(self, partners_to_consider):
+    def define_agents_to_consider(self, potential_partners, potential_communities, uid, distances, n_closest_neighbors):
         """
-        Creates a dictionary of all possible communities of all possible sizes, 
-        where the key is the name of the community and the value is a dictionary
-        of the community characteristics.
+        Defines list of potential communities to consider.
+
+        Inputs
+
+        Returns
+            agents_to_consider = list of buildings to consider for forming a community (list of ids)
+        """
+
+        # Place all agents that could be potential partners in a list
+        agents_to_consider = potential_partners
+
+        # If there is any potential community, add the closest agent of each potential community to the list
+        if len(potential_communities) > 0:
+            
+            # List the agents in each potential community to join
+            com_ags = [com.split("_") for com in potential_communities]
+
+            # List the closest agents per community
+            for com_ag_ids in com_ags:
+
+                # Create a distances dataframe only of the agents in community
+                d_df = distances[distances[uid].isin(com_ag_ids)]
+
+                # Set the names of the buildings as the index
+                d_df = d_df.set_index(uid)
+
+                # Find closest agent in community and append to list
+                agents_to_consider.extend([ag for ag in self.model.schedule.agents if ag.unique_id == d_df.idxmin().values[0]])
+        
+        # Check if more options to consider than limit
+        if len(agents_to_consider) > n_closest_neighbors:
+
+            # Create dataframe with only the agents in the list
+            d_df = self.distances[self.distances[uid].isin(potential_partners)]
+
+            # List the n_closest_neighbors 
+            agents_to_consider = [ag for ag in agents_to_consider if ag.unique_id in d_df.sort_values(by = ['dist_' + uid]).iloc[:n_closest_neighbors].index]
+
+        return agents_to_consider
+
+    def define_possible_coms(self, agents_to_consider):
+        """
+        Creates a dictionary of all possible communities of all possible sizes, where the key is the name of the community and the value is a dictionary of the community characteristics.
 
         Inputs:
             self = active agent (obj)
-            partners_to_consider = available agents to form community (list objs)
+            agents_to_consider = available agents to form community (list objs)
 
         Returns:
             combinations_dict = dictionary of all possible communities with
-                key = community name (all unique_id of agents joined with "_") and
-                value = dictionary of community properties (the only item is:
-                key = "members", value = list of agents in community (list objs))
-        
-        Note: in future versions, this will be easier with a new object class.
+                key = community name (all unique_id of agents joined with "_") and value = dictionary of community properties (the only item is: key = "members", value = list of agents in community (list objs))
         """
 
+        # Filter individual buildings and buildings in communities
+        ags_alone = [ag for ag in agents_to_consider if ag.adopt_comm == 0]
+        ags_in_com = [ag for ag in agents_to_consider if ag.adopt_comm == 1]
+        
         # Create empty list to store all possible communities
-        combinations_list = []
+        coms_list = []
 
         # Create empty dictionary to store the possible communities by name
-        combinations_dict = {}
+        coms_dict = {}
 
         # Loop through all possible community sizes (i.e. number of members)
-        for com_size in np.arange(1,len(partners_to_consider)+1):
+        for com_size in np.arange(1,len(ags_alone)+1):
 
             # Create a list of tuples, each one a combination possible
-            combinations_list.extend(list(itertools.combinations(
-                                            partners_to_consider, com_size)))
+            coms_list.extend(list(itertools.combinations(ags_alone, com_size)))
         
-        # Transform the tuples into lists (to later add active agent)
-        combinations_list = [list(c) for c in combinations_list]
+        # Remove repeated buildings in each combination
+        coms_list = [tuple(set(c)) for c in coms_list]
 
-        # Add active agent to each potential community in the list
-        for item in combinations_list:
-            item.append(self)
+        # Remove repeated combinations
+        coms_list = list(set(coms_list))
+
+        # Add active agent to each combination (as tuple)
+        coms_list = [c+(self,) for c in coms_list]
 
         # Create dictionary of combinations
-        for community_members in combinations_list:
+        for com_members in coms_list:
 
-            # Create the community name by joining with "_" in between the list of
-            # unique identifications of each agent in the community
-            community_name = '_'.join([ag.unique_id for ag in community_members])
+            # Create the community name
+            com_name = '_'.join([ag.unique_id for ag in com_members])
 
             # Create a dictionary for storing this community parameters
-            combinations_dict[community_name] = {}
+            coms_dict[com_name] = {}
 
             # Store community in dictionary
-            combinations_dict[community_name]["members"] = community_members
-            
-        return combinations_dict
+            coms_dict[com_name]["members"] = com_members
+        
+        # Add the agent to existing communities available
+        for ag_in_com in ags_in_com:
+
+            # Create the name of the new community
+            com_name = '_'.join([ag_in_com.com_name,self.unique_id])
+
+            # Create a dictionary for storing this community parameters
+            coms_dict[com_name] = {}
+
+            # List members
+            com_members = [ag for ag in self.model.schedule.agents if ag.unique_id in com_name.split("_")]
+
+            # Store community in dictionary
+            coms_dict[com_name]["members"] = com_members
+
+        return coms_dict
 
     def update_combinations_available(self, model, combinations_dict):
         """
         This method completes the characteristics of all possible communities
         by directly updating the combinations_dict.
         """
+        # IMPORTANT: if there is any agent with PV already:
+        # (1) PV investment is the sum of agents with no prior PV
+        # (2) Smart meter investmetns is sum of agents with no prior PV
+        # IMPORTANT 2: PV and smart meter investment needs to be computed for the whole community to realize scale effects on prices
+
+        # Following this paragraph: "As a rule, [the tariff used to compute the price charged to members of the solar community] does not correspond to the external electricity product that the community actually purchases (Art. 16 (1) (b) EnV), since the community, as the larger consumer, is no longer considered a household customer." (EnergieSchweiz, Leitfaden Eigenverbrauch, 2019, p.18). We consider communities enter the commercial tariffs and we assign them one depending on their size. This forces us to use two electricity prices -> one to compute the cost of the electricity bought from the grid *as a community* and one to compute the savings with the electricity tariff the agents had *as individual consumers*.
+
+        # List communities to delete because insufficient generation
+        coms_below_ratio = []
 
         # Loop through combinations_dict to fill-in community attributes
-        for c_name, c_dict in combinations_dict.items():
+        for c, c_d in combinations_dict.items():
 
             # Create list of agents members of the community
-            members = c_dict["members"]
+            members = np.array(c_d["members"])
 
             # Compute solar generation potential of community by summing along
             # the rows the columns in solar of the agents in community
-            c_dict["solar"] = np.nansum([ag.solar for ag in members], axis=0)
+            c_d["solar"] = np.nansum([ag.solar for ag in members], axis=0)
 
             # Compute demand of community
-            c_dict["demand"] = np.nansum([ag.demand for ag in members], axis=0)
+            c_d["demand"] = np.nansum([ag.demand for ag in members], axis=0)
 
-            # IMPORTANT: if there is any agent with PV already:
-            # (1) PV investment is the sum of agents with no prior PV
-            # (2) Smart meter investmetns is sum of agents with no prior PV
-            # IMPORTANT 2: PV and smart meter investment needs to be 
-            # computed for the whole community to realize scale effects on prices
+            # Compute ratio of solar generation to demand
+            if np.nansum(c_d["demand"]) != 0:
 
-            # Compute total community size PV
-            c_dict["pv_size"] = sum([ag.pv_size for ag in members])
-
-            # Compute added PV (in case any agent has already PV)
-            c_dict["pv_size_added"] = sum(
-                [ag.pv_size for ag in members if ag.adopt_ind == 0])
+                # Divide annual solar generation over annual demand
+                c_sd = np.nansum(c_d["solar"]) / np.nansum(c_d["demand"])
             
-            # Compute total number of smart meters in the community
-            c_dict["n_sm"] = sum([ag.n_sm for ag in members])
+            # If the community has zero demand, it cannot be formed
+            else:
+                c_sd = 0
 
-            # Compute added smart meters (in case any agent has already PV)
-            c_dict["n_sm_added"] = sum(
-                [ag.n_sm for ag in members if ag.adopt_ind == 0])
+            # Compare the community's ratio
+            if ((c_sd < model.min_ratio_sd) or np.isnan(c_sd) or np.isinf(c_sd)):
 
-            # Determine the community's electricity tariff
-            # Following this paragraph: "As a rule, [the tariff used to compute the price charged to members of the solar community] does not correspond to the external electricity product that the community actually purchases (Art. 16 (1) (b) EnV), since the community, as the larger consumer, is no longer considered a household customer." (EnergieSchweiz, Leitfaden Eigenverbrauch, 2019, p.18). We consider communities enter the commercial tariffs and we assign them one depending on their size. This forces us to use two electricity prices -> one to compute the cost of the electricity bought from the grid *as a community* and one to compute the savings with the electricity tariff the agents had *as individual consumers*.
-            c_dict["tariff"] = self.assign_community_tariff(np.sum(c_dict["demand"]), model.el_tariff_demands)
-
-            # Compute NPV and pv_sub of the community
-            npv_c, pv_sub_c = self.calculate_com_npv(model.inputs, c_dict, 
-                                                model.sim_year)
-            c_dict["npv"] = npv_c
-            c_dict["pv_sub"] = pv_sub_c
+                # If ratio too small, put in list to remove
+                coms_below_ratio.append(c)
             
-            """
-            TO BE SOLVED: 
-            (1) What happens with installed PV capacity?
-            ---> At the moment, no PV inv and no SM costs of already installed
-            """
+            # If ratio is big enough, then continue estimating parameters
+            else:
+
+                # Compute total community size PV
+                c_d["pv_size"] = sum([ag.pv_size for ag in members])
+
+                # Compute added PV (in case any agent has already PV)
+                c_d["pv_size_added"] = sum([ag.pv_size for ag in members if ag.pv_installation == False])
+                
+                # Compute total number of smart meters in the community
+                c_d["n_sm"] = sum([ag.n_sm for ag in members])
+
+                # Compute added smart meters (in case any agent has already PV)
+                c_d["n_sm_added"] = sum([ag.n_sm for ag in members if ag.pv_installation == False])
+
+                # Determine the community's electricity tariff
+                c_d["tariff"] = self.assign_community_tariff(np.sum(c_d["demand"]), model.el_tariff_demands)
+                
+                # For agents that join the community now with existing PV, compute the current value of their invesmtent wiht a linear depretiation process and add them up
+                c_d["present_inv_ind"] = np.sum([(
+                    ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
+                    for ag in members 
+                    if ((ag.pv_installation == True) and (ag.adopt_ind == 1))])
+                
+                # For agents that join the community as part of an existing community, compute the curretn value of the existing community PV with a linear depretiation process and add them up
+                c_d["present_inv_com"] = np.sum(list(set([(
+                    ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
+                    for ag in members 
+                    if ((ag.pv_installation == True) and (ag.adopt_comm == 1))])))
+                # Explanation: each agent already in a community has stored the year when they installed on their rooftops pv_installation_year and how much they invested in it in pv_installation_cost (which could be individually, if they joined being grid prosumers, or could be the new investment in the commmunity if they joined as grid consumers). For the agents that joined the community as grid consumers, the stored pv_installation_cost is the inv_new (this is, the cost of adding new PV and smart meters) of the whole community. Since these agents store the same pv_installation_year and pv_installation_cost, using set() removes duplicated values and ensures we only count them once.
+
+                # Compute NPV and pv_sub of the community
+                npv_c, pv_sub_c, inv_c_new = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
+
+                # Store the economic parameters of the community
+                c_d["npv"] = npv_c
+                c_d["pv_sub"] = pv_sub_c
+                c_d["inv_new"] = inv_c_new
+                c_d["inv_old"] = c_d["present_inv_ind"] + c_d["present_inv_com"]
+
+        # Loop through the communities below ratio and delete them from dict
+        for c in coms_below_ratio:
+            del combinations_dict[c]
+
     def assign_community_tariff(self, demand_yr, el_tariff_demands):
         """
         This method assigns the community a commercial electricity tariff based on the annual demand of the community.
@@ -662,7 +787,7 @@ class BuildingAgent(Agent):
 
         # If the community consumes more than 100 MWh/yr - it can sell/buy electricity in the wholesale electricity market. Then, assign the wholesale price
         if self.model.direct_market == True:
-            print(self.model.direct_market)
+
             if demand_yr > self.model.direct_market_th:
                 com_tariff = "wholesale"
                 print(com_tariff)
@@ -763,6 +888,7 @@ class BuildingAgent(Agent):
         for c, c_d in combinations_dict.items():
 
             if np.nansum(c_d["demand"]) != 0:
+
                 # Divide annual solar generation over annual demand
                 c_ratio_sd = np.nansum(c_d["solar"]) / np.nansum(c_d["demand"])
             
@@ -813,7 +939,7 @@ class BuildingAgent(Agent):
         c_export_dict["SCR"] = c_export_dict["SC"] / c_export_dict["solar"]
 
         # Define PV size and profitability values
-        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff"]:
+        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old"]:
             c_export_dict[v] = c_dict[v]
         
         self.model.datacollector.add_table_row("communities", c_export_dict)
@@ -1350,7 +1476,7 @@ class BuildingAgent(Agent):
         lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, pv_size, lifetime_load_profile, self.model.deg_rate,self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="com", com_tariff=com_tariff)
 
         # Compute the investment subsidy
-        pv_sub = self.compute_pv_sub(self.pv_size, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
+        pv_sub = self.compute_pv_sub(pv_size, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
         
         # Compute the investment cost of the PV system
         pv_inv = self.compute_pv_inv(pv_size, pv_sub, self.model.pv_price, self.model.pv_scale_alpha, self.model.pv_scale_beta)
@@ -1362,12 +1488,18 @@ class BuildingAgent(Agent):
         coop_cost = 0
         
         # Estimate the total investment cost
-        inv = pv_inv + sm_inv + coop_cost
+        inv_new = pv_inv + sm_inv + coop_cost
+
+        # Compute investment for buying old systems
+        inv_old = c_dict["present_inv_ind"] + c_dict["present_inv_com"]
+
+        # Total investment
+        inv = inv_new + inv_old
 
         # Compute the community's NPV
         npv_com = self.compute_npv(inv, lifetime_cashflows, self.model.disc_rate, self.model.sim_year)
 
-        return npv_com, pv_sub
+        return npv_com, pv_sub, inv_new
     
     def compute_pv_sub(self, pv_size, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d):
         """
