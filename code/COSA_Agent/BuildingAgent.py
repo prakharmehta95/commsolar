@@ -327,10 +327,8 @@ class BuildingAgent(Agent):
 
                 # Define what community options the agent considers
                 agents_to_consider = self.define_agents_to_consider(potential_partners, potential_communities, self.unique_id, self.distances, self.model.n_closest_neighbors)
-                #partners_to_consider = self.define_partners_to_consider(potential_partners, self.model.n_closest_neighbors)
 
                 # Define what possible communities could be formed
-                #combinations_dict = self.define_possible_communities(partners_to_consider)
                 combinations_dict = self.define_possible_coms(agents_to_consider)
 
                 # Evaluate the characteristics of each possible community
@@ -520,51 +518,6 @@ class BuildingAgent(Agent):
             # Save data about formed community
             self.save_formed_community(c_max_npv, c_max_npv_dict)              
         
-    def define_partners_to_consider(self, potential_partners, n_closest_neighbors):
-        """
-        Create a list of agents with whom a community could be formed taking the
-        n_closest_neighbors potential partners based on distance to agent.
-
-        Inputs:
-            self = active agent (obj)
-            potential_partners = agents in same plot and not in a community, with
-                the idea to adopt solar OR individual solar (list of objects)
-            n_closest_neighbors = max number of potential partners to consider (int)
-        
-        Returns:
-            partners_to_consider = agents to consider forming a community (list objs)
-        """
-
-        # Read the active agent unique identification
-        uid = self.unique_id
-
-        # Check how many agents in the building's plot have intention to adopt
-        if len(potential_partners) > n_closest_neighbors:
-
-            # If there are more than n_closests_neighbors, then choose those
-            # closest to the agent up to n_closest_neighbors
-
-            # Reduce list of distances to only buildings in plot with ideas
-            d_df = self.distances[self.distances[uid].isin(potential_partners)]
-            # Note - column name for list of buildings in distance dataframe
-            # is the unique_id of the active agent
-
-            # Sort buildings by distance to active agent
-            d_df.sort_values(by = ['dist_' + uid], inplace=True)
-
-            # List the n_closest_neighbors as the closest potential partners
-            closest_pps = np.array(d_df[uid].iloc[:(n_closest_neighbors + 1)].values)
-
-            # Create a list of agents (objs) containing the closest_pps
-            partners_to_consider = [ag for ag in potential_partners 
-                                                if ag.unique_id in closest_pps]
-
-        # If there are fewer than n_closest_neighbors, then take all agents
-        else:
-            partners_to_consider = potential_partners
-
-        return partners_to_consider
-
     def define_agents_to_consider(self, potential_partners, potential_communities, uid, distances, n_closest_neighbors):
         """
         Defines list of potential communities to consider.
@@ -708,6 +661,10 @@ class BuildingAgent(Agent):
                 # Divide annual solar generation over annual demand
                 c_sd = np.nansum(c_d["solar"]) / np.nansum(c_d["demand"])
             
+            # Note: this code also prevents the formation of communities with no solar generation or no demand.
+
+            # More info: this is based on the Art. 15 par 1 of the RS 730.01 which says "Grouping in the context of own consumption is permitted, provided that the production power of the installation or installations is at least 10% of the connection power of the grouping" https://www.admin.ch/opc/fr/official-compilation/2019/913.pdf
+
             # If the community has zero demand, it cannot be formed
             else:
                 c_sd = 0
@@ -790,7 +747,6 @@ class BuildingAgent(Agent):
 
             if demand_yr > self.model.direct_market_th:
                 com_tariff = "wholesale"
-                print(com_tariff)
 
         return com_tariff
         
@@ -860,52 +816,6 @@ class BuildingAgent(Agent):
             npv_sh_d[ag.unique_id] = ag_d_share * c_max_npv_dict["npv"]            
 
         return npv_sh_d
-    
-    def remove_communities_below_min_ratio_sd(self, min_ratio_sd, 
-                                                            combinations_dict):
-        """
-        This method removes communities that do not meet the minium solar
-        generation potential requirement from consideration.
-        
-        Inputs
-            min_ratio_sd = minimum ratio of annual solar generation and 
-                annual electricity demand (float)
-            combinations_dict = all possible communities (dict)
-
-        Returns
-            None = it updates directly the combinations_dict 
-
-        Note: this code also prevents the formation of communities with no
-        solar generation or no demand.
-
-        More info: this method is based on the Art. 15 par 1 of the RS 730.01 which says "Grouping in the context of own consumption is permitted, provided that the production power of the installation or installations is at least 10% of the connection power of the grouping" https://www.admin.ch/opc/fr/official-compilation/2019/913.pdf         
-        """
-        # List communities to delete
-        coms_below_ratio = []
-
-        # Remove communities that do not meet minimum criteria
-        # of solar production to demand ratio
-        for c, c_d in combinations_dict.items():
-
-            if np.nansum(c_d["demand"]) != 0:
-
-                # Divide annual solar generation over annual demand
-                c_ratio_sd = np.nansum(c_d["solar"]) / np.nansum(c_d["demand"])
-            
-            # If the community has zero demand, it cannot be formed
-            else:
-                c_ratio_sd = 0
-
-            # Compare the community's ratio
-            if ((c_ratio_sd < min_ratio_sd) or np.isnan(c_ratio_sd) 
-                                                    or np.isinf(c_ratio_sd)):
-
-                # If ratio too small, put in list to remove
-                coms_below_ratio.append(c)
-        
-        # Loop through the communities below ratio and delete them from dict
-        for c in coms_below_ratio:
-            del combinations_dict[c]
     
     def save_formed_community(self, c_name, c_dict):
         """
