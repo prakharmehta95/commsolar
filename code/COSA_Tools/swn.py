@@ -35,5 +35,4 @@ def make_swn(distances, list_agents, n_peers, seed):
         AgentsNetwork[agent_id] = random.sample(list(distances[agent_id]), 
                                                 k = n_peers)
     
-    return AgentsNetwork
-   
+    return AgentsNetwork   

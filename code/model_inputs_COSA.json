@@ -3,16 +3,16 @@
         "runs": 2,
         "start_year": 2010,
         "end_year": 2035,
-        "n_agents": 2000,
+        "n_agents": 5000,
         "n_peers": 20,
         "n_closest_neighbors" : 4,
         "n_cores": 2
     },
     "calibration_parameters":{
         "w_econ": [0.14],
-        "w_swn": [0.32],
+        "w_swn": [0.3],
         "w_att": [0.38],
-        "w_subplot": [0.16],
+        "w_subplot": [0.18],
         "threshold": [0.5],
         "reduction": [0],
         "awareness_mean": [0.698],
@@ -20,8 +20,8 @@
         "awareness_minergie": [0.95]
     },
     "policy_parameters":{
-        "direct_market_th":100000,
-        "direct_market":"False",
+        "direct_market_th":1,
+        "direct_market": true,
         "com_year":2019        
     },
     "economic_parameters":{
@@ -46,7 +46,7 @@
         "PV_degradation": 0,
         "OM_Cost_rate": 0.06,
         "disc_rate": 0.09,
-        "discount_pp": "False",
+        "discount_pp": false,
         "AC_conv_eff": 0.97,
         "max_payback_period": 15,
         "av_hh_size": 2.2,
@@ -54,7 +54,7 @@
         "pv_scale_alpha":1.836538343,
         "pv_scale_beta":-0.264,
         "hist_pv_prices":{"2010":6500,"2011":4500,"2012":3500,"2013":3250,"2014":3000,"2015":2850,"2016":2850,"2017":2700,"2018":2500},
-        "el_price_change":0.066,
+        "el_price_change":0.011,
         "wholesale_el_price_change":-0.004,
         "el_tariff_demand":{
             "residential":{
