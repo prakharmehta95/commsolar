@@ -98,6 +98,9 @@ class SolarAdoptionModel(Model):
         # Define year communities become allowed
         self.com_allowed_year = inputs["policy_parameters"]["com_year"]
 
+        # Define if joining an existing community is allowed
+        self.join_com = True
+
         # Define if FIT is available
         self.fit_on = True
 
@@ -208,6 +211,9 @@ class SolarAdoptionModel(Model):
             # Assign an electricity tariff to the agent
             ag_tariff = self.assign_electricity_tariff(unique_id, demand,agents_info, self.el_tariff_demands, inputs["economic_parameters"]["av_hh_size"])
 
+            # Create agent's social network **NOT USED FOR THESIS SIMULATIONS**
+            #ag_peers = self.assign_social_network(unique_id, distances, inputs["simulation_parameters"]["n_peers"])
+
             # Create instantiation of an agent and provide necessary inptus
             ag = agent(self,
                 unique_id = unique_id,
@@ -268,7 +274,7 @@ class SolarAdoptionModel(Model):
             tables = {
                 "communities": ["year", "community_id", "solar", "demand",
                     "SC", "SCR", "pv_size", "pv_size_added", "n_sm",
-                    "n_sm_added", "npv", "tariff"],
+                    "n_sm_added", "npv", "tariff", "pv_sub", "inv_new", "inv_old"],
             }
             )
                                     
@@ -401,3 +407,20 @@ class SolarAdoptionModel(Model):
         ag_tariff = sorted(list(el_tariff_demands[t_type].keys()))[t_ix]
 
         return ag_tariff
+
+    def assign_social_network(self, unique_id, distances, n_peers):
+        """
+        This method creates a list of peers with whom the agent is connected.
+
+        Inputs:
+            unique_id = agent's identifier (str)
+            distances = list of distance to other agents (df)
+            n_peers = number of connections per agent (int)
+        
+        Returns:
+            peers_list = list of agents ids connected to agent (list)
+        """
+        
+        peers_list = self.random.sample(list(distances[unique_id]), k = n_peers)
+        
+        return peers_list
