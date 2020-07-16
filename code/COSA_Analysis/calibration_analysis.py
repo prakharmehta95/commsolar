@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D
 files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
-data_subfolder = 'code\\COSA_Outputs\\1_calibration'
+data_subfolder = 'code\\COSA_Outputs\\1_calibration\\cal_el_chg_11\\'
 input_subfolder = 'code\\COSA_Data\\'
 data_dir = files_dir[:files_dir.rfind('code')] + data_subfolder
 input_dir = files_dir[:files_dir.rfind('code')] + input_subfolder
@@ -41,7 +41,9 @@ for key, val in out_dict.items():
     for input_file in glob.glob(join(data_dir,'*'+key+'.feather')):
 
         # Create a label from the name of the experiment that created the data
-        label = "_".join(input_file.split("_")[4:7])
+        label = "_".join(input_file.split("_")[5:7])
+        label = "_".join(input_file.split("_")[8:10])
+        print(label)
         
         # Read data and store it in the container dictionary
         with open(input_file, "r") as mydata:
