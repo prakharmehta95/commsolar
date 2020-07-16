@@ -8,3 +8,5 @@
 8. Calibrate the model again, test more values for peers/neighbors
 9. Introduce annual updates to investment subsidy to follow the reductions of PV prices (as in history)
 10. Make sure systems 10-30 kWp choose the FIT and NOT the investment subsidy for 2013-2016
+11. Reduce lifetime of previously existing systems in NPV calculations for communities
+12. Find a way to link the improved profitability of community solar to the ideation variables
