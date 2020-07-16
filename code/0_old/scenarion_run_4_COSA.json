@@ -1,4 +1,4 @@
-{   "exp_name": "com_2019_dm_100_intention",
+{   "exp_name": "com_2019_dm_1_el2yr",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2010,
@@ -20,7 +20,7 @@
         "awareness_minergie": [0.95]
     },
     "policy_parameters":{
-        "direct_market_th":100000,
+        "direct_market_th":1,
         "direct_market":true,
         "com_year":2019        
     },
