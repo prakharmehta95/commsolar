@@ -159,7 +159,7 @@ class BuildingAgent(Agent):
         elif (self.adopt_comm == 0) and (self.adopt_ind == 0) and (self.intention != 1):
 
             # Evaluate the influence of peers
-            self.peer_effect = self.check_peers()
+            self.peer_effect = self.check_peers(self.peers, self.model.schedule.agents)
 
             # Evaluate the persuasion effect from neighbors
             self.neighbor_influence = self.check_neighbors_influence()
@@ -214,7 +214,7 @@ class BuildingAgent(Agent):
 
         return pp_norm
 
-    def check_peers(self):
+    def check_peers(self, peers, all_agents):
         """
         Determines the impact of peer effects in the agent.
 
@@ -223,7 +223,8 @@ class BuildingAgent(Agent):
         (self.peer_effect) accordingly
         
         Inputs:
-            None
+            peers = list of agent ids connected to this agent (list of str)
+            all_agents = list of agents in the model (list of objs)
         Returns:
             peer_effect = fraction of contacts with solar installed (float)
         """
@@ -232,26 +233,19 @@ class BuildingAgent(Agent):
         peer_effect = 0
 
         # Determine the number of contacts in the network of current agent
-        n_peers = len(self.peers)
-
-        if n_peers == 0:
-            print(self.unique_id + " zero peers")
-
-        # List all agents in the model
-        all_agents = self.model.schedule.agents
+        n_peers = len(peers)
 
         # If the agent has any peers, then count how many have solar
         if n_peers != 0:
 
             # Create a list of agents that are peers of this one
-            peers_list = [ag for ag in all_agents if ag.unique_id in self.peers]
+            peers_list = [ag for ag in all_agents if ag.unique_id in peers]
 
             # Sum up the number of peers with solar
-            n_peers_solar = sum([1 if (
-                (ag.adopt_ind == 1) or (ag.adopt_comm == 1)) else 0 for ag in peers_list])
+            n_peers_solar = sum([1 if (ag.pv_installation == True) else 0 for ag in peers_list])
             
             # Determine peer effects
-            peer_effect = (n_peers_solar/n_peers)
+            peer_effect = n_peers_solar / n_peers
 
         return peer_effect
 
@@ -275,16 +269,13 @@ class BuildingAgent(Agent):
         all_agents = self.model.schedule.agents
 
         # Collect list of neighbors
-        neighbors_list = [ag for ag in all_agents if ag.bldg_plot == self.bldg_plot]
-
-        # Remove current agent from neighbors list
-        neighbors_list = [ag for ag in neighbors_list if ag.unique_id != self.unique_id]
+        neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_plot == self.bldg_plot) and (ag.unique_id != self.unique_id)])
 
         # If there are any neighbors (own agent counts as 1)
         if len(neighbors_list) > 0:
             
             # Compute the number of neighbors with intention to adopt
-            neighbors_idea = sum([1 if ag.intention == 1 else 0 for ag in neighbors_list])
+            neighbors_idea = np.sum([1 if ((ag.intention == 1) or (ag.adopt_comm == 1)) else 0 for ag in neighbors_list])
 
             # Compute the neighbors persuation influence
             neighbor_influence = neighbors_idea / len(neighbors_list)
@@ -360,8 +351,7 @@ class BuildingAgent(Agent):
                     if npv_ind < npv_com:
                         
                         # Go for a solar community
-                        self.consider_community_adoption(c_max_npv,
-                            combinations_dict[c_max_npv], self.model.reduction, self.model.sim_year)                        
+                        self.consider_community_adoption(c_max_npv,combinations_dict[c_max_npv], self.model.reduction, self.model.sim_year)                        
                     
                     # If NPV of individual adoption is greater than the
                     # NPV of the solar community alternative
@@ -512,7 +502,12 @@ class BuildingAgent(Agent):
                     com_ag.pv_installation_cost = c_max_npv_dict["inv_new"]
 
             # Save data about formed community
-            self.save_formed_community(c_max_npv, c_max_npv_dict)              
+            self.save_formed_community(c_max_npv, c_max_npv_dict)
+
+        # If other agents don't accept community, fall back to individual
+        else:
+
+            self.consider_individual_adoption(self.ind_inv, self.ind_npv, self.ind_inv_sub, self.model.reduction, self.model.sim_year)     
         
     def define_agents_to_consider(self, potential_partners, potential_communities, uid, distances, n_closest_neighbors):
         """
