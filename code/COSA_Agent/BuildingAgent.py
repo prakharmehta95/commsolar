@@ -706,13 +706,14 @@ class BuildingAgent(Agent):
                 # Explanation: each agent already in a community has stored the year when they installed on their rooftops pv_installation_year and how much they invested in it in pv_installation_cost (which could be individually, if they joined being grid prosumers, or could be the new investment in the commmunity if they joined as grid consumers). For the agents that joined the community as grid consumers, the stored pv_installation_cost is the inv_new (this is, the cost of adding new PV and smart meters) of the whole community. Since these agents store the same pv_installation_year and pv_installation_cost, using set() removes duplicated values and ensures we only count them once.
 
                 # Compute NPV and pv_sub of the community
-                npv_c, pv_sub_c, inv_c_new = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
+                npv_c, pv_sub_c, inv_c_new, pp_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
 
                 # Store the economic parameters of the community
                 c_d["npv"] = npv_c
                 c_d["pv_sub"] = pv_sub_c
                 c_d["inv_new"] = inv_c_new
                 c_d["inv_old"] = c_d["present_inv_ind"] + c_d["present_inv_com"]
+                c_d["pp_com"] = pp_c
 
         # Loop through the communities below ratio and delete them from dict
         for c in coms_below_ratio:
@@ -847,8 +848,11 @@ class BuildingAgent(Agent):
         # Define community self-consumption ratio
         c_export_dict["SCR"] = c_export_dict["SC"] / c_export_dict["solar"]
 
+        # Define community self-sufficiency ratio
+        c_export_dict["SSR"] = c_export_dict["SC"] / c_export_dict["demand"]
+
         # Define PV size and profitability values
-        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old"]:
+        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old", "pp_com"]:
             c_export_dict[v] = c_dict[v]
         
         self.model.datacollector.add_table_row("communities", c_export_dict)
@@ -1408,7 +1412,10 @@ class BuildingAgent(Agent):
         # Compute the community's NPV
         npv_com = self.compute_npv(inv, lifetime_cashflows, self.model.disc_rate, self.model.sim_year)
 
-        return npv_com, pv_sub, inv_new
+        # Compute the community's simple pay-back period
+        pp_com = self.compute_simple_pp(inv, lifetime_cashflows, self.model.max_pp)
+
+        return npv_com, pv_sub, inv_new, pp_com
     
     def compute_pv_sub(self, pv_size, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d):
         """
