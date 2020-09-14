@@ -161,6 +161,39 @@ communities_df["community_block_n_buildings"] = np.array([np.sum(agents_info["pl
 # Compute the ratio of buildings in the community per block
 communities_df["community_block_ratio_com"] = np.array([communities_df["n_members"].values[i] / communities_df["community_block_n_buildings"].values[i] for i in range(len(communities_df["community_block_n_buildings"].values))])
 
+#%% SUMMARY OF RESULTS
+
+labels_d = {"2050_False_100000":"IND", "2019_False_100000":"COM", "2019_True_100000":"ZEV", "2019_True_1":"ZEV+"}
+
+variables = ["inst_cum_com", "inst_cum_ind", "n_com", "n_ind", "pol_cost_sub_com", "pol_cost_sub_ind"]
+
+output = {}
+
+for sc in labels_d.keys():
+
+    data_sc = sc_results_analysed.loc[sc]
+
+    output[sc] = {}
+
+    for var in variables:
+
+        data_v = data_sc.loc[data_sc["variable"]==var]
+
+        output[sc][var+"_median"] = data_v["p50"].loc[data_v["sim_year"]==25].values[0]
+        output[sc][var+"_p5"] = data_v["p05"].loc[data_v["sim_year"]==25].values[0]
+        output[sc][var+"_p95"] = data_v["p95"].loc[data_v["sim_year"]==25].values[0]
+
+        if (var == "pol_cost_sub_com") or (var == "pol_cost_sub_ind"):
+
+            data = np.sum(data_v.iloc[:,2:52].values,axis=0)
+            output[sc][var+"_median"] = np.median(data)
+            output[sc][var+"_p5"] = np.percentile(data, q=5)
+            output[sc][var+"_p95"] = np.percentile(data, q=95)
+
+output_df = pd.DataFrame(output)
+
+output_df.to_csv(files_dir +"\\results_table.csv", sep=";")
+
 #%% PLOT BUBBLE GRAPH WITH HISTOGRAMS
 # Color dictionary
 color_d = {'dark_blue':(0.,114/255,178/255), 
@@ -831,36 +864,177 @@ scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
 
 colors_d = {"all_residential":"darkorange", "all_commercial":"blue", "mixed_use":"green"}
 
-fig_scr_all, axes_scr = plt.subplots(1,3, figsize=(6.5,3), sharex=True)
+fig_scr_all, axes_scr = plt.subplots(2,3, figsize=(6.5,5))
 plt.tight_layout()
+plt.subplots_adjust(hspace=0.3)
 
 data = communities_df
 
 for cat in cats:
 
-    ax = axes_scr[cats.index(cat)]
-
     binwidth = 0.05
 
-    ax.hist(data["SCR"].loc[(data["category"].values == cat)], alpha=1, bins=np.arange(0,1.05, binwidth), label=cat, density=True, color=colors_d[cat], edgecolor="k")
+    ssr = data["SC"].loc[(data["category"].values == cat)].values / data["demand"].loc[(data["category"].values == cat)].values 
 
-    ax.set_xlim(0,1)
+    axes_scr[0, cats.index(cat)].hist(data["SCR"].loc[(data["category"].values == cat)].values, alpha=0.75, bins=np.arange(0,1.05, binwidth), label=cat, density=True, color=colors_d[cat])
 
-    ax.set_title(cat.replace("_", " ").title())
+    axes_scr[0, cats.index(cat)].axvline(x=np.median(data["SCR"].loc[(data["category"].values == cat)].values), color='k')
 
-    yticks = ax.get_yticks()
-    ax.set_yticklabels(['{:,.1%}'.format(x*binwidth) for x in yticks])
+    axes_scr[1, cats.index(cat)].hist(ssr, alpha=0.75, bins=np.arange(0,1.05, binwidth), label=cat, density=True, color=colors_d[cat])
+
+    axes_scr[1, cats.index(cat)].axvline(x=np.median(ssr), color='k')
+
+    axes_scr[0, cats.index(cat)].set_xlim(0,1)
+    axes_scr[1, cats.index(cat)].set_xlim(0,1)
+
+    axes_scr[0, cats.index(cat)].set_title(cat.replace("_", " ").title())
+
+    yticks = axes_scr[0, cats.index(cat)].get_yticks()
+    axes_scr[0, cats.index(cat)].set_yticklabels(['{:,.0%}'.format(x*binwidth) for x in yticks])
+    yticks = axes_scr[1, cats.index(cat)].get_yticks()
+    axes_scr[1, cats.index(cat)].set_yticklabels(['{:,.0%}'.format(x*binwidth) for x in yticks])
+
+    if cat == "all_commercial":
+        axes_scr[1, 1].annotate("Median", xytext=(0.5, 0.72), xycoords="axes fraction",xy=(0.28, 0.6), arrowprops=dict(arrowstyle="->"))
     
-    #ax.yaxis.set_major_formatter(mtick.PercentFormatter(100,decimals=1))
-    ax.xaxis.set_major_formatter(mtick.PercentFormatter(1,decimals=0))
+    
+    from matplotlib.ticker import AutoMinorLocator
+    for i in range(2):
+        axes_scr[i, cats.index(cat)].xaxis.set_major_formatter(mtick.PercentFormatter(1,decimals=0))
+        axes_scr[i, cats.index(cat)].xaxis.set_minor_locator(AutoMinorLocator())
 
-    axes_scr[cats.index(cat)].set_xlabel("Self-consumption rate [%]")
+    axes_scr[0, cats.index(cat)].set_xlabel("Self-consumption rate [%]")
+    axes_scr[1, cats.index(cat)].set_xlabel("Self-sufficiency rate [%]")
 
-axes_scr[0].set_ylabel("Share of communities [%]")
+axes_scr[0,0].set_ylabel("Share of communities [%]")
+axes_scr[1,0].set_ylabel("Share of communities [%]")
 
 #%% EXPORT FIGURE
 fig_scr_all.savefig(files_dir +"\\fig_scr_all.svg", format="svg")
 fig_scr_all.savefig(files_dir +"\\fig_scr_all.png", format="png", bbox_inches="tight", dpi=210)
+
+#%% PLOT NUMBER OF COMMUNITIES WITH GREATER DEMAND
+
+cats = ["all_residential", "all_commercial", "mixed_use"]
+
+scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+
+labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+
+color_d = {"com_2019_no_dm":(230/255,159/255,0.), "com_2019_dm_100":(86/255,180/255,233/255), "com_2019_dm_1":(0.,114/255,178/255)}
+
+fig_cd, ax = plt.subplots(1,1, figsize=(6.5,4), sharex=True, sharey=True)
+plt.subplots_adjust(wspace=0)
+
+for sc in scs:
+    
+    data_sc = communities_df.loc[sc]
+
+    med_sc = np.zeros(50)
+    p5_sc = np.zeros(50)
+    p95_sc = np.zeros(50)
+
+    nums_d = []
+
+    for run in range(50):
+
+        data_run = data_sc.loc[data_sc["run"]==run]
+
+        demands = data_run["demand"].values / 1000
+
+        cat_d = np.arange(0,5000,100)
+        num_d = np.array([np.sum((demands > d)) for d in cat_d])
+
+        if np.max(num_d) > 0:
+            nums_d.append(num_d/np.max(num_d))
+        else:
+            nums_d.append(num_d)
+
+    median = np.median(np.array(nums_d), axis=0)
+    p5 = np.percentile(np.array(nums_d), axis=0, q=5)
+    p95 = np.percentile(np.array(nums_d), axis=0, q=95)
+
+    ax.plot(median, label=labels_d[sc], color=color_d[sc])
+
+    ax.fill_between(range(len(cat_d)), p5,p95,alpha=0.2, color=color_d[sc], zorder=z)
+
+ax.axvline(x=1, color="k", linestyle="--")
+
+ax.annotate("100 MWh/year", xy=(1,0.85), xytext=(7,0.9), arrowprops=dict(arrowstyle="->"), ha="left")
+
+ax.xaxis.set_minor_locator(AutoMinorLocator())
+ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+import matplotlib.ticker as mtick
+ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
+
+ax.set_ylim(0,1)
+ax.set_xlim(0,40)
+
+ax.set_xlabel("Community electricity demand [MWh/year]")
+ax.set_ylabel("Communities with larger demand [%]")
+
+ax.set_xticklabels(np.arange(0,4500,500))
+
+ax.legend(frameon=False)
+
+#%% EXPORT FIGURE
+fig_cd.savefig(files_dir +"\\fig_com_dem_num.svg", format="svg")
+fig_cd.savefig(files_dir +"\\fig_com_dem_num.png", format="png", bbox_inches="tight", dpi=210)
+
+#%% PLOT communities net-present values
+
+cats = ["all_residential", "all_commercial", "mixed_use"]
+
+scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+
+labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+
+color_d = {"com_2019_no_dm":(230/255,159/255,0.), "com_2019_dm_100":(86/255,180/255,233/255), "com_2019_dm_1":(0.,114/255,178/255)}
+
+fig_cnpv, axes = plt.subplots(3,1, figsize=(6.5,5), sharex=True, sharey=True)
+plt.subplots_adjust(wspace=0, hspace=0)
+
+for sc in scs:
+
+    ax = axes[scs.index(sc)]
+    
+    data_sc = communities_df.loc[sc]
+
+    npvs = []
+
+    for run in range(50):
+
+        data_run = data_sc.loc[data_sc["run"]==run]
+
+        npvs.extend(data_run["npv"].values / 1000)
+
+    bins = np.logspace(1,5,100)
+
+    ax.hist(np.clip(npvs, bins[0],bins[-1]), color=color_d[sc], bins=bins)
+
+    ax.axvline(x=np.median(npvs), linestyle="--", linewidth=0.5, color="k")
+    ax.annotate("Median: "+str(round(np.median(npvs)/1000,1))+" m CHF ", xy=(np.median(npvs),0.05*len(npvs)), ha="right", fontsize=8)
+    ax.axvline(x=np.average(npvs), linestyle="--", linewidth=0.5,  color="red")
+    ax.annotate(" Average: "+str(round(np.average(npvs)/1000,1))+" m CHF ", xy=(np.average(npvs),0.05*len(npvs)),color="red", fontsize=8)
+
+    ax.annotate(labels_d[sc], xy=(0.02,0.85), xycoords="axes fraction")
+
+    print("n ", len(npvs))
+
+    ax.set_ylim(0,0.06*len(npvs))
+    ax.set_xlim(10,100000)
+    ax.set_xscale("log")
+
+    ax.set_yticks(np.arange(0,0.06,0.02)*len(npvs))
+    ax.set_yticklabels(['{:,.1%}'.format(x) for x in np.arange(0,0.06,0.02)])
+
+axes[2].set_xlabel("Community net-present value [k CHF]")
+
+fig_cnpv.text(0.02, 0.5, "Share of communities [%]", rotation=90, va="center")
+#%% EXPORT FIGURE
+fig_cnpv.savefig(files_dir +"\\fig_com_npv.svg", format="svg")
+fig_cnpv.savefig(files_dir +"\\fig_com_npv.png", format="png", bbox_inches="tight", dpi=210)
 #%% PLOT SIZE PER COMMUNITY CATEGORY
 import matplotlib.ticker as mtick
 
@@ -1151,26 +1325,32 @@ for col in range(2):
         data_d[col][b]["fed"] = fed
 
         axes_ce[buildings.index(b),col].fill_between(range(7*24), np.zeros(7*24), data_d[col][b]["grid"], color="cornflowerblue")
-        axes_ce[buildings.index(b),col].plot(data_d[col][b]["grid"], color="k", linestyle="--", linewidth=0.5)
+        #axes_ce[buildings.index(b),col].plot(data_d[col][b]["grid"], color="k", linestyle="--", linewidth=0.5)
+        #axes_ce[buildings.index(b),col].plot((-1)*data_d[col][b]["fed"], color="k", linestyle="--", linewidth=0.5)
         axes_ce[buildings.index(b),col].plot(data_d[col][b]["dem"], color="midnightblue", linewidth=0.5)
 
         axes_ce[buildings.index(b),col].fill_between(range(7*24), np.zeros(7*24), (-1)*data_d[col][b]["sun"], color="gold")
         axes_ce[buildings.index(b),col].fill_between(range(7*24), np.zeros(7*24), (-1)*data_d[col][b]["sc"], color="orangered")
-        axes_ce[buildings.index(b),col].plot((-1)*data_d[col][b]["sun"], color="orangered", linewidth=0.5)
+        axes_ce[buildings.index(b),col].plot((-1)*data_d[col][b]["sun"], color="darkred", linewidth=0.5)
 
         axes_ce[buildings.index(b),col].set_xlim(0,7*24)
         axes_ce[buildings.index(b),col].axhline(y=0, color="k")
 
         axes_ce[buildings.index(b),0].set_ylabel("Power [kW]")
 
-        axes_ce[buildings.index(b),col].annotate(ag_d[b]["bldg_type"], xy=(0.98,0.93), xycoords="axes fraction", fontsize=8, ha="right")
+        if buildings.index(b) != 1:
+            axes_ce[buildings.index(b),col].annotate(ag_d[b]["bldg_type"], xy=(0.98,0.93), xycoords="axes fraction", fontsize=8, ha="right")
 
-        axes_ce[buildings.index(b),col].annotate("SCR="+'{:,.1%}'.format(np.sum(sc)/np.sum(sun)), xy=(0.98,0.85), xycoords="axes fraction", fontsize=8, ha="right")
+            axes_ce[buildings.index(b),col].annotate("SCR="+'{:,.1%}'.format(np.sum(sc)/np.sum(sun)), xy=(0.98,0.85), xycoords="axes fraction", fontsize=8, ha="right")
 
-        axes_ce[buildings.index(b),col].annotate("SSR="+'{:,.1%}'.format(np.sum(sc)/np.sum(dem)), xy=(0.98,0.78), xycoords="axes fraction", fontsize=8, ha="right")
+            axes_ce[buildings.index(b),col].annotate("SSR="+'{:,.1%}'.format(np.sum(sc)/np.sum(dem)), xy=(0.98,0.78), xycoords="axes fraction", fontsize=8, ha="right")
+        else:
+            axes_ce[buildings.index(b),col].annotate(ag_d[b]["bldg_type"], xy=(0.98,0.98), xycoords="axes fraction", fontsize=8, ha="right")
 
+            axes_ce[buildings.index(b),col].annotate("SCR="+'{:,.1%}'.format(np.sum(sc)/np.sum(sun)), xy=(0.98,0.9), xycoords="axes fraction", fontsize=8, ha="right")
 
-    
+            axes_ce[buildings.index(b),col].annotate("SSR="+'{:,.1%}'.format(np.sum(sc)/np.sum(dem)), xy=(0.98,0.83), xycoords="axes fraction", fontsize=8, ha="right")
+   
     # Compute data for community
 
     com = "_".join(buildings)
@@ -1193,7 +1373,7 @@ for col in range(2):
 
     axes_ce[3,col].fill_between(range(7*24), np.zeros(7*24), (-1)*data_d[col][com]["sun"], color="gold")
     axes_ce[3,col].fill_between(range(7*24), np.zeros(7*24), (-1)*data_d[col][com]["sc"], color="orangered")
-    axes_ce[3,col].plot((-1)*data_d[col][com]["sun"], color="orangered", linewidth=0.5)
+    axes_ce[3,col].plot((-1)*data_d[col][com]["sun"], color="darkred", linewidth=0.5)
 
     axes_ce[3,col].axhline(y=0, color="k", linewidth=0.5)
 
@@ -1216,10 +1396,25 @@ axes_ce[0,1].set_title("Example summer week (w=36)")
 from matplotlib.ticker import AutoMinorLocator
 axes_ce[0,0].yaxis.set_minor_locator(AutoMinorLocator())
 axes_ce[0,0].xaxis.set_minor_locator(AutoMinorLocator())
-axes_ce[0,0].set_ylim(-130,130)
+axes_ce[0,0].set_ylim(-135,135)
 
 for col in range(2):
     for row in range(3):
         axes_ce[row,col].spines['top'].set_visible(False)
         axes_ce[row,col].spines['bottom'].set_visible(False)
     axes_ce[3,col].spines['top'].set_visible(False)
+
+# add custom legend
+from matplotlib.lines import Line2D
+custom_lines = [Line2D([0], [0], color="midnightblue", lw=1, linestyle="--"),
+                Line2D([0], [0], color="cornflowerblue", lw=4),
+                Line2D([0], [0], color="darkred", lw=1),
+                Line2D([0], [0], color="orangered", lw=4),
+                Line2D([0], [0], color="gold", lw=4)
+                ]
+
+axes_ce[3,0].legend(custom_lines, ['Load profile', 'Net demand', 'PV generation', 'Self-consumption', 'PV exports'], ncol=5, bbox_to_anchor=(2,-0.2), frameon=False)
+
+#%% EXPORT FIGURE
+fig_com_example.savefig(files_dir +"\\fig_com_example.svg", format="svg")
+fig_com_example.savefig(files_dir +"\\fig_com_example.png", format="png", bbox_inches="tight", dpi=210)

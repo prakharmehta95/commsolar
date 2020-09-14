@@ -336,8 +336,8 @@ ax_cal.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_yea
 # Add legend
 ax_cal.legend(loc='upper left', ncol=1, frameon=False, fontsize=8)
 #%% EXPORT FIGURE
-fig_cal.savefig(files_dir +"\\calibration_cal.svg", format="svg")
-fig_cal.savefig(files_dir +"\\calibration_cal.png", format="png", bbox_inches="tight", dpi=210)
+fig_cal.savefig(files_dir +"\\calibration_cal_el11.svg", format="svg")
+fig_cal.savefig(files_dir +"\\calibration_cal_el11.png", format="png", bbox_inches="tight", dpi=210)
 #%% PLOT INSTALLED CAPACITIES OF BEST CALIBRATION
 
 zh_col = (36/255,139/255,204/255)
@@ -399,8 +399,8 @@ ax_best.legend(handles = leg_elements , labels=leg_labels,loc='upper left',
              ncol=1, frameon=False)
 
 #%% EXPORT FIGURE
-fig_best.savefig(files_dir +"\\calibration_best.svg", format="svg")
-fig_best.savefig(files_dir +"\\calibration_best.png", format="png", bbox_inches="tight", dpi=210)
+fig_best.savefig(files_dir +"\\calibration_best_el11.svg", format="svg")
+fig_best.savefig(files_dir +"\\calibration_best_el11.png", format="png", bbox_inches="tight", dpi=210)
 
 #%%
 
