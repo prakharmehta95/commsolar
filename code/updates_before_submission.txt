@@ -11,3 +11,8 @@
 11. Reduce lifetime of previously existing systems in NPV calculations for communities
 12. Find a way to link the improved profitability of community solar to the ideation variables
 --> for example, by taking the average pp of communities and choosing best self.pp or av(pp_com).
+13. Make the social networks truly Small World Networks by adding the possibility of rewiring
+to distant agents in the map.
+14. Check start of the ZEV law. It seems it began in 2018 not 2019.
+15. Check ammendment of ZEV in 2019, it allowed communities to form across streets.
+16. Make sure communities with wholesale prices do not receive feed-in tariff.
