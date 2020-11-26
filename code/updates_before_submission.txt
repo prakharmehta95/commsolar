@@ -1,18 +1,29 @@
-1. Try to get all historical values until 2019 (PV prices is main one missing)
-2. Use weekly average for converting high/low prices from average
 3. Check KEV regulation and impose direct marketing when necessary (check EWZ website)
-4. Compute distances within model to allow scenarios with different distances
-5. Modify assumption for electricity tariff annual growth from exponential to linear
-6. Flexibilize cashflow calculation away from high/low prices to test other tariff designs
 7. Clean up code for speed (e.g., avoid calling model variables within functions of agent, etc)
 8. Calibrate the model again, test more values for peers/neighbors
 9. Introduce annual updates to investment subsidy to follow the reductions of PV prices (as in history)
-10. Make sure systems 10-30 kWp choose the FIT and NOT the investment subsidy for 2013-2016
 11. Reduce lifetime of previously existing systems in NPV calculations for communities
 12. Find a way to link the improved profitability of community solar to the ideation variables
---> for example, by taking the average pp of communities and choosing best self.pp or av(pp_com).
-13. Make the social networks truly Small World Networks by adding the possibility of rewiring
-to distant agents in the map.
-14. Check start of the ZEV law. It seems it began in 2018 not 2019.
-15. Check ammendment of ZEV in 2019, it allowed communities to form across streets.
+--> for example, by taking the average pp of communities and choosing best self.pp or av(pp_com)
+13. Make the social networks truly Small World Networks by adding a rewiring chance to distant agents
+14. Check start of the ZEV law. It seems it began in 2018 not 2019
 16. Make sure communities with wholesale prices do not receive feed-in tariff.
+==NOT FOR NOW==
+4. Compute distances within model to allow scenarios with different distances
+--> out of scope (no scenarios depend on this)
+5. Modify assumption for electricity tariff annual growth from exponential to linear
+--> retail electricity prices grow so slowly this does not matter
+--> wholesale electricity price goes down also so slowly that this probably does not make a change
+6. Flexibilize cashflow calculation away from high/low prices to test other tariff designs
+--> out of scope (not relevant for research question)
+15. Check ammendment of ZEV in 2019, it allowed communities to form across streets
+--> add as part of the discussion, suggesting that more flexible regulations for community formation rules
+-- could lead to more adoption of PV
+==DONE==
+1. Try to get all historical values until 2019 (PV prices is main one missing)
+-- updated PV costs, retail and wholesale electricity prices
+2. Use weekly average for converting high/low prices from average
+-- updated lines 1044-1048 in BuildingAgent.py BUT not SI
+10. Make sure systems 10-30 kWp choose the FIT and NOT the investment subsidy for 2013-2016
+-- updated compute_pv_sub: >30 kWp did not have access to inv sub until 2018,
+-- and 10-30 kWp we assume take FIT over inv sub until FIT runs out of money in 2016
