@@ -1042,7 +1042,9 @@ class BuildingAgent(Agent):
         el_p_ind = el_price[ind_tariff]
 
         # Set high and low electricity prices for individual adoption
-        el_p_l = (6/24) + (18/24) * ratio_high_low * el_p_ind
+        # High prices Mon-Sat 06:00 to 22:00 = 6 d/w * 16 h/d = 96 h/w
+        # Low prices Mon-Sat 22:00 to 06:00; and Sunday = 6 * 8 + 24 = 72 h/w
+        el_p_l = el_p_ind / ((72/168) + (96/168) * ratio_high_low)
         el_p_h = ratio_high_low * el_p_l
         
         # If this is for a community NPV, assign the electricity when in com
