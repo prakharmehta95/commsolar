@@ -1006,11 +1006,13 @@ class BuildingAgent(Agent):
 
         WARNING: energy balances with "_high" or "_low" are already summed up
         per year, while energy balances without them (e.g., "demand") are a numpy array with hourly value for each year of the lifetime.
+
+        IMPORTANT: Since 2013, systems above 10 kWp could choose between the feet-in tariff and the investment subsidy. Because the feed-in tariff was generally more profitable, we assume all installations opted for the feed-in tariff.
         """
         # FEED-IN TARIFF
 
         # Before 2017 (end of FIT funds), we assume all go for federal FIT
-        if sim_year > 2016:
+        if sim_year > 2017:
 
             # Later, therere is only the EWZ feed-in tariff available
             fit_h = fit_high
@@ -1021,6 +1023,7 @@ class BuildingAgent(Agent):
 
             # Optimize this later
             if pv_size < 10:
+                # hist_fit = 0 since 2013 because gov <10 to investment subsidy
                 fit_h = hist_fit["10"][(sim_year - 2010)]
             elif pv_size < 30:
                 fit_h = hist_fit["30"][(sim_year - 2010)]
@@ -1061,7 +1064,7 @@ class BuildingAgent(Agent):
                 el_p_com = el_price[com_tariff]
 
                 # Set high and low individual electricity prices
-                el_p_com_l = 0.25 + 0.75 * ratio_high_low * el_p_com
+                el_p_com_l = el_p_com / ((72/168) + (96/168) * ratio_high_low)
                 el_p_com_h = ratio_high_low * el_p_com_l
 
         # ANNUAL CASHFLOW CALCULATION
@@ -1079,10 +1082,10 @@ class BuildingAgent(Agent):
                 ex_pv_h = np.array(lifetime_load_profile["excess_solar_high"][y])
                 ex_pv_l = np.array(lifetime_load_profile["excess_solar_low"][y])
                 
-                # Compute the revenues from feeding solar electricity to the grid
+                # Compute the revenues from feeding PV electricity to the grid
                 cf_y["FIT"] = ex_pv_h * fit_h + ex_pv_l * fit_l
 
-                # Read avoided consumption from the grid (i.e. self-consumption)
+                # Read avoided consumption from grid (i.e. self-consumption)
                 sc_h = np.array(lifetime_load_profile["sc_high"][y])
                 sc_l = np.array(lifetime_load_profile["sc_low"][y])
 
@@ -1421,7 +1424,7 @@ class BuildingAgent(Agent):
     
     def compute_pv_sub(self, pv_size, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d):
         """
-        This method computes the investment subsidy applicable to the installation.
+        This method computes the investment subsidy applicable to the installation based on the historical policy in Switzerland.
 
         Inputs
             pv_size = size of the PV system (float)
@@ -1429,41 +1432,69 @@ class BuildingAgent(Agent):
         Returns
             pv_sub = lump-sum subsidy in CHF (float)
         
-        More info: since 2013, the Swiss government made available a one-time investment subsidy for new PV installations. The introduction of this measure was motivated by the long waiting list to obtain a feed-in tariff subsidy. The investment subsidy was made available to systems of different sizes at different points in times, and it also applied to registered installtions waiting for the feed-in tariff (which makes it ambiguous to pinpoint the exact time the policy began since installtions prior to the entry into force of the law could apply for it). We simplify by taking one single value per year, and assuming only installations taking place after the entry in force of the legislation can apply to it.
+        More info: since 2013, the Swiss government made available a one-time investment subsidy for new PV installations. The investment subsidy was made available to systems of different sizes at different times, and it also applied to registered installations waiting for the feed-in tariff (which makes it ambiguous to pinpoint the exact time the policy began since installtions prior to the entry into force of the law could apply for it). We simplify by taking one single value per year, and assuming only installations taking place after the entry in force of the legislation can apply to it.
+
+        Summary:
+        Since 2010      Federal feed-in tariff available to all installations
+        Since 2013      Systems < 10 kWp excluded from FIT
+                        Systems 10-30 kWp can choose. We assume all take FIT
+        Since 2016      Federal feed-in tariff has no more funds for PV
+                        All systems take EWZ FIT, except direct marketing 
+                        All systems take investment subsidy
+        Since 2018      Large installations >30 kWp can take inv subsidy
+        Since 2030      No more investment subsidies
+
+        Sources:
+
+        Subsidies agency Pronovo
+        https://pronovo.ch/fr/financement/systeme-de-retribution-de-linjection-sri/retribution/
+
+        RS 730.01
+        https://www.admin.ch/opc/fr/classified-compilation/19983391/201404010000/730.01.pdf
+
+        RS 730.03 Annexe 2.1
+        https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html#app6ahref3 
+
+        Chapter 4 art 36 
+        https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html
         """
-        # 2014 -> (<30kW) base 1400, vol 850 730.01, App 1.8, 3.1
-        # Systems <10 kW forced to take investment subsidy, no more FIT
-        # Systems 10-30 kW can choose to get investment subsidy or FIT
-        # https://www.admin.ch/opc/fr/classified-compilation/19983391/201404010000/730.01.pdf
-
-        # DATA FROM https://pronovo.ch/fr/financement/systeme-de-retribution-de-linjection-sri/retribution/
-
-        # In law: https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html#app6ahref3 
-        # RS 730.03 Annexe 2.1
 
         # Initialize subsidy to zero
         pv_sub = 0
 
+        # No investment subsidies before 2013 or after 2030
         if (sim_year > 2013) and (sim_year <= 2030):
 
-            # Chapter 4 art 36 https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html
+            # Small installations
             if (pv_size > 2) and (pv_size < 30):
-
+                
+                # Compute investmet subsidy
                 try:
                     pv_sub =  base_d[str(sim_year)] + pot_30_d[str(sim_year)] * pv_size
                 except:
                     pv_sub = min(base_d.values()) + min(pot_30_d.values()) * pv_size
 
+                # All installations 10-30 kWp opted for FIT until 2016
+                if (pv_size > 10) and (sim_year < 2017):
+                    pv_sub = 0
+
+            # Medium installations
             elif 30 <= pv_size < 100:
 
-                try:
-                    pv_sub =  base_d[str(sim_year)] + pot_30_d[str(sim_year)] * 30 + pot_100_d[str(sim_year)] * (pv_size - 30)
-                except:
-                    pv_sub = min(base_d.values()) + min(pot_30_d.values()) * 30 + min(pot_100_d.values()) * (pv_size - 30)
+                # Since 2018, >30 kWp can access investment subsidy
+                if (sim_year > 2018):
 
+                    try:
+                        pv_sub =  base_d[str(sim_year)] + pot_30_d[str(sim_year)] * 30 + pot_100_d[str(sim_year)] * (pv_size - 30)
+                    except:
+                        pv_sub = min(base_d.values()) + min(pot_30_d.values()) * 30 + min(pot_100_d.values()) * (pv_size - 30)
+                else:
+                    pv_sub = 0
+
+            # Large installations
             elif (pv_size >= 100) and (pv_size < 50000):
                 
-                # Based on https://pronovo.ch/fr/financement/systeme-de-retribution-de-linjection-sri/
+                # Since 2018, >100k kWp can access investment subsidy
                 if (sim_year > 2018):
                     try:
                         pv_sub =  base_d[str(sim_year)] + pot_30_d[str(sim_year)] * 30 + pot_100_d[str(sim_year)] * 70 + pot_100_plus_d[str(sim_year)] * (pv_size - 100)
