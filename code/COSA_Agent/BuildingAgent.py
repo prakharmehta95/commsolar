@@ -1007,7 +1007,11 @@ class BuildingAgent(Agent):
         WARNING: energy balances with "_high" or "_low" are already summed up
         per year, while energy balances without them (e.g., "demand") are a numpy array with hourly value for each year of the lifetime.
 
+        INCOMPLETE: the version with solar output degradation is NOT complete
+
         IMPORTANT: Since 2013, systems above 10 kWp could choose between the feet-in tariff and the investment subsidy. Because the feed-in tariff was generally more profitable, we assume all installations opted for the feed-in tariff.
+
+        POLICY CHANGES: Since 2018, installations above 100 kWp that had taken the federal FIT had the obligation to market their electricity directly (turning the FIT into a feed-in premium plus a management fee). Supposedly, all new PV installations >100 kWp that opted for the FIT would have to market directly but (all in all, the revenue would be guaranteed by the feed-in premum). These installations could not take the investment subsidy. But the waiting list is so long that I think no new installations would get the FIT. ASSUMPTION: After 2018, all installations take the investment subsidy.
         """
         # FEED-IN TARIFF
 
