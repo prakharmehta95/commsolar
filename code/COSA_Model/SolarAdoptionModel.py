@@ -306,6 +306,11 @@ class SolarAdoptionModel(Model):
                 self.el_price[tariff] *= (1 + self.el_price_change)
             
             self.wholesale_el_price *= (1 + self.wholesale_el_price_change)
+
+        # Update base investment subsidy
+        if self.sim_year > 2020:
+            for var in [self.base_d, self.pot_30_d, self.pot_100_d, self.   pot_100_plus_d]:
+                var[str(self.sim_year)] = var[str(self.sim_year - 1)] * (1 + self.pv_price_change)
         
         # Loop through all agents using the scheduler
         self.schedule.step()
