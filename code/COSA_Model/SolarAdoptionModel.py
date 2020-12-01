@@ -212,7 +212,7 @@ class SolarAdoptionModel(Model):
             ag_tariff = self.assign_electricity_tariff(unique_id, demand,agents_info, self.el_tariff_demands, inputs["economic_parameters"]["av_hh_size"])
 
             # Create agent's social network **NOT USED FOR THESIS SIMULATIONS**
-            #ag_peers = self.assign_social_network(unique_id, distances, inputs["simulation_parameters"]["n_peers"])
+            ag_peers = self.assign_social_network(unique_id, distances[[unique_id, "dist_"+unique_id]], inputs["simulation_parameters"]["n_peers"], inputs["simulation_parameters"]["p_rewire"])
 
             # Create instantiation of an agent and provide necessary inptus
             ag = agent(self,
@@ -224,7 +224,8 @@ class SolarAdoptionModel(Model):
                 attitude = ag_env_aw,
                 pv_size = agents_info[unique_id]['pv_size_kw'],
                 pv_possible = agents_info[unique_id]['can_install_pv'],
-                peers= self.AgentsNetwork.loc[:,unique_id],
+                #peers= self.AgentsNetwork.loc[:,unique_id],
+                peers = ag_peers,
                 n_sm = agents_info[unique_id]['num_smart_meters'],
                 solar = np.array(solar[unique_id]) * inputs["economic_parameters"]["AC_conv_eff"],
                 demand = np.array(demand[unique_id]),
@@ -408,19 +409,37 @@ class SolarAdoptionModel(Model):
 
         return ag_tariff
 
-    def assign_social_network(self, unique_id, distances, n_peers):
+    def assign_social_network(self, unique_id, distances, n_peers, p_rewire):
         """
         This method creates a list of peers with whom the agent is connected.
 
         Inputs:
             unique_id = agent's identifier (str)
-            distances = list of distance to other agents (df)
+            distances = distance to other agents (df) (two columns: "unique_id" contains agents ids, "dist_"+unique_id contains distance to agent)
             n_peers = number of connections per agent (int)
+            p_rewire = probability connection rewiring to distant agent (float)
         
         Returns:
             peers_list = list of agents ids connected to agent (list)
         """
-        
-        peers_list = self.random.sample(list(distances[unique_id]), k = n_peers)
+
+        # Order dataframe with distances and pick n_peers first
+        all_near_peers = list(distances.sort_values("dist_"+unique_id)[unique_id])[:n_peers]
+
+        # Loop through all connections, remove at random, and rewire later
+        near_peers = [all_near_peers[i] for i in range(n_peers) if self.random.uniform(0,1) > p_rewire]
+
+        # If any of the connections have been removed, connect to other agent
+        if len(near_peers) < n_peers:
+            far_ags = list(distances.sort_values("dist_"+unique_id)[n_peers:][unique_id])
+            far_peers = self.random.sample(far_ags, n_peers - len(near_peers))
+        else:
+            far_peers = []
+
+        # Make list of connections
+        peers_list = near_peers + far_peers
+
+        # ALTERNATIVE - PURE RANDOM CHOICE AMONG ALL AGENTS
+        #peers_list = self.random.sample(list(distances[unique_id]), k = n_peers)
         
         return peers_list
