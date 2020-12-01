@@ -3,8 +3,9 @@
         "runs": 2,
         "start_year": 2010,
         "end_year": 2035,
-        "n_agents": 5000,
+        "n_agents": 50,
         "n_peers": 20,
+        "p_rewire": 0.10,
         "n_closest_neighbors" : 4,
         "n_cores": 2
     },
@@ -22,7 +23,7 @@
     "policy_parameters":{
         "direct_market_th":1,
         "direct_market": true,
-        "com_year":2019        
+        "com_year":2018        
     },
     "economic_parameters":{
         "min_ratio_sd": 0.1,
