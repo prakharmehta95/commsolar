@@ -691,19 +691,43 @@ class BuildingAgent(Agent):
 
                 # Determine the community's electricity tariff
                 c_d["tariff"] = self.assign_community_tariff(np.sum(c_d["demand"]), model.el_tariff_demands)
+
+                # Create list of members with indiviudal pre-existing PV
+                members_ind_pv = [ag for ag in members 
+                if ((ag.pv_installation == True) and (ag.adopt_ind == 1))]
                 
+                # Create list of members with community pre-existing PV
+                members_com_pv = [ag for ag in members 
+                if ((ag.pv_installation == True) and (ag.adopt_com == 1))]
+
+                # Create a dictionary with PV size already installed and years since it was installed as value for agents that join the community now with existing PV.
+                c_d["old_ind_pv"] = {year: sum([ag.pv_size for ag in members_ind_pv if ag.pv_installation_year == year])
+                for year in list(set([ag.pv_installation_year 
+                for ag in members_ind_pv]))}
+                # Note: this loops through a list of years when the agents installed pv, and sums the size of all the installations that happened that year. Then it creates a dictionary with key the year and value the sum of PV sizes installed that year.
+
+                # Create a list of unique pairs of installation year & pv size
+                pvyr_set = list(set([(ag.pv_installation_year, ag.pv_size) 
+                for ag in members_com_pv]))
+
+                # Create a dictionary with PV size already installed and years since it was installed as value for agents that join the community now with existing PV.
+                c_d["old_com_pv"] = {yr: sum(pvyr[-1]
+                for pvyr in pvyr_set if pvyr[0] == yr)
+                for yr in set([ag.pv_installation_year 
+                for ag in members_com_pv])}
+                # Note: the previous step removes duplicates when year of installation and PV size are the same, otherwise adding up installations in the same year but with different sizes.
+
                 # For agents that join the community now with existing PV, compute the current value of their invesmtent wiht a linear depretiation process and add them up
                 c_d["present_inv_ind"] = np.sum([(
                     ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
-                    for ag in members 
-                    if ((ag.pv_installation == True) and (ag.adopt_ind == 1))])
+                    for ag in members_ind_pv])
                 
-                # For agents that join the community as part of an existing community, compute the curretn value of the existing community PV with a linear depretiation process and add them up
+                # For agents that join the community as part of an existing community, compute the current value of the existing community PV with a linear depretiation process and add them up
                 c_d["present_inv_com"] = np.sum(list(set([(
                     ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
-                    for ag in members 
-                    if ((ag.pv_installation == True) and (ag.adopt_comm == 1))])))
+                    for ag in members_com_pv])))
                 # Explanation: each agent already in a community has stored the year when they installed on their rooftops pv_installation_year and how much they invested in it in pv_installation_cost (which could be individually, if they joined being grid prosumers, or could be the new investment in the commmunity if they joined as grid consumers). For the agents that joined the community as grid consumers, the stored pv_installation_cost is the inv_new (this is, the cost of adding new PV and smart meters) of the whole community. Since these agents store the same pv_installation_year and pv_installation_cost, using set() removes duplicated values and ensures we only count them once.
+                # WARNING: these removes duplicates of pv_installation_costs NOT based on agents part of the same community. There is a risk of under counting if e.g., there are members from two communities who installed the same PV size in the same year.
 
                 # Compute NPV and pv_sub of the community
                 npv_c, pv_sub_c, inv_c_new, pp_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
@@ -1394,7 +1418,7 @@ class BuildingAgent(Agent):
         # Compute the load profile of the installation throughout its lifetime
         lifetime_load_profile = self.compute_lifetime_load_profile(solar, demand, self.model.pv_lifetime, self.model.deg_rate, self.model.hour_price)
 
-        # Compute hte cashflows of the installation throughout its lifetime
+        # Compute the cashflows of the installation throughout its lifetime
         lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, pv_size, lifetime_load_profile, self.model.deg_rate,self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="com", com_tariff=com_tariff)
 
         # Compute the investment subsidy
