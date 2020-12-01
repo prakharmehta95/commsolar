@@ -1,13 +1,10 @@
-3. Check KEV regulation and impose direct marketing when necessary (check EWZ website)
 7. Clean up code for speed (e.g., avoid calling model variables within functions of agent, etc)
 8. Calibrate the model again, test more values for peers/neighbors
-9. Introduce annual updates to investment subsidy to follow the reductions of PV prices (as in history)
 11. Reduce lifetime of previously existing systems in NPV calculations for communities
-12. Find a way to link the improved profitability of community solar to the ideation variables
---> for example, by taking the average pp of communities and choosing best self.pp or av(pp_com)
-13. Make the social networks truly Small World Networks by adding a rewiring chance to distant agents
-14. Check start of the ZEV law. It seems it began in 2018 not 2019
-16. Make sure communities with wholesale prices do not receive feed-in tariff.
+-- Created dictionaries with PV installation year and PV size as dictionary of community characteristics
+-- TO DO -> modify lifetime_cashflow calculations to take into account reduced lifetimes
+17. Clean up code for small world network part if works correctly
+18. Add cost of smart meters to individual adoption
 ==NOT FOR NOW==
 4. Compute distances within model to allow scenarios with different distances
 --> out of scope (no scenarios depend on this)
@@ -16,6 +13,9 @@
 --> wholesale electricity price goes down also so slowly that this probably does not make a change
 6. Flexibilize cashflow calculation away from high/low prices to test other tariff designs
 --> out of scope (not relevant for research question)
+12. Find a way to link the improved profitability of community solar to the ideation variables
+--> for example, by taking the average pp of communities and choosing best self.pp or av(pp_com)
+-- This is an interesting addition but a bit arbitrary and difficult to implement -> add to discussion
 15. Check ammendment of ZEV in 2019, it allowed communities to form across streets
 --> add as part of the discussion, suggesting that more flexible regulations for community formation rules
 -- could lead to more adoption of PV
@@ -24,6 +24,21 @@
 -- updated PV costs, retail and wholesale electricity prices
 2. Use weekly average for converting high/low prices from average
 -- updated lines 1044-1048 in BuildingAgent.py BUT not SI
+3. Check KEV regulation and impose direct marketing when necessary (check EWZ website)
+-- it is rather confusing. My conclusion is: After 2018, all installations >500 kWp and all "new"
+   installations >100 kWp are obliged to market their electricity directly IF they are part of the FIT.
+   By new, this means installations in the waiting list of the FIT before 2018 but built after 2018.
+   I could not find an obligation to market electricity directly for installations outside of FIT.
+9. Introduce annual updates to investment subsidy to follow the reductions of PV prices (as in history)
+-- Investment subsidy components reduce every year by the same amount as PV prices
 10. Make sure systems 10-30 kWp choose the FIT and NOT the investment subsidy for 2013-2016
 -- updated compute_pv_sub: >30 kWp did not have access to inv sub until 2018,
 -- and 10-30 kWp we assume take FIT over inv sub until FIT runs out of money in 2016
+13. Make the social networks truly Small World Networks by adding a rewiring chance to distant agents
+-- rewire prob of 10% follows Rai and Robinson 2015 https://doi.org/10.1016/j.envsoft.2015.04.014
+-- implemented and working but not tested!
+14. Check start of the ZEV law. It seems it began in 2018 not 2019
+-- changed in model and needs to be updated in text. In several references (Swisssolar, energieschweiz), 
+-- it says that the ZEV began in January 2018
+16. Make sure communities with wholesale prices do not receive feed-in tariff
+-- this was already implemented in compute_lifetime_cashflows line 1136
