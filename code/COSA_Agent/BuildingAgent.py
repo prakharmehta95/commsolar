@@ -692,42 +692,41 @@ class BuildingAgent(Agent):
                 # Determine the community's electricity tariff
                 c_d["tariff"] = self.assign_community_tariff(np.sum(c_d["demand"]), model.el_tariff_demands)
 
-                # Create list of members with indiviudal pre-existing PV
-                members_ind_pv = [ag for ag in members 
-                if ((ag.pv_installation == True) and (ag.adopt_ind == 1))]
-                
-                # Create list of members with community pre-existing PV
-                members_com_pv = [ag for ag in members 
-                if ((ag.pv_installation == True) and (ag.adopt_com == 1))]
+                # If any member has pre-existing PV:
+                if any([ag.pv_installation for ag in members]):
 
-                # Create a dictionary with PV size already installed and years since it was installed as value for agents that join the community now with existing PV.
-                c_d["old_ind_pv"] = {year: sum([ag.pv_size for ag in members_ind_pv if ag.pv_installation_year == year])
-                for year in list(set([ag.pv_installation_year 
-                for ag in members_ind_pv]))}
-                # Note: this loops through a list of years when the agents installed pv, and sums the size of all the installations that happened that year. Then it creates a dictionary with key the year and value the sum of PV sizes installed that year.
+                    # Create list of members with indiviudal pre-existing PV
+                    members_ind_pv = [ag for ag in members 
+                    if ((ag.pv_installation == True) and (ag.adopt_ind == 1))]
+                    
+                    # Create list of members with community pre-existing PV
+                    members_com_pv = [ag for ag in members 
+                    if ((ag.pv_installation == True) and (ag.adopt_com == 1))]
 
-                # Create a list of unique pairs of installation year & pv size
-                pvyr_set = list(set([(ag.pv_installation_year, ag.pv_size) 
-                for ag in members_com_pv]))
+                    # Create a list with each item is the hourly solar production of one year of the pv_lifetime of the community installation taking into account that prior installations are dismantled when they reach their end of life.
+                    c_d["solar_prior"] = [np.sum([ag.solar 
+                    for ag in members 
+                    if ((ag.pv_installation_year + model.pv_lifetime > yr)
+                    or (ag.pv_installation == False))], axis=0)
+                    for yr in range(model.sim_year, model.sim_year + model.pv_lifetime)]
+                    # Note: for each member in the community being evaluated, the solar output throught the year is added only if (a) the agent is installing a new installation, or (b) the prior existing installation is within its operational lifetime.
 
-                # Create a dictionary with PV size already installed and years since it was installed as value for agents that join the community now with existing PV.
-                c_d["old_com_pv"] = {yr: sum(pvyr[-1]
-                for pvyr in pvyr_set if pvyr[0] == yr)
-                for yr in set([ag.pv_installation_year 
-                for ag in members_com_pv])}
-                # Note: the previous step removes duplicates when year of installation and PV size are the same, otherwise adding up installations in the same year but with different sizes.
+                    # For agents that join the community now with existing PV, compute the current value of their invesmtent wiht a linear depretiation process and add them up
+                    c_d["present_inv_ind"] = np.sum([(
+                        ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
+                        for ag in members_ind_pv])
+                    
+                    # For agents that join the community as part of an existing community, compute the current value of the existing community PV with a linear depretiation process and add them up
+                    c_d["present_inv_com"] = np.sum(list(set([(
+                        ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
+                        for ag in members_com_pv])))
+                    # Explanation: each agent already in a community has stored the year when they installed on their rooftops pv_installation_year and how much they invested in it in pv_installation_cost (which could be individually, if they joined being grid prosumers, or could be the new investment in the commmunity if they joined as grid consumers). For the agents that joined the community as grid consumers, the stored pv_installation_cost is the inv_new (this is, the cost of adding new PV and smart meters) of the whole community. Since these agents store the same pv_installation_year and pv_installation_cost, using set() removes duplicated values and ensures we only count them once.
+                    # WARNING: these removes duplicates of pv_installation_costs NOT based on agents part of the same community. There is a risk of under counting if e.g., there are members from two communities who installed the same PV size in the same year.
 
-                # For agents that join the community now with existing PV, compute the current value of their invesmtent wiht a linear depretiation process and add them up
-                c_d["present_inv_ind"] = np.sum([(
-                    ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
-                    for ag in members_ind_pv])
-                
-                # For agents that join the community as part of an existing community, compute the current value of the existing community PV with a linear depretiation process and add them up
-                c_d["present_inv_com"] = np.sum(list(set([(
-                    ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
-                    for ag in members_com_pv])))
-                # Explanation: each agent already in a community has stored the year when they installed on their rooftops pv_installation_year and how much they invested in it in pv_installation_cost (which could be individually, if they joined being grid prosumers, or could be the new investment in the commmunity if they joined as grid consumers). For the agents that joined the community as grid consumers, the stored pv_installation_cost is the inv_new (this is, the cost of adding new PV and smart meters) of the whole community. Since these agents store the same pv_installation_year and pv_installation_cost, using set() removes duplicated values and ensures we only count them once.
-                # WARNING: these removes duplicates of pv_installation_costs NOT based on agents part of the same community. There is a risk of under counting if e.g., there are members from two communities who installed the same PV size in the same year.
+                    c_d["inv_old"] = c_d["present_inv_ind"] + c_d["present_inv_com"]
+
+                else:
+                    c_d["inv_old"] = 0
 
                 # Compute NPV and pv_sub of the community
                 npv_c, pv_sub_c, inv_c_new, pp_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
@@ -736,7 +735,6 @@ class BuildingAgent(Agent):
                 c_d["npv"] = npv_c
                 c_d["pv_sub"] = pv_sub_c
                 c_d["inv_new"] = inv_c_new
-                c_d["inv_old"] = c_d["present_inv_ind"] + c_d["present_inv_com"]
                 c_d["pp_com"] = pp_c
 
         # Loop through the communities below ratio and delete them from dict
@@ -881,7 +879,7 @@ class BuildingAgent(Agent):
         
         self.model.datacollector.add_table_row("communities", c_export_dict)
     
-    def compute_lifetime_load_profile(self,solar_building, demand_ag, PV_lifetime, deg_rate, hour_price):
+    def compute_lifetime_load_profile(self,solar_building, demand_ag, PV_lifetime, deg_rate, hour_price, com_prior_PV=False):
         """
         Inputs
             solar_outputs = hourly electricity output of PV system in the building for first year of its operational lifetime (list of 8760 items)
@@ -889,14 +887,20 @@ class BuildingAgent(Agent):
             PV_lifetime = years of operational life of installation (integer)
             deg_rate  = degression rate of PV output (float)
             hour_price = price level for each hour of the year (list)
+            com_prior_PV = computation for a community with existing PV (boolean, False by default)
         Returns
             lifetime_load_profile = description of annual energy balances over the operational lifetime of the PV installation of the buildign
                 (dataframe with index = year of lifetime, columns = energy balances)
         """
-        if deg_rate != 0:
+        if (deg_rate != 0) or (com_prior_PV == True):
 
-            # Compute the hourly solar output AC for each operational year of PV
-            solar_outputs = [solar_building * ((1 - deg_rate) ** y) for y in range(PV_lifetime)]
+            if deg_rate != 0:
+                # Compute hourly solar output AC for each operational year
+                solar_outputs = [solar_building * ((1 - deg_rate) ** y) for y in range(PV_lifetime)]
+            
+            elif com_prior_PV == True:
+                # Hourly solar output already a list accounting for prior installations reaching end of life
+                solar_outputs = solar_building
 
             for yr in range(PV_lifetime):
 
@@ -924,12 +928,11 @@ class BuildingAgent(Agent):
                 load_profile["excess_solar"] = np.array(
                     [x if x > 0 else 0 for x in load_profile["excess_solar"]])
 
-                # Compute hourly self-consumed electricity
-                # For the hours of the year with solar generation: self-consume all
-                # solar generation if less than demand (s) or up to demand (d)
-                s = np.array(solar_outputs[yr])
-                d = np.array(demand_ag)
-                load_profile["sc"] = [min(s[i], d[i]) if s[i] > 0 else 0 for i in range(8760)]
+                # Compute hourly self-consumed electricity. For the hours of the year with solar generation: self-consume all solar generation if less than demand (s) or up to demand (d)
+                s = solar_outputs[yr]
+                d = demand_ag
+                load_profile["sc"] = np.array([min(s[i], d[i]) 
+                                        if s[i] > 0 else 0 for i in range(8760)])
                 
                 # Compute annual energy balances regardless of hour prices
                 for bal in ["solar", "demand", "net_demand", "excess_solar", "sc"]:
@@ -944,7 +947,7 @@ class BuildingAgent(Agent):
                 # Compute year self-consumption rate
                 load_profile_year["SCR"] = 0
                 if load_profile_year["sc"] > 0:
-                    load_profile_year["SCR"] = load_profile_year["sc"] / load_profile_year["solar"]
+                    load_profile_year["SCR"] = np.divide(np.sum(load_profile_year["sc"]),np.sum(load_profile_year["solar"]))
 
                 # Store results in return dataframe
                 if yr == 0:
@@ -995,7 +998,7 @@ class BuildingAgent(Agent):
             
             # Store energy balances regardless of hour prices
             for bal in ["solar", "demand", "net_demand", "excess_solar", "sc"]:
-                load_profile_year[bal] = load_profile[bal]
+                load_profile_year[bal] = sum(load_profile[bal])
             
             # Compute annual energy balances for high and low price hours
             for bal in ["solar", "demand", "excess_solar", "net_demand", "sc"]:
@@ -1404,19 +1407,31 @@ class BuildingAgent(Agent):
         # Define the number of newly installed smart meters
         n_sm = c_dict["n_sm_added"]
 
-        # Define community's generation potential (already AC)
-        solar = c_dict["solar"]
-
         # Define community's aggregated consumption
         demand = c_dict["demand"]
 
         # Define the community's electricity tariff
         com_tariff = c_dict["tariff"]
 
+        # If pre-existing PV, then solar is different to account for installations reaching the end of their operational life
+            
+        # No pre-existing PV
+        if c_dict["inv_old"] == 0:
+            
+            # Define community's generation potential (already AC)
+            solar = c_dict["solar"]
+            com_prior_PV = False
+
+        else:
+
+            # Define community's generation potential
+            solar = c_dict["solar_prior"]
+            com_prior_PV = True
+
         # NON-COMMUNITY SPECIFIC
 
         # Compute the load profile of the installation throughout its lifetime
-        lifetime_load_profile = self.compute_lifetime_load_profile(solar, demand, self.model.pv_lifetime, self.model.deg_rate, self.model.hour_price)
+        lifetime_load_profile = self.compute_lifetime_load_profile(solar, demand, self.model.pv_lifetime, self.model.deg_rate, self.model.hour_price, com_prior_PV)
 
         # Compute the cashflows of the installation throughout its lifetime
         lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, pv_size, lifetime_load_profile, self.model.deg_rate,self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="com", com_tariff=com_tariff)

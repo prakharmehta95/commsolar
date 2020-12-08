@@ -1,8 +1,5 @@
 7. Clean up code for speed (e.g., avoid calling model variables within functions of agent, etc)
 8. Calibrate the model again, test more values for peers/neighbors
-11. Reduce lifetime of previously existing systems in NPV calculations for communities
--- Created dictionaries with PV installation year and PV size as dictionary of community characteristics
--- TO DO -> modify lifetime_cashflow calculations to take into account reduced lifetimes
 17. Clean up code for small world network part if works correctly
 18. Add cost of smart meters to individual adoption
 ==NOT FOR NOW==
@@ -34,6 +31,11 @@
 10. Make sure systems 10-30 kWp choose the FIT and NOT the investment subsidy for 2013-2016
 -- updated compute_pv_sub: >30 kWp did not have access to inv sub until 2018,
 -- and 10-30 kWp we assume take FIT over inv sub until FIT runs out of money in 2016
+11. Reduce lifetime of previously existing systems in NPV calculations for communities
+-- Creates solar output for the lifetime of the installation that removes the input from prior installations
+-- that reach the end of their lifetimes within the community installation lifetime, and passes it to the
+-- lifetime load calculation. This way, the NPV is correctly computed because the solar generation of PV
+-- installations past their operational lifetime becomes zero.
 13. Make the social networks truly Small World Networks by adding a rewiring chance to distant agents
 -- rewire prob of 10% follows Rai and Robinson 2015 https://doi.org/10.1016/j.envsoft.2015.04.014
 -- implemented and working but not tested!
