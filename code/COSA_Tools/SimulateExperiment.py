@@ -7,8 +7,6 @@ import sys, os, datetime, re, json, glob, feather
 from time import gmtime, strftime
 from multiprocessing import Pool
 
-from COSA_Tools.swn import make_swn
-
 def import_parameters(files_dir):
     """
     This function imports all the experiments to be simulated in the form
@@ -174,18 +172,10 @@ def simulate_run(run, in_dict, sc_dict):
     randomseed = sc_dict["randomseed"][run]
     SolarAdoptionModel = in_dict["SolarAdoptionModel"]
 
-    # Create Small World Network
-    AgentsNetwork = make_swn(
-                        in_dict["distances"], 
-                        list(in_dict["agents_info"].keys()), 
-                        sc_dict["simulation_parameters"]["n_peers"], 
-                        randomseed)
-
     # Create one instantiation of the model
     sim_model = SolarAdoptionModel(
                             in_dict["BuildingAgent"], 
                             sc_dict,
-                            AgentsNetwork, 
                             in_dict["agents_info"], 
                             in_dict["distances"], 
                             in_dict["solar"], 

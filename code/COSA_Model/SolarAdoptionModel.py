@@ -24,7 +24,7 @@ class SolarAdoptionModel(Model):
     solar communities or not.
     '''    
     
-    def __init__(self, agent, inputs, AgentsNetwork, agents_info, distances, solar, demand, seed):
+    def __init__(self, agent, inputs, agents_info, distances, solar, demand, seed):
         '''
         This method initializes the instantiation of the model class, and 
         creates the agents in it.
@@ -33,8 +33,7 @@ class SolarAdoptionModel(Model):
             agent = Agent model taken as an input (class)
             inputs = all inputs for experiment simulation (dict)
             seed = random seed for the model (int)
-            agents_info = data about buildings in the model (df).
-            AgentsNetwork = peers of each agent (df)
+            agents_info = data about buildings in the model (df)
             distances = distances between all buildings (df)
             solar = hourly generation potential for each building (df)
             demand = hourly electricity consumption for each building (df)
@@ -46,9 +45,6 @@ class SolarAdoptionModel(Model):
 
         # Make inputs a variable of the model
         self.inputs = inputs
-
-        # Define the small world network of the agents
-        self.AgentsNetwork = AgentsNetwork
 
         ## INITIALIZE SIMULATION PARAMETERS
         
@@ -224,7 +220,6 @@ class SolarAdoptionModel(Model):
                 attitude = ag_env_aw,
                 pv_size = agents_info[unique_id]['pv_size_kw'],
                 pv_possible = agents_info[unique_id]['can_install_pv'],
-                #peers= self.AgentsNetwork.loc[:,unique_id],
                 peers = ag_peers,
                 n_sm = agents_info[unique_id]['num_smart_meters'],
                 solar = np.array(solar[unique_id]) * inputs["economic_parameters"]["AC_conv_eff"],
