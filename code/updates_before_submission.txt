@@ -1,6 +1,4 @@
-7. Clean up code for speed (e.g., avoid calling model variables within functions of agent, etc)
 8. Calibrate the model again, test more values for peers/neighbors
-17. Clean up code for small world network part if works correctly
 ==NOT FOR NOW==
 4. Compute distances within model to allow scenarios with different distances
 --> out of scope (no scenarios depend on this)
@@ -9,6 +7,8 @@
 --> wholesale electricity price goes down also so slowly that this probably does not make a change
 6. Flexibilize cashflow calculation away from high/low prices to test other tariff designs
 --> out of scope (not relevant for research question)
+7. Clean up code for speed (e.g., avoid calling model variables within functions of agent, etc)
+--> No time for this right now, I will do on the go if I see something
 12. Find a way to link the improved profitability of community solar to the ideation variables
 --> for example, by taking the average pp of communities and choosing best self.pp or av(pp_com)
 -- This is an interesting addition but a bit arbitrary and difficult to implement -> add to discussion
@@ -45,3 +45,5 @@
 -- it says that the ZEV began in January 2018
 16. Make sure communities with wholesale prices do not receive feed-in tariff
 -- this was already implemented in compute_lifetime_cashflows line 1136
+17. Clean up code for small world network part if works correctly
+-- Done and tested
