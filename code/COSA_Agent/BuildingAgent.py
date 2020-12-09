@@ -1149,7 +1149,7 @@ class BuildingAgent(Agent):
                     # If it is the first year, then create the dataframe
                     lifetime_cashflows = pd.DataFrame(cf_y, index=[0])
                 else:
-                    # Append the dictionary containing the results for this year
+                    # Append dictionary containing the results for this year
                     lifetime_cashflows = lifetime_cashflows.append(cf_y, ignore_index=True)
             
         else:
@@ -1209,7 +1209,6 @@ class BuildingAgent(Agent):
             if sys == "ind":
                 cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["O&M"])
                 cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["O&M"])
-                # THIS NEEDS TO INCLUDE SMART METER COSTS
 
             elif sys == "com":
                 cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"])

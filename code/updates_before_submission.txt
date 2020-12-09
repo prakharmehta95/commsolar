@@ -1,7 +1,6 @@
 7. Clean up code for speed (e.g., avoid calling model variables within functions of agent, etc)
 8. Calibrate the model again, test more values for peers/neighbors
 17. Clean up code for small world network part if works correctly
-18. Add cost of smart meters to individual adoption
 ==NOT FOR NOW==
 4. Compute distances within model to allow scenarios with different distances
 --> out of scope (no scenarios depend on this)
@@ -16,6 +15,8 @@
 15. Check ammendment of ZEV in 2019, it allowed communities to form across streets
 --> add as part of the discussion, suggesting that more flexible regulations for community formation rules
 -- could lead to more adoption of PV
+18. Add cost of smart meters to individual adoption
+--> Consider this to represent a cost of infrastructure for communities
 ==DONE==
 1. Try to get all historical values until 2019 (PV prices is main one missing)
 -- updated PV costs, retail and wholesale electricity prices
