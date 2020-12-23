@@ -1537,7 +1537,7 @@ class BuildingAgent(Agent):
             elif (pv_size >= 100) and (pv_size < 50000):
                 
                 # Since 2018, >100k kWp can access investment subsidy
-                if (sim_year > 2018):
+                if (sim_year > 2017):
                     try:
                         pv_sub =  base_d[str(sim_year)] + pot_30_d[str(sim_year)] * 30 + pot_100_d[str(sim_year)] * 70 + pot_100_plus_d[str(sim_year)] * (pv_size - 100)
                     except:
