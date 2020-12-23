@@ -285,13 +285,13 @@ class SolarAdoptionModel(Model):
             self.com_allowed = True
 
         # Update PV price
-        if self.sim_year < 2019 :
+        if self.sim_year < 2020 :
             self.pv_price = self.inputs["economic_parameters"]["hist_pv_prices"][str(self.sim_year)]
         else:
             self.pv_price *= (1 + self.pv_price_change)
 
         # Update electricity price
-        if self.sim_year < 2019:
+        if self.sim_year < 2020:
             # Historical data always starts in 2010
             self.el_price = {tariff:self.inputs["economic_parameters"]["hist_el_prices"][tariff][self.sim_year-2010] for tariff in self.el_tariff_names}
 
