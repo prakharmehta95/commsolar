@@ -1039,11 +1039,13 @@ class BuildingAgent(Agent):
         IMPORTANT: Since 2013, systems above 10 kWp could choose between the feet-in tariff and the investment subsidy. Because the feed-in tariff was generally more profitable, we assume all installations opted for the feed-in tariff.
 
         POLICY CHANGES: Since 2018, installations above 100 kWp that had taken the federal FIT had the obligation to market their electricity directly (turning the FIT into a feed-in premium plus a management fee). Supposedly, all new PV installations >100 kWp that opted for the FIT would have to market directly but (all in all, the revenue would be guaranteed by the feed-in premum). These installations could not take the investment subsidy. But the waiting list is so long that I think no new installations would get the FIT. ASSUMPTION: After 2018, all installations take the investment subsidy.
+        EWZ FIT (Stromrücklieferung) available since 2016.
+        https://web.archive.org/web/20201229083051/https://www.ewz.ch/content/dam/ewz/Privatkunden/Solaranlagen/Solarstrom_fuer_Eigentuemer/verguetung_stromruecklieferung_zh_2016-20.pdf
         """
         # FEED-IN TARIFF
 
         # Before 2017 (end of FIT funds), we assume all go for federal FIT
-        if sim_year > 2017:
+        if sim_year >= 2017:
 
             # Later, therere is only the EWZ feed-in tariff available
             fit_h = fit_high
@@ -1505,7 +1507,7 @@ class BuildingAgent(Agent):
         pv_sub = 0
 
         # No investment subsidies before 2013 or after 2030
-        if (sim_year > 2013) and (sim_year <= 2030):
+        if (sim_year >= 2013) and (sim_year <= 2030):
 
             # Small installations
             if (pv_size > 2) and (pv_size < 30):
