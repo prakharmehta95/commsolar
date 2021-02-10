@@ -1,0 +1,120 @@
+Sender: LSF System <lsfadmin@eu-g1-034-4>
+Subject: Job 162353873: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-41> by user <anunezji> in cluster <euler> at Tue Feb  9 17:25:33 2021
+Job was executed on host(s) <48*eu-g1-034-4>, in queue <bigmem.24h>, as user <anunezji> in cluster <euler> at Tue Feb  9 17:25:52 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Tue Feb  9 17:25:52 2021
+Terminated at Tue Feb  9 17:54:56 2021
+Results reported at Tue Feb  9 17:54:56 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   45854.07 sec.
+    Max Memory :                                 82026 MB
+    Average Memory :                             63655.88 MB
+    Total Requested Memory :                     122880.00 MB
+    Delta Memory :                               40854.00 MB
+    Max Swap :                                   -
+    Max Processes :                              51
+    Max Threads :                                56
+    Run time :                                   1744 sec.
+    Turnaround time :                            1763 sec.
+
+The output (if any) follows:
+
+Importing data
+= Run exp 1 of 4 =
+16:25:59
+Randomseed:  -1061421388
+Randomseed:  -338101881
+Randomseed:  1701556624
+Randomseed:  -275078972
+Randomseed:  900009197
+Randomseed:  -1206395838
+Randomseed:  558083796
+Randomseed:  -1159671325
+Randomseed:  1083994222
+Randomseed:  -1405548424
+Randomseed:  -1364939999
+Randomseed:  -1297464737
+Randomseed:  -1178352934
+Randomseed:  149221280
+Randomseed:  -374944242
+Randomseed:  1219179824
+Randomseed:  1595663549
+Randomseed:  -1802520833
+Randomseed:  -2057604218
+Randomseed:  -415371531
+Randomseed:  -1112863197
+Randomseed:  2002096676
+Randomseed:  -41776951
+Randomseed:  379125397
+Randomseed:  340000967
+Randomseed:  1328554912
+Randomseed:  972839627
+Randomseed:  -350318313
+Randomseed:  -898371798
+Randomseed:  494203063
+Randomseed:  -1719146663
+Randomseed:  1846573783
+Randomseed:  1883895425
+Randomseed:  1867266810
+Randomseed:  -485203102
+Randomseed:  1692109359
+Randomseed:  1680195255
+Randomseed:  -861333008
+Randomseed:  -247347986
+Randomseed:  1936609080
+Randomseed:  1973638764
+Randomseed:  578140008
+Randomseed:  -606933433
+Randomseed:  2008210571
+Randomseed:  2072207644
+Randomseed:  -1523257964
+Randomseed:  -106295498
+Randomseed:  -35204194
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 121, in worker
+    result = (True, func(*args, **kwds))
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 47, in starmapstar
+    return list(itertools.starmap(args[0], args[1]))
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 190, in simulate_run
+    sim_model.step()
+  File "/cluster/home/anunezji/COSA_Model/SolarAdoptionModel.py", line 311, in step
+    self.schedule.step()
+  File "/cluster/home/anunezji/COSA_Tools/scheduler.py", line 53, in step
+    getattr(self._agents[agent_key], stage)()  # Run stage
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 326, in step_decision
+    self.update_combinations_available(self.model, combinations_dict)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 732, in update_combinations_available
+    npv_c, pv_sub_c, inv_c_new, pp_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 1456, in calculate_com_npv
+    inv_old = c_dict["present_inv_ind"] + c_dict["present_inv_com"]
+KeyError: 'present_inv_ind'
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "COSA_main.py", line 60, in <module>
+    exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, agents_info, distances, solar, demand)
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 152, in run_experiment
+    exp_results = p.starmap(simulate_run, run_inputs)
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 298, in starmap
+    return self._map_async(func, iterable, starmapstar, chunksize).get()
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 683, in get
+    raise self._value
+KeyError: 'present_inv_ind'
