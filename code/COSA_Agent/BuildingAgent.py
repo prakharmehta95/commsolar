@@ -93,7 +93,7 @@ class BuildingAgent(Agent):
         self.adopt_ind = 0
 
         # initialize boolean attribute for community adoption
-        self.adopt_comm = 0
+        self.adopt_com = 0
 
         # initialize adoption year to zero
         self.adopt_year = 0
@@ -152,11 +152,11 @@ class BuildingAgent(Agent):
         
         # If the agent has already adopted solar PV, whether individually or
         # as part of a community, set the intention to 0
-        if self.adopt_comm == 1 or self.adopt_ind == 1:
+        if self.adopt_com == 1 or self.adopt_ind == 1:
             self.intention = 0
 
         # If the agent has not adopted solar PV and not developed the intention before, then, update its attributes and evaluate whether it develops the intention in this step                        
-        elif (self.adopt_comm == 0) and (self.adopt_ind == 0) and (self.intention != 1):
+        elif (self.adopt_com == 0) and (self.adopt_ind == 0) and (self.intention != 1):
 
             # Evaluate the influence of peers
             self.peer_effect = self.check_peers(self.peers, self.model.schedule.agents)
@@ -275,7 +275,7 @@ class BuildingAgent(Agent):
         if len(neighbors_list) > 0:
             
             # Compute the number of neighbors with intention to adopt
-            neighbors_idea = np.sum([1 if ((ag.intention == 1) or (ag.adopt_comm == 1)) else 0 for ag in neighbors_list])
+            neighbors_idea = np.sum([1 if ((ag.intention == 1) or (ag.adopt_com == 1)) else 0 for ag in neighbors_list])
 
             # Compute the neighbors persuation influence
             neighbor_influence = neighbors_idea / len(neighbors_list)
@@ -296,16 +296,16 @@ class BuildingAgent(Agent):
         """          
         # Only agents with the intention and possibility to adopt enter this
         # step, who are not year part of a solar community
-        if self.intention == 1 and self.pv_possible and self.adopt_comm == 0:
+        if self.intention == 1 and self.pv_possible and self.adopt_com == 0:
 
             # Create a list containing all the agents in the plot with the idea to adopt PV or that already have PV, who are not in community
             potential_partners = [ag for ag in self.model.schedule.agents if (
                                     (ag.bldg_plot == self.bldg_plot) and (
                                     (ag.intention == 1) or (ag.adopt_ind == 1))
-                                    and (ag.adopt_comm == 0) and (ag.unique_id != self.unique_id))]
+                                    and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
 
             # Create a list of formed communities the agent could join
-            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_comm==1) and (ag.unique_id != self.unique_id))]))
+            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
 
             # Compute the number of community options
             if self.model.join_com == True:
@@ -478,7 +478,7 @@ class BuildingAgent(Agent):
                 com_ag.adopt_ind = 0
                 
                 #setting community adoption as 1 for all agents involved
-                com_ag.adopt_comm = 1
+                com_ag.adopt_com = 1
                         
                 # Record the year of installation
                 com_ag.adopt_year = sim_year
@@ -573,8 +573,8 @@ class BuildingAgent(Agent):
         """
 
         # Filter individual buildings and buildings in communities
-        ags_alone = [ag for ag in agents_to_consider if ag.adopt_comm == 0]
-        ags_in_com = [ag for ag in agents_to_consider if ag.adopt_comm == 1]
+        ags_alone = [ag for ag in agents_to_consider if ag.adopt_com == 0]
+        ags_in_com = [ag for ag in agents_to_consider if ag.adopt_com == 1]
         
         # Create empty list to store all possible communities
         coms_list = []
@@ -784,16 +784,12 @@ class BuildingAgent(Agent):
                 (it is a string with buildings id of all members joined
                 with "_")
         """
+        # Create a list of NPV values "v", and community names "k"
+        v=[d["npv"] for d in list(combinations_dict.values())]
+        k=list(combinations_dict.keys())
         
-        # Pick the community with the best NPV:
-        max_c_npv = max([c["npv"] for c in combinations_dict.values()])
-
-        # Read the name of the community with max_com_npv
-        for c, c_d in combinations_dict.items():
-            if c_d["npv"] == max_c_npv:
-                c_max_npv = c
-        
-        return c_max_npv
+        # Pick the community name with the highest NPV in the dictionary
+        return k[v.index(max(v))]
 
     def compute_community_npv_shares(self, c_max_npv_dict):
         """
@@ -1453,7 +1449,7 @@ class BuildingAgent(Agent):
         inv_new = pv_inv + sm_inv + coop_cost
 
         # Compute investment for buying old systems
-        inv_old = c_dict["present_inv_ind"] + c_dict["present_inv_com"]
+        inv_old = c_dict["inv_old"]
 
         # Total investment
         inv = inv_new + inv_old
@@ -1493,14 +1489,34 @@ class BuildingAgent(Agent):
         Subsidies agency Pronovo
         https://pronovo.ch/fr/financement/systeme-de-retribution-de-linjection-sri/retribution/
 
-        RS 730.01
+        RS 730.01 (version 1 April 2014)
         https://www.admin.ch/opc/fr/classified-compilation/19983391/201404010000/730.01.pdf
+        # Art 6
+        # 1 Only PV sizes below 30 kW after 1-Jan-2013 can access inv subsidy
+        # 2 If announced before 31-Dec-2012, also installations 2006-2012
+        # 3 10 kW < PV sizes < 30 kW can choose FIT or inv sub, PV size < 10 kW only option is inv sub
+        # Version 1-Aug-2014 remains the same
+        # Version 1-Jan-2015 remains the same
+        # Version 1-Jan-2016 remains the same
+        # Version 1-Aug-2016 remains the same
+        # Version 1-Jan-2017 remains the same
+        # See versions: https://www.fedlex.admin.ch/eli/cc/1999/28/fr 
 
         RS 730.03 Annexe 2.1
-        https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html#app6ahref3 
+        https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html#app6ahref3
+
+        RS 730.03 (version 1-Jan-2018, approved 1-Nov-2017)
+        # Art 14 Direct marketing of electricity
+        --> PV size < 100 kW exempt from obligation
+        --> 500 kW < existing PV size have to direct market even if old FIT
+        --> Any installation can direct market if they want to
+        # Art 36 Investment subsidy
+        --> open for 2 kW < PV size < 50 MW
 
         Chapter 4 art 36 
         https://www.admin.ch/opc/fr/classified-compilation/20162947/index.html
+        # Art 36 -> investment subsidy applies for 2 kW < PV size < 50 MW
+        # Annex 2.1 shows plants online since before 2010 can access inv sub
         """
 
         # Initialize subsidy to zero
