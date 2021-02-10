@@ -51,6 +51,7 @@ if __name__ == '__main__':
 
         # Print what experiment is running and how many are in the list
         print("= Run exp "+str(exp+1)+" of "+str(len(experiment_inputs))+" =")
+        print(inputs["exp_name"])
         print(strftime("%H:%M:%S", gmtime()))
 
         # Initialize the scenario inputs
