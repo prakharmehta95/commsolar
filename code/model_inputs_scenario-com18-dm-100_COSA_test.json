@@ -22,7 +22,7 @@
     },
     "policy_parameters":{
         "direct_market_th": 100000,
-        "direct_market": false,
+        "direct_market": true,
         "com_year":2018
     },
     "economic_parameters":{

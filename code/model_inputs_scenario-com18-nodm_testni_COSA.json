@@ -1,4 +1,4 @@
-{   "exp_name": "com_2018_dm_100",
+{   "exp_name": "com_2018_no_dm_testni",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2010,
@@ -11,9 +11,9 @@
     },
     "calibration_parameters":{
         "w_econ": [0.13],
-        "w_swn": [0.32],
+        "w_swn": [0.1],
         "w_att": [0.45],
-        "w_subplot": [0.1],
+        "w_subplot": [0.32],
         "threshold": [0.5],
         "reduction": [0],
         "awareness_mean": [0.698],
@@ -22,7 +22,7 @@
     },
     "policy_parameters":{
         "direct_market_th": 100000,
-        "direct_market": true,
+        "direct_market": false,
         "com_year":2018
     },
     "economic_parameters":{
