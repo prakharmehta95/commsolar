@@ -7,7 +7,7 @@
         "n_peers": 20,
         "p_rewire": 0.10,
         "n_closest_neighbors" : 4,
-        "n_cores": 48
+        "n_cores": 6
     },
     "calibration_parameters":{
         "w_econ": [0.13],

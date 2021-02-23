@@ -1,4 +1,4 @@
-{   "exp_name": "com_2018_no_dm_testni",
+{   "exp_name": "com_2018_dm_100_testni",
     "simulation_parameters": {
         "runs": 50,
         "start_year": 2010,
@@ -22,7 +22,7 @@
     },
     "policy_parameters":{
         "direct_market_th": 100000,
-        "direct_market": false,
+        "direct_market": true,
         "com_year":2018
     },
     "economic_parameters":{
