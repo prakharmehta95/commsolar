@@ -932,27 +932,28 @@ class BuildingAgent(Agent):
                 
                 # Compute annual energy balances regardless of hour prices
                 for bal in ["solar", "demand", "net_demand", "excess_solar", "sc"]:
-                    load_profile_year[bal] = sum(load_profile[bal])
-                
+                    load_profile_year[bal] = load_profile[bal]
+
                 # Compute annual energy balances for high and low price hours
                 for bal in ["solar", "demand", "excess_solar", "net_demand", "sc"]:
                     for pl in ["high", "low"]:
                         cond = (load_profile["hour_price"] == pl)
-                        load_profile_year[bal+'_'+pl] = sum(load_profile[bal].loc[cond])
+                        load_profile_year[bal+'_'+pl] = load_profile[bal].loc[cond]
 
                 # Compute year self-consumption rate
                 load_profile_year["SCR"] = 0
-                if load_profile_year["sc"] > 0:
+                if np.sum(load_profile_year["sc"]) > 0:
                     load_profile_year["SCR"] = np.divide(np.sum(load_profile_year["sc"]),np.sum(load_profile_year["solar"]))
 
                 # Store results in return dataframe
                 if yr == 0:
-                    # If it is the first year, then create the dataframe
-                    lifetime_load_profile = pd.DataFrame(load_profile_year, index=[0])
+                    # If it is the first year, create a dictionary
+                    lifetime_load_profile = {k:[v] for k,v in load_profile_year.items()}
                 else:
-                    # Append the dictionary containing the results for this year
-                    lifetime_load_profile = lifetime_load_profile.append(
-                                                load_profile_year, ignore_index=True)
+                    # Append results for this year
+                    for k,v in lifetime_load_profile.items():
+                        v.append(load_profile_year[k])
+                        lifetime_load_profile[k] = v
             
         # No degradation
         else:
@@ -994,24 +995,22 @@ class BuildingAgent(Agent):
             
             # Store energy balances regardless of hour prices
             for bal in ["solar", "demand", "net_demand", "excess_solar", "sc"]:
-                load_profile_year[bal] = sum(load_profile[bal])
+                load_profile_year[bal] = load_profile[bal]
             
             # Compute annual energy balances for high and low price hours
             for bal in ["solar", "demand", "excess_solar", "net_demand", "sc"]:
                 for pl in ["high", "low"]:
                     cond = (load_profile["hour_price"] == pl)
-                    load_profile_year[bal+'_'+pl] = sum(load_profile[bal].loc[cond])
+                    load_profile_year[bal+'_'+pl] = load_profile[bal].loc[cond]
 
             # Compute year self-consumption rate
             load_profile_year["SCR"] = 0
             if np.sum(load_profile_year["sc"]) > 0:
                 load_profile_year["SCR"] = np.divide(np.sum(load_profile_year["sc"]),np.sum(load_profile_year["solar"]))
 
-            # Store results in return dataframe
-            lifetime_load_profile = pd.DataFrame(load_profile_year, index=[0])
-
             # Make results the same for all lifetime
-            lifetime_load_profile = pd.concat([lifetime_load_profile] * PV_lifetime,ignore_index=True)
+            #lifetime_load_profile = {k:[v] * PV_lifetime for k,v in load_profile_year.items()}
+            lifetime_load_profile = {k:[v] for k,v in load_profile_year.items()}
 
         return lifetime_load_profile
 
@@ -1103,52 +1102,8 @@ class BuildingAgent(Agent):
 
         # Check if load profile changes over the lifetime or not
         if deg_rate != 0:
-
-            # Loop through the years of operational life of the system
-            for y in range(PV_lifetime):
-
-                # Read year excess solar
-                ex_pv_h = np.array(lifetime_load_profile["excess_solar_high"][y])
-                ex_pv_l = np.array(lifetime_load_profile["excess_solar_low"][y])
-                
-                # Compute the revenues from feeding PV electricity to the grid
-                cf_y["FIT"] = ex_pv_h * fit_h + ex_pv_l * fit_l
-
-                # Read avoided consumption from grid (i.e. self-consumption)
-                sc_h = np.array(lifetime_load_profile["sc_high"][y])
-                sc_l = np.array(lifetime_load_profile["sc_low"][y])
-
-                # Compute the savings from self-consuming solar electricity
-                if sys == "ind":
-
-                    # Savings only from avoided consumption from grid
-                    cf_y["savings"] = sc_h * el_p_h + sc_l * el_p_l
-
-                elif sys == "com":
-
-                    # Savings from avoided consumption from grid *with old tariff* and from moving to a cheaper electricity tariff because now a single bigger consumer
-                    cf_y["savings"] = sc_h * el_p_h + sc_l * el_p_l + np.array(lifetime_load_profile["net_demand_high"][y]) * (el_p_h - el_p_com_h) + np.array(lifetime_load_profile["net_demand_high"][y]) * (el_p_l - el_p_com_l)
-                
-                    # Compute the cost of individual metering
-                    cf_y["split"] = (sc_h + sc_l) * solar_split_fee
-
-                # Compute O&M costs
-                cf_y["O&M"] = np.array(lifetime_load_profile["solar"][y]) * om_cost
-
-                # Compute net cashflows to the agent
-                if sys == "ind":
-                    cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["O&M"])
-
-                elif sys == "com":
-                    cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"])
-
-                # Store results in return dataframe
-                if y == 0:
-                    # If it is the first year, then create the dataframe
-                    lifetime_cashflows = pd.DataFrame(cf_y, index=[0])
-                else:
-                    # Append dictionary containing the results for this year
-                    lifetime_cashflows = lifetime_cashflows.append(cf_y, ignore_index=True)
+            # TO-DO develop estimation that loops over installation lifetime
+            print('Error: code not ready for deg_rate != 0')
             
         else:
 
@@ -1168,10 +1123,10 @@ class BuildingAgent(Agent):
                 cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][0],el_p_com))
 
                 # Compute savings as the difference between electricity bill
-                cf_y["savings"] = d_h * el_p_h + d_l * el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][0],el_p_com))
+                cf_y["savings"] = np.sum(d_h)*el_p_h + np.sum(d_l)*el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][0],el_p_com))
 
                 # Compute the cost of individual metering
-                cf_y["split"] = (sc_h + sc_l) * solar_split_fee
+                cf_y["split"] = np.sum((sc_h + sc_l)) * solar_split_fee
 
             else:
 
@@ -1180,13 +1135,13 @@ class BuildingAgent(Agent):
                 ex_pv_l = lifetime_load_profile["excess_solar_low"][0]
                 
                 # Compute revenues from feeding solar electricity to the grid
-                cf_y["FIT"] = ex_pv_h * fit_h + ex_pv_l * fit_l
+                cf_y["FIT"] = np.sum(ex_pv_h) * fit_h + np.sum(ex_pv_l) * fit_l
 
                 # Compute the savings from self-consuming solar electricity
                 if sys == "ind":
 
                     # Savings only from avoided consumption from grid
-                    cf_y["savings"] = sc_h * el_p_h + sc_l * el_p_l
+                    cf_y["savings"] = np.sum(sc_h)*el_p_h + np.sum(sc_l)*el_p_l
 
                 elif sys == "com":
 
@@ -1195,10 +1150,10 @@ class BuildingAgent(Agent):
                     net_d_l = lifetime_load_profile["net_demand_high"][0]
 
                     # Savings from avoided consumption from grid *with old tariff* and from moving to a cheaper electricity tariff because now a single bigger consumer
-                    cf_y["savings"] = sc_h * el_p_h + sc_l * el_p_l + net_d_h * (el_p_h - el_p_com_h) + net_d_l * (el_p_l - el_p_com_l)
+                    cf_y["savings"] = np.sum(sc_h)*el_p_h + np.sum(sc_l)*el_p_l + np.sum(net_d_h) * (el_p_h - el_p_com_h) + np.sum(net_d_l) * (el_p_l - el_p_com_l)
                 
                     # Compute the cost of individual metering
-                    cf_y["split"] = (sc_h + sc_l) * solar_split_fee
+                    cf_y["split"] = np.sum((sc_h + sc_l)) * solar_split_fee
 
             # Compute O&M costs
             cf_y["O&M"] = np.sum(lifetime_load_profile["solar"][0]) * om_cost
@@ -1564,3 +1519,4 @@ class BuildingAgent(Agent):
                     pv_sub = 0
 
         return pv_sub
+# %%
