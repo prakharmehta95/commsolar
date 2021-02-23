@@ -92,6 +92,7 @@ model_df["file_label"] = model_df["cal_label"] + ["_"+x[0] for x in list(model_d
 vars = ['n_ind', 'inst_cum_ind', 'n_com', 'inst_cum_com']
 
 n_ticks =  len(set(model_df["sim_year"]))
+n_ticks = 15
 n_runs = len(set(model_df["run"]))
 
 sc_results = {}
@@ -304,20 +305,7 @@ fig_cal, ax_cal = plt.subplots(1,1, figsize=(6.5,4))
 col = plt.cm.coolwarm(np.linspace(0,1,n_sc))
 
 # for sc in set(sc_results_analysed.index):
-#for sc in list(cal_summary.index)[:n_sc]:
-scs = ['0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14'
-,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testpvprice'
-,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testFITassumption'
-,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testearlyinv'
-#,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14test2013inv'
-,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscale'
-,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleAND2013inv'
-#,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleAND2016inv'
-,'0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleANDpvprice'
-,'0.13_0.32_0.45_0.1_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice'
-,'0.14_0.31_0.45_0.1_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice2'
-]
-for sc in scs:
+for sc in list(cal_summary.index)[:n_sc]:
 
     # Select data
     plot_df = sc_results_analysed.loc[sc,:]
@@ -372,21 +360,18 @@ fig_best, ax_best = plt.subplots(1,1, figsize=(6.5,4))
 
 # Select best calibration
 sc = list(cal_summary.index)[0]
-sc = '0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testpvprice'
-#sc = '0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleAND2013inv'
-#sc = '0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleAND2016inv'
-
-#sc = '0.12_0.31_0.46_0.11_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice7'
-sc='0.125_0.31_0.455_0.11_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice6'
-#sc = '0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscale'
-#sc = '0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleANDpvprice'
-#sc = '0.13_0.32_0.45_0.1_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice'
-#sc = '0.13_0.42_0.45_0.0_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice4'
-#sc = '0.14_0.31_0.45_0.1_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice2'
-#sc = '0.14_0.32_0.44_0.1_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice3'
-#sc = '0.14_0.1_0.45_0.31_0.5_0_0.698_0.18_0.95_caltestreindexscaleANDpvprice5'
-#sc = '0.13_0.34_0.43_0.1_0.5_0_0.698_0.18_0.95_cal14testreindexscaleAND2013inv'
-
+#sc = '0.13_0.1_0.45_0.32_0.5_0_0.698_0.18_0.95_no'
+sc = '0.13_0.1_0.45_0.32_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.13_0.3_0.45_0.12_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.13_0.2_0.45_0.22_0.5_0_0.698_0.18_0.95_recal-3'
+#sc = '0.14_0.1_0.44_0.32_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.14_0.2_0.44_0.22_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.14_0.3_0.44_0.12_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.14_0.3_0.45_0.11_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.13_0.3_0.44_0.13_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.13_0.2_0.44_0.23_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.14_0.1_0.45_0.31_0.5_0_0.698_0.18_0.95_recal-3'
+# '0.14_0.2_0.45_0.21_0.5_0_0.698_0.18_0.95_recal-3'
 
 # Define scenario label
 v = sc.split("_")[:4]
@@ -420,7 +405,7 @@ ax_best.set_xticks(np.arange(0,len(x),2))
 ax_best.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,2))
 
 #ax_best.set_ylim(0,10000)
-ax_best.set_title(sc_lab)
+ax_best.set_title(sc_lab+", diff_median: "+str(int(cal_summary["diff_median"].loc[sc]))+", 90% C.I. ("+str(int(cal_summary["diff_p05"].loc[sc]))+", "+str(int(cal_summary["diff_p95"].loc[sc]))+")", fontsize=10)
 
 # Add legend
 leg_elements = [

@@ -20,28 +20,32 @@ from matplotlib.lines import Line2D
 files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
-data_subfolder = 'code\\COSA_Outputs\\2_results\\el-change-11-new-cal-fallback-intention\\'
+data_subfolder = 'code\\COSA_Outputs\\2_results\\202002_recal-2\\tests\\'
 #data_subfolder = 'code\\COSA_Outputs\\'
 input_subfolder = 'code\\COSA_Data\\'
 data_dir = files_dir[:files_dir.rfind('code')] + data_subfolder
 input_dir = files_dir[:files_dir.rfind('code')] + input_subfolder
 
+# Include agent files?
+ag_file = False
+
 # Create container dictionaries to import simulation results
 model_files = {}
 com_files = {}
-#ag_files = {}
+ag_files = {}
 
 # Create a dictionary of file name and container dict
-out_dict = {"model_vars_":model_files, "com_formed_":com_files,}#"agent_vars_":ag_files}
+if ag_file:
+    out_dict = {"model_vars_":model_files, "com_formed_":com_files, "agent_vars_":ag_files}
+else:
+    out_dict = {"model_vars_":model_files, "com_formed_":com_files}
 
 # Loop through container dictionaries
 for key, val in out_dict.items():
     for input_file in glob.glob(join(data_dir,'*'+key+'.feather')):
 
         # Create a label from the name of the experiment that created the data
-        label = "_".join(input_file.split("_")[5:9])
-        #label = "_".join(input_file.split("_")[4:6])
-        #label = label.replace("_el2yr_"+key+'.feather',"")
+        label = "_".join(input_file.split("\\")[-1].split("_")[1:5])
         print(label)
 
         # Read data and store it in the container dictionary
@@ -55,7 +59,8 @@ for key, df in out_dict["model_vars_"].items():
 # Put all data frames into one
 model_df = pd.concat(out_dict["model_vars_"])
 communities_df = pd.concat(out_dict["com_formed_"])
-#agents_df = pd.concat(out_dict["agent_vars_"])
+if ag_file:
+    agents_df = pd.concat(out_dict["agent_vars_"])
 
 # Create a scenario label
 model_df["scenario_label"] = np.char.array(model_df["com_year"].values.astype(str))+ "_" + np.char.array(model_df["direct_market"].values.astype(str)) + "_" + np.char.array(model_df["direct_market_th"].values.astype(str))
@@ -163,7 +168,23 @@ communities_df["community_block_ratio_com"] = np.array([communities_df["n_member
 
 #%% SUMMARY OF RESULTS
 
-labels_d = {"2050_False_100000":"IND", "2019_False_100000":"COM", "2019_True_100000":"ZEV", "2019_True_1":"ZEV+"}
+#labels_d = {"2050_False_100000":"IND", "2018_False_100000":"COM", "2018_True_100000":"ZEV", "2018_True_1":"ZEV+"}
+def assign_label(k):
+    
+    com_yr, dm_flag, dm_threshold = k.split("_")
+    
+    if int(com_yr) > 2035:
+        return "IND"
+    elif dm_flag == 'False':
+        return "COM"
+    elif (dm_flag != 'False') and (dm_threshold == '100000'):
+        return "ZEV"
+    elif (dm_flag != 'False') and (dm_threshold == '100000'):
+        return "ZEV+"
+    else:
+        return "Unknown"
+
+labels_d = {k:assign_label(k) for k in set(sc_results_analysed.index)}
 
 variables = ["inst_cum_com", "inst_cum_ind", "n_com", "n_ind", "pol_cost_sub_com", "pol_cost_sub_ind"]
 
@@ -191,21 +212,14 @@ for sc in labels_d.keys():
             output[sc][var+"_p95"] = np.percentile(data, q=95)
 
 output_df = pd.DataFrame(output)
-
+#%% EXPORT SUMMARY OF RESULTS
 output_df.to_csv(files_dir +"\\results_table.csv", sep=";")
 
 #%% PLOT BUBBLE GRAPH WITH HISTOGRAMS
 # Color dictionary
-color_d = {'dark_blue':(0.,114/255,178/255), 
-'flx_monthly':(213/255,94/255,0.),
-'pid_monthly':(204/255,121/255,167/255), 
-'fix_trigger':(86/255,180/255,233/255),
-'flx_trigger':(230/255,159/255,0.),
-'green':(0.,158/255,115/255),}
+color_d = {"2050_False_100000":(213/255,94/255,0.), "2018_False_100000":(230/255,159/255,0.), "2018_True_100000":(86/255,180/255,233/255), "2018_True_1":(0.,114/255,178/255)}
 
-color_d = {"2050_False_100000":(213/255,94/255,0.), "2019_False_100000":(230/255,159/255,0.), "2019_True_100000":(86/255,180/255,233/255), "2019_True_1":(0.,114/255,178/255)}
-
-labels_d = {"2050_False_100000":"IND", "2019_False_100000":"COM", "2019_True_100000":"ZEV", "2019_True_1":"ZEV+"}
+labels_d = {"2050_False_100000":"IND", "2018_False_100000":"COM", "2018_True_100000":"ZEV", "2018_True_1":"ZEV+"}
 
 def scatter_hist(x, y, ax, ax_histx, ax_histy, sc, color_d):
 
@@ -220,16 +234,16 @@ def scatter_hist(x, y, ax, ax_histx, ax_histy, sc, color_d):
     ax.scatter(np.median(x[0]), np.median(y[0]), color=color_d[sc],alpha=0.5, edgecolor="k", zorder=100)
 
     # annotate median
-    if sc == "2019_True_100000":
+    if sc == "2018_True_100000":
         # ZEV
         ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*0.2, np.median(y[0])*2.25), arrowprops=dict(arrowstyle="->"))
     elif sc == "2050_False_100000":
         # IND
         ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*1.7, np.median(y[0])*0.6), arrowprops=dict(arrowstyle="->"))
-    elif sc == "2019_False_100000":
+    elif sc == "2018_False_100000":
         # COM
         ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*1, np.median(y[0])*0.3), arrowprops=dict(arrowstyle="->"))
-    elif sc == "2019_True_1":
+    elif sc == "2018_True_1":
         # ZEV+
         ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*1, np.median(y[0])*3), arrowprops=dict(arrowstyle="->"))
 
@@ -275,7 +289,8 @@ ax = fig_bubhist.add_subplot(gs[1, 0])
 ax_histx = fig_bubhist.add_subplot(gs[0, 0], sharex=ax)
 ax_histy = fig_bubhist.add_subplot(gs[1, 1], sharey=ax)
 
-for scenario in ["2050_False_100000", "2019_False_100000", "2019_True_100000", "2019_True_1"]:
+#for scenario in ["2050_False_100000", "2018_False_100000", "2018_True_100000", "2018_True_1"]:
+for scenario in set(sc_results_analysed.index):
 
     sc_df = sc_results_analysed.loc[scenario]
 
@@ -298,9 +313,9 @@ fig_bubhist.savefig(files_dir +"\\fig_bubhist.svg", format="svg")
 fig_bubhist.savefig(files_dir +"\\fig_bubhist.png", format="png", bbox_inches="tight", dpi=210)
 #%% PLOT INSTALLATIONS
 
-color_d = {"2050_False_100000":(213/255,94/255,0.), "2019_False_100000":(86/255,180/255,233/255), "2019_True_100000":(230/255,159/255,0.), "2019_True_10000":"purple"}
+color_d = {"2050_False_100000":(213/255,94/255,0.), "2018_False_100000":(86/255,180/255,233/255), "2018_True_100000":(230/255,159/255,0.), "2018_True_1":"purple"}
 
-labels_d = {"2050_False_100000":"IND", "2019_False_100000":"COM", "2019_True_100000":"ZEV", "2019_True_1":"ZEV+"}
+labels_d = {"2050_False_100000":"IND", "2018_False_100000":"COM", "2018_True_100000":"ZEV", "2018_True_1":"ZEV+"}
 
 # Define vars to plot
 plotvars = ["inst_cum_ind", "inst_cum_com"]
@@ -319,15 +334,15 @@ for scenario in set(sc_results_analysed.index):
         # Set Y-axis label
         ax_inst.set_ylabel("Cumulative installed capacity [MWp]")
 
-    elif scenario == "2019_False_100000":
+    elif scenario == "2018_False_100000":
         ax_inst = axes_inst[0,1]
-    elif scenario == "2019_True_100000":
+    elif scenario == "2018_True_100000":
         ax_inst = axes_inst[1,0]
 
         # Set Y-axis label
         ax_inst.set_ylabel("Cumulative installed capacity [MWp]")
 
-    elif scenario == "2019_True_1":
+    elif scenario == "2018_True_1":
         ax_inst = axes_inst[1,1]
 
     # Select data
@@ -353,6 +368,11 @@ for scenario in set(sc_results_analysed.index):
         ax_inst.set_xticks(np.arange(0,len(x),d_yrs))
         ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,d_yrs))
 
+    # Plot total installed capacity
+    i = plot_df["p50"].loc[plot_df["variable"]=="inst_cum_ind"].values/1000
+    c = plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values/1000
+    ax_inst.plot(c+i, color="black", ls="--")
+
     ax_inst.set_ylim(0,20)
     ax_inst.set_xlim(0,25)
 
@@ -362,7 +382,7 @@ for scenario in set(sc_results_analysed.index):
     ax_inst.set_title(labels_d[scenario])
 
 # Add legend
-axes_inst[1,0].legend(["Individual adoption", "Community systems"], loc="center", bbox_to_anchor=(1.1, -0.2), ncol=2)
+axes_inst[1,0].legend(["Individual", "Community", "Total"], loc="center", bbox_to_anchor=(1.1, -0.2), ncol=3)
 
 #%% EXPORT FIGURE
 fig_inst.savefig(files_dir +"\\fig_inst.svg", format="svg")
@@ -382,15 +402,15 @@ for scenario in set(sc_results_analysed.index):
         # Set Y-axis label
         ax_adopt.set_ylabel("Number of PV adopters [-]")
 
-    elif scenario == "2019_False_100000":
+    elif scenario == "2018_False_100000":
         ax_adopt = axes_adopt[0,1]
-    elif scenario == "2019_True_100000":
+    elif scenario == "2018_True_100000":
         ax_adopt = axes_adopt[1,0]
 
         # Set Y-axis label
         ax_adopt.set_ylabel("Number of PV adopters [-]")
 
-    elif scenario == "2019_True_1":
+    elif scenario == "2018_True_1":
         ax_adopt = axes_adopt[1,1]
 
     # Select data
@@ -424,14 +444,14 @@ fig_adopt.savefig(files_dir +"\\fig_adopters.png", format="png", bbox_inches="ti
 
 #%% PLOT NEIGHBOR INFLUENCE EFFECT
 
-labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
 fig_ni, axes_ni = plt.subplots(3,3, figsize=(10,12), sharey=True, sharex=True)
 
 # Remove space between subplots
 plt.subplots_adjust(wspace=0, hspace=0)
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -504,7 +524,7 @@ fig_blocks.savefig(files_dir +"\\fig_blocks.png", format="png", bbox_inches="tig
 #%% PLOT NUMBERS OF COMMUNITIES PER CATEGORY
 import seaborn as sns
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -543,7 +563,7 @@ fig_cats.savefig(files_dir +"\\fig_stripplots.svg", format="svg")
 fig_cats.savefig(files_dir +"\\fig_stripplots.png", format="png", bbox_inches="tight", dpi=210)
 
 #%% PLOT EVOLUTION OF NUMBER OF COMMUNITIES
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -596,7 +616,7 @@ for sc in scs:
     ax_ncoms[scs.index(sc)].set_ylabel("Solar communities [-]")
 
 ax_ncoms[2].set_xticks(np.arange(9,26,2))
-ax_ncoms[2].set_xticklabels(np.arange(2019,2036,2))
+ax_ncoms[2].set_xticklabels(np.arange(2018,2036,2))
 
 # add custom legend
 from matplotlib.lines import Line2D
@@ -612,14 +632,14 @@ fig_ncoms.savefig(files_dir +"\\fig_ncoms_evolution.png", format="png", bbox_inc
 
 var = "n_members"
 
-labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
 fig_comscr, axes_comscr = plt.subplots(3,3, figsize=(10,12), sharey=True, sharex=True)
 
 # Remove space between subplots
 plt.subplots_adjust(wspace=0, hspace=0)
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -661,20 +681,20 @@ for sc in scs:
 # Set X-axis labels
 d_yrs = 5
 for i in range(3):
-    axes_comscr[2,i].set_xticks(np.arange(8,len(x),d_yrs))
-    axes_comscr[2,i].set_xticklabels(np.arange(2019,max(model_df["sim_year"])+1,d_yrs))
+    axes_comscr[2,i].set_xticks(np.arange(8,24,d_yrs))
+    axes_comscr[2,i].set_xticklabels(np.arange(2018,max(model_df["sim_year"])+1,d_yrs))
     axes_comscr[i,0].set_ylabel("Self-consumption rate \n[% solar generation consumed on site]")
 
 #%% PLOT COMMUNITY SIZE EVOLUTION
 
-labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
 fig_comsize, axes_comsize = plt.subplots(3,3, figsize=(10,12), sharey=True, sharex=True)
 
 # Remove space between subplots
 plt.subplots_adjust(wspace=0, hspace=0)
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -721,7 +741,7 @@ axes_comsize[2,0].set_ylabel("Community size [number of buildings]")
 d_yrs = 5
 for i in range(3):
     axes_comsize[2,i].set_xticks(np.arange(8,len(x),d_yrs))
-    axes_comsize[2,i].set_xticklabels(np.arange(2019,max(model_df["sim_year"])+1,d_yrs))
+    axes_comsize[2,i].set_xticklabels(np.arange(2018,max(model_df["sim_year"])+1,d_yrs))
 #%% EXPORT FIGURE
 fig_comsize.savefig(files_dir +"\\fig_comsize.svg", format="svg")
 fig_comsize.savefig(files_dir +"\\fig_comsize.png", format="png", bbox_inches="tight", dpi=210)
@@ -730,14 +750,14 @@ fig_comsize.savefig(files_dir +"\\fig_comsize.png", format="png", bbox_inches="t
 
 var = "SCR"
 
-labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
 fig_comscr, axes_comscr = plt.subplots(3,3, figsize=(10,12), sharey=True, sharex=True)
 
 # Remove space between subplots
 plt.subplots_adjust(wspace=0, hspace=0)
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -780,7 +800,7 @@ for sc in scs:
 d_yrs = 5
 for i in range(3):
     axes_comscr[2,i].set_xticks(np.arange(8,len(x),d_yrs))
-    axes_comscr[2,i].set_xticklabels(np.arange(2019,max(model_df["sim_year"])+1,d_yrs))
+    axes_comscr[2,i].set_xticklabels(np.arange(2018,max(model_df["sim_year"])+1,d_yrs))
     axes_comscr[i,0].set_ylabel("Self-consumption rate \n[% solar generation consumed on site]")
 #%% EXPORT FIGURE
 fig_comscr.savefig(files_dir +"\\fig_comscr.svg", format="svg")
@@ -791,7 +811,7 @@ import matplotlib.ticker as mtick
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 colors_d = {"all_residential":"darkorange", "all_commercial":"blue", "mixed_use":"green"}
 
@@ -827,7 +847,7 @@ import matplotlib.ticker as mtick
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 colors_d = {"all_residential":"darkorange", "all_commercial":"blue", "mixed_use":"green"}
 
@@ -860,7 +880,7 @@ import matplotlib.ticker as mtick
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 colors_d = {"all_residential":"darkorange", "all_commercial":"blue", "mixed_use":"green"}
 
@@ -914,14 +934,16 @@ fig_scr_all.savefig(files_dir +"\\fig_scr_all.svg", format="svg")
 fig_scr_all.savefig(files_dir +"\\fig_scr_all.png", format="png", bbox_inches="tight", dpi=210)
 
 #%% PLOT NUMBER OF COMMUNITIES WITH GREATER DEMAND
+import matplotlib.ticker as mtick
+from matplotlib.ticker import AutoMinorLocator
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
-labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
-color_d = {"com_2019_no_dm":(230/255,159/255,0.), "com_2019_dm_100":(86/255,180/255,233/255), "com_2019_dm_1":(0.,114/255,178/255)}
+color_d = {"com_2018_no_dm":(230/255,159/255,0.), "com_2018_dm_100":(86/255,180/255,233/255), "com_2018_dm_1":(0.,114/255,178/255)}
 
 fig_cd, ax = plt.subplots(1,1, figsize=(6.5,4), sharex=True, sharey=True)
 plt.subplots_adjust(wspace=0)
@@ -956,7 +978,7 @@ for sc in scs:
 
     ax.plot(median, label=labels_d[sc], color=color_d[sc])
 
-    ax.fill_between(range(len(cat_d)), p5,p95,alpha=0.2, color=color_d[sc], zorder=z)
+    ax.fill_between(range(len(cat_d)), p5,p95,alpha=0.2, color=color_d[sc])
 
 ax.axvline(x=1, color="k", linestyle="--")
 
@@ -983,14 +1005,15 @@ fig_cd.savefig(files_dir +"\\fig_com_dem_num.svg", format="svg")
 fig_cd.savefig(files_dir +"\\fig_com_dem_num.png", format="png", bbox_inches="tight", dpi=210)
 
 #%% PLOT communities net-present values
+from matplotlib.ticker import PercentFormatter
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
-labels_d = {"com_2019_no_dm":"COM", "com_2019_dm_100":"ZEV", "com_2019_dm_1":"ZEV+"}
+labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
-color_d = {"com_2019_no_dm":(230/255,159/255,0.), "com_2019_dm_100":(86/255,180/255,233/255), "com_2019_dm_1":(0.,114/255,178/255)}
+color_d = {"com_2018_no_dm":(230/255,159/255,0.), "com_2018_dm_100":(86/255,180/255,233/255), "com_2018_dm_1":(0.,114/255,178/255)}
 
 fig_cnpv, axes = plt.subplots(3,1, figsize=(6.5,5), sharex=True, sharey=True)
 plt.subplots_adjust(wspace=0, hspace=0)
@@ -1007,27 +1030,33 @@ for sc in scs:
 
         data_run = data_sc.loc[data_sc["run"]==run]
 
+        n_coms = len(data_run)
+
         npvs.extend(data_run["npv"].values / 1000)
 
     bins = np.logspace(1,5,100)
 
-    ax.hist(np.clip(npvs, bins[0],bins[-1]), color=color_d[sc], bins=bins)
+    ax.hist(np.clip(npvs, bins[0],bins[-1]), weights=np.ones(len(np.clip(npvs, bins[0],bins[-1]))) / len(np.clip(npvs, bins[0],bins[-1])), color=color_d[sc], bins=bins)
 
     ax.axvline(x=np.median(npvs), linestyle="--", linewidth=0.5, color="k")
-    ax.annotate("Median: "+str(round(np.median(npvs)/1000,1))+" m CHF ", xy=(np.median(npvs),0.05*len(npvs)), ha="right", fontsize=8)
+    ax.annotate("Median: "+str(round(np.median(npvs)/1000,1))+" m CHF ", xy=(np.median(npvs),0.05), ha="right", fontsize=8)
     ax.axvline(x=np.average(npvs), linestyle="--", linewidth=0.5,  color="red")
-    ax.annotate(" Average: "+str(round(np.average(npvs)/1000,1))+" m CHF ", xy=(np.average(npvs),0.05*len(npvs)),color="red", fontsize=8)
+    ax.annotate(" Average: "+str(round(np.average(npvs)/1000,1))+" m CHF ", xy=(np.average(npvs),0.05),color="red", fontsize=8)
 
     ax.annotate(labels_d[sc], xy=(0.02,0.85), xycoords="axes fraction")
 
     print("n ", len(npvs))
 
-    ax.set_ylim(0,0.06*len(npvs))
-    ax.set_xlim(10,100000)
+    #ax.set_ylim(0,0.06*len(npvs))
+    #ax.set_xlim(10,100000)
     ax.set_xscale("log")
 
-    ax.set_yticks(np.arange(0,0.06,0.02)*len(npvs))
-    ax.set_yticklabels(['{:,.1%}'.format(x) for x in np.arange(0,0.06,0.02)])
+    ax.yaxis.set_major_formatter(PercentFormatter(1))
+
+    #ax.set_yticks(np.arange(0,0.1,0.02)*len(npvs))
+    #ax.set_yticklabels(['{:,.1%}'.format(x) for x in np.arange(0,0.1,0.02)])
+    
+    ax.set_yticklabels
 
 axes[2].set_xlabel("Community net-present value [k CHF]")
 
@@ -1040,7 +1069,7 @@ import matplotlib.ticker as mtick
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
-scs = ["com_2019_no_dm", "com_2019_dm_100", "com_2019_dm_1"]
+scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
 
 colors_d = {"all_residential":"darkorange", "all_commercial":"blue", "mixed_use":"green"}
 
@@ -1090,6 +1119,11 @@ for scenario in set(sc_results_analysed.index):
     # Plot median
     ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values, label=scenario)
 
+    #ax_inst.fill_between(x,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values, alpha=0.10)
+
+    # Plot median
+    #ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values, label=scenario)
+
 # Set Y-axis label
 ax_inst.set_ylabel("Cumulative installed capacity [kWp]")
 
@@ -1098,7 +1132,7 @@ d_yrs = 3
 ax_inst.set_xticks(np.arange(0,len(x),d_yrs))
 ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,d_yrs))
 
-ax_inst.set_ylim(0,20000)
+#ax_inst.set_ylim(0,20000)
 
 # Add legend
 ax_inst.legend(loc="upper left")
@@ -1213,7 +1247,7 @@ for scenario in set(sc_results_analysed.index):
 
 fig, ax = plt.subplots(1,1)
 
-for lab in ["com_2019_no_dm", "com_2019_dm_100"]:
+for lab in ["com_2018_no_dm", "com_2018_dm_100"]:
 
     plot_df = model_df.loc[lab]
 
@@ -1227,7 +1261,7 @@ for lab in ["com_2019_no_dm", "com_2019_dm_100"]:
 ax.legend()
 #%%
 
-scs = ["com_2019_dm_100", "com_2019_no_dm"]
+scs = ["com_2018_dm_100", "com_2018_no_dm"]
 
 fig, ax = plt.subplots(1,1)
 
@@ -1418,3 +1452,218 @@ axes_ce[3,0].legend(custom_lines, ['Load profile', 'Net demand', 'PV generation'
 #%% EXPORT FIGURE
 fig_com_example.savefig(files_dir +"\\fig_com_example.svg", format="svg")
 fig_com_example.savefig(files_dir +"\\fig_com_example.png", format="png", bbox_inches="tight", dpi=210)
+#%%
+
+# Remove unnecessary columns
+del agents_df["sim_label"]
+del agents_df["eco_label"]
+del agents_df["cal_label"]
+
+# Add scenario column
+agents_df["scenario"] = [x[0] for x in agents_df.index]
+
+#%%
+data_dict = {}
+scs = set(agents_df["scenario"])
+for sc in scs:
+    #for rs in set(agents_df["random_seed"]):
+    data_dict[sc]={}
+    for rs in [578140008]:
+        for var in ['intention', 'attitude', 'pp', 'peer_effect',
+       'ideation_total', 'neighbor_influence', "ind_inv", "ind_npv"]:
+            data_dict[sc][var] = []
+            for sy in set(agents_df["sim_year"]):
+                cond = (agents_df["scenario"]==sc) & (agents_df["random_seed"]==rs) & (agents_df["sim_year"]==sy)
+                data_dict[sc][var].append(np.average(agents_df[var].loc[cond]))
+#%%
+
+v = "pp"
+
+fig, ax = plt.subplots(1,1)
+
+for sc in scs:
+    print(sc, data_dict[sc][v])
+    ax.plot(data_dict[sc][v], label=sc)
+
+ax.legend(loc="upper left")
+#ax.set_xticklabels(range(2005,2036,5))
+ax.set_ylabel(v)
+#%%
+run = 4
+communities_df["scenario"] = [x[0] for x in communities_df.index]
+for sc in set(communities_df["scenario"]):
+    #plt.scatter([sc]*len(communities_df["npv"].loc[communities_df["scenario"]==sc].values), communities_df["npv"].loc[communities_df["scenario"]==sc].values)
+    for r in set(communities_df["run"]):
+        plt.scatter(sc, len(communities_df.loc[(communities_df["scenario"]==sc)&(communities_df["run"]==r)].values))
+        plt.annotate(str(len(communities_df.loc[(communities_df["scenario"]==sc)&(communities_df["run"]==r)].values)),xy=(sc,len(communities_df.loc[(communities_df["scenario"]==sc)&(communities_df["run"]==r)].values)) )
+        plt.ylabel("Number of communities")
+
+#%%
+cd = {0:'gray',1:'red',2:'green',3:'orange',4:'blue'}
+scs=list(set(communities_df["scenario"]))
+for r in set(communities_df["run"]):
+    for sc in scs:
+        plt.scatter([scs.index(sc)+r/8]*len(communities_df["npv"].loc[(communities_df["scenario"]==sc)&(communities_df["run"]==r)].values), communities_df["npv"].loc[(communities_df["scenario"]==sc)&(communities_df["run"]==r)].values, color=cd[r])
+
+plt.ylabel("Community NPV")
+plt.ylim(1,1e9)
+plt.yscale("log")
+#%%
+solar = pd.read_pickle(r'C:\Users\anunezji\Documents\P4_comm_solar\code\COSA_Data\CEA_Disaggregated_SolarPV_3Dec.pickle')
+demand = pd.read_pickle(r'C:\Users\anunezji\Documents\P4_comm_solar\code\COSA_Data\CEA_Disaggregated_TOTAL_FINAL_06MAR.pickle')
+
+in_file =r'C:\Users\anunezji\Documents\P4_comm_solar\code\model_inputs_scenario-com18-dm-1_testni_COSA.json'
+with open(in_file, "r") as myinputs:
+    pars = json.loads(myinputs.read())
+#%%
+solar_com=solar["B148269"]+solar["B148278"]
+demand_com=demand["B148269"]+demand["B148278"]
+exp = "model_inputs_scenario-com18-dm-1_testni_COSA.json"
+# Set solar output as output first year of lifetime
+solar_outputs = solar_com
+
+# Create a dataframe with one row per hour of the year and one
+# column per building
+load_profile = pd.DataFrame(data = None, index = range(8760))
+
+# Create a dictionary to contain the annual energy balances
+load_profile_year = {} 
+
+# Define hourly solar system output for this building and hourly demand
+load_profile["solar"] = solar_outputs
+load_profile["demand"] = demand_com
+
+# Define price of electricity per hour of the day
+# Last value is 2020
+sim_year = 25
+wemp = pars["economic_parameters"]["hist_wholesale_el_prices"][-1]*(1+pars["economic_parameters"]["wholesale_el_price_change"])**(sim_year-10)
+load_profile["hour_price"] = [wemp * x for x in pars["economic_parameters"]["hour_to_average"]]
+load_profile["hour_price"] = pars["economic_parameters"]["hour_price"]
+"""
+PROBLEM -> HOUR_TO_AVERAGE HAS 8761 ELEMENTS INSTEAD OF 8760 ?!?!?!?!?!
+"""
+
+# Compute hourly net demand from grid and hourly excess solar
+load_profile["net_demand"] = load_profile.demand - load_profile.solar
+load_profile["excess_solar"] = load_profile.solar - load_profile.demand
+
+# Remove negative values by making them zero
+load_profile["net_demand"] = np.array(
+    [x if x > 0 else 0 for x in load_profile["net_demand"]])
+load_profile["excess_solar"] = np.array(
+    [x if x > 0 else 0 for x in load_profile["excess_solar"]])
+
+# Compute hourly self-consumed electricity
+# For the hours of the year with solar generation: self-consume all
+# solar generation if less than demand (s) or up to demand (d)
+s = solar_outputs
+d = demand_com
+load_profile["sc"] = np.array([min(s[i], d[i]) 
+                            if s[i] > 0 else 0 for i in range(8760)])
+
+# Store energy balances regardless of hour prices
+for bal in ["solar", "demand", "net_demand", "excess_solar", "sc"]:
+    #load_profile_year[bal] = sum(load_profile[bal])
+    load_profile_year[bal] = load_profile[bal]
+
+# Compute annual energy balances for high and low price hours
+for bal in ["solar", "demand", "excess_solar", "net_demand", "sc"]:
+    for pl in ["high", "low"]:
+        cond = (load_profile["hour_price"] == pl)
+        load_profile_year[bal+'_'+pl] = sum(load_profile[bal].loc[cond])
+
+# Compute year self-consumption rate
+load_profile_year["SCR"] = 0
+if np.sum(load_profile_year["sc"]) > 0:
+    load_profile_year["SCR"] = np.divide(np.sum(load_profile_year["sc"]),np.sum(load_profile_year["solar"]))
+
+# Make results the same for all lifetime
+lifetime_load_profile = {k:[v] * pars["economic_parameters"]["PV_lifetime"] for k,v in load_profile_year.items()}
+#%%
+agents_info.loc["B148269"]
+agents_info.loc["B148278"]
+
+# Read building type
+unique_id = "B148269"
+building_type = agents_info["bldg_type"].loc[unique_id]
+   
+# Define type of tariff
+t_type = "commercial"
+
+# Read demand for building
+demand_yr = np.sum(demand[unique_id])
+
+# List max demands for each tariff category
+t_ds = sorted(list(pars["economic_parameters"]["el_tariff_demand"][t_type].values()))
+
+# Find the index of the category whose demnad limit is higher than the annual demand of the building
+try:
+    t_ix = next(ix for ix,v in enumerate(t_ds) if v > demand_yr)
+except:
+    t_ix = len(t_ds)
+
+# Read the label of the tariff and return it
+# Note: we can only do this because demand limits and tariff names can be sorted alphabetically and by value, otherwise this is wrong!
+ag_tariff = sorted(list(pars["economic_parameters"]["el_tariff_demand"][t_type].keys()))[t_ix]
+
+        
+#%%
+# ELECTRICITY PRICE
+
+# Define average electricity price for individual adoption
+el_p_ind = pars["economic_parameters"]["hist_el_prices"][ag_tariff][-1]*(1+pars["economic_parameters"]["el_price_change"])**(sim_year-10)
+
+# Set high and low electricity prices for individual adoption
+# High prices Mon-Sat 06:00 to 22:00 = 6 d/w * 16 h/d = 96 h/w
+# Low prices Mon-Sat 22:00 to 06:00; and Sunday = 6 * 8 + 24 = 72 h/w
+el_p_l = el_p_ind / ((72/168) + (96/168) * pars["economic_parameters"]["ratio_high_low"])
+el_p_h = pars["economic_parameters"]["ratio_high_low"] * el_p_l
+
+el_p_com = np.multiply(pars["economic_parameters"]["hour_to_average"],wemp)
+
+# ANNUAL CASHFLOW CALCULATION
+
+# Create empty dictionary to store annual cashflows
+cf_y = {}
+
+# Without degradation, all years have the same profile so we just take the first one and copy the results over the lifetime of the system.
+
+# Read avoided consumption from grid (i.e. self-consumption)
+sc_h = lifetime_load_profile["sc_high"][0]
+sc_l = lifetime_load_profile["sc_low"][0]
+
+# Read demand from grid before adoption
+d_h = lifetime_load_profile["demand_high"][0]
+d_l = lifetime_load_profile["demand_low"][0]
+
+"""
+Here's the problem: lifetime_load_profile["excess_solar"][0] is one number, instead of a list of 8760 hourly values, while el_p_com is a list of 8760 values.
+"""
+
+# Compute gains from direct marketing
+cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][0],el_p_com))
+
+# Compute savings as the difference between electricity bill
+cf_y["savings"] = d_h * el_p_h + d_l * el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][0],el_p_com))
+
+# Compute the cost of individual metering
+cf_y["split"] = (sc_h + sc_l) * pars["economic_parameters"]["ewz_solarsplit_fee"]
+
+# Compute O&M costs
+cf_y["O&M"] = np.sum(lifetime_load_profile["solar"][0]) * pars["economic_parameters"]['OM_Cost_rate']
+
+# Compute net cashflows to the agent
+if sys == "ind":
+    cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["O&M"])
+    cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["O&M"])
+
+elif sys == "com":
+    cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"])
+    cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["split"] - cf_y["O&M"])
+
+# Store results in return dataframe
+lifetime_cashflows = pd.DataFrame(cf_y, index=[0])
+
+# Make results the same for all lifetime
+lifetime_cashflows = lifetime_cashflows.append([cf_y] * pars["economic_parameters"]["PV_lifetime"], ignore_index=True)
+# %%
