@@ -209,8 +209,23 @@ class BuildingAgent(Agent):
             # Compute simple payback period per year simulated
             pp = self.compute_simple_pp(ind_inv, lifetime_cashflows, max_pp)
 
-        # Compute normalized payback periods
+        ref_coms_dict = {"B145617_B145620_B145659":{"members":[ag for ag in self.model.schedule.agents if ag.unique_id in ["B145617","B145620","B145659"]]}}
+        
+        self.update_combinations_available(self.model, ref_coms_dict)
+
+        # if self.model.sim_year >= self.model.com_allowed_year:
+        #     pp_norm = 1 - 0.5 * (pp + ref_coms_dict["B145617_B145620_B145659"]["pp_com"]) / max_pp
+        # else:
         pp_norm = 1 - (pp / max_pp)
+
+        # if self.model.av_pp_com == 0:
+
+        #     # Compute normalized payback periods
+        #     pp_norm = 1 - (pp / max_pp)
+
+        # elif self.model.av_pp_com > 0:
+
+        #     pp_norm = 1 - 0.5 * (pp + self.model.av_pp_com) / max_pp
 
         return pp_norm
 
@@ -269,7 +284,12 @@ class BuildingAgent(Agent):
         all_agents = self.model.schedule.agents
 
         # Collect list of neighbors
-        neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_plot == self.bldg_plot) and (ag.unique_id != self.unique_id)])
+        # Block
+        #neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_plot == self.bldg_plot) and (ag.unique_id != self.unique_id)])
+        # Zone
+        #neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_zone == self.bldg_zone) and (ag.unique_id != self.unique_id)])
+        # No restriction
+        neighbors_list = np.array([ag for ag in all_agents if ag.unique_id != self.unique_id])
 
         # If there are any neighbors (own agent counts as 1)
         if len(neighbors_list) > 0:
@@ -299,13 +319,20 @@ class BuildingAgent(Agent):
         if self.intention == 1 and self.pv_possible and self.adopt_com == 0:
 
             # Create a list containing all the agents in the plot with the idea to adopt PV or that already have PV, who are not in community
-            potential_partners = [ag for ag in self.model.schedule.agents if (
-                                    (ag.bldg_plot == self.bldg_plot) and (
-                                    (ag.intention == 1) or (ag.adopt_ind == 1))
-                                    and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            # Block
+            #potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_plot == self.bldg_plot) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            # Plot
+            #potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_zone == self.bldg_zone) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            # No restrictions
+            potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
 
             # Create a list of formed communities the agent could join
-            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+            # Block
+            #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+            # Plot
+            #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_zone==self.bldg_zone) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+            # No restrictions
+            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
 
             # Compute the number of community options
             if self.model.join_com == True:
@@ -552,10 +579,11 @@ class BuildingAgent(Agent):
         if len(agents_to_consider) > n_closest_neighbors:
 
             # Create dataframe with only the agents in the list
-            d_df = self.distances[self.distances[uid].isin(potential_partners)]
+            #d_df = self.distances[self.distances[uid].isin(potential_partners)]
 
             # List the n_closest_neighbors 
-            agents_to_consider = [ag for ag in agents_to_consider if ag.unique_id in d_df.sort_values(by = ['dist_' + uid]).iloc[:n_closest_neighbors].index]
+            #agents_to_consider = [ag for ag in agents_to_consider if ag.unique_id in d_df.sort_values(by = ['dist_' + uid]).iloc[:n_closest_neighbors].index]
+            agents_to_consider = self.random.sample(agents_to_consider,n_closest_neighbors)
 
         return agents_to_consider
 
@@ -872,6 +900,13 @@ class BuildingAgent(Agent):
         # Define PV size and profitability values
         for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old", "pp_com"]:
             c_export_dict[v] = c_dict[v]
+
+        # Update average community payback period
+        # n_com = np.sum([ag.adopt_com for ag in self.model.schedule.agents])
+        # if n_com > 1:
+        #     self.model.av_pp_com = (self.model.av_pp_com * n_com + c_dict["pp_com"] * (n_com - 1)) / (n_com * (n_com -1))
+        # elif n_com == 1:
+        #     self.model.av_pp_com = c_dict["pp_com"]
         
         self.model.datacollector.add_table_row("communities", c_export_dict)
     

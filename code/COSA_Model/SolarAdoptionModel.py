@@ -142,6 +142,9 @@ class SolarAdoptionModel(Model):
         # Defime maximum payback period
         self.max_pp = inputs["economic_parameters"]["max_payback_period"]
 
+        # Initialize community pp variable
+        self.av_pp_com = 0
+
         # Define scale effects parameters
         self.pv_scale_alpha = inputs["economic_parameters"]["pv_scale_alpha"]
         self.pv_scale_beta = inputs["economic_parameters"]["pv_scale_beta"]
