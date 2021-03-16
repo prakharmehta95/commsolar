@@ -1,0 +1,39 @@
+Sender: LSF System <lsfadmin@eu-a6-008-15>
+Subject: Job 164320161: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-42> by user <anunezji> in cluster <euler> at Thu Mar  4 12:04:15 2021
+Job was executed on host(s) <12*eu-a6-008-15>, in queue <bigmem.120h>, as user <anunezji> in cluster <euler> at Thu Mar  4 12:04:41 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Thu Mar  4 12:04:41 2021
+Terminated at Thu Mar  4 12:04:42 2021
+Results reported at Thu Mar  4 12:04:42 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   0.08 sec.
+    Max Memory :                                 6 MB
+    Average Memory :                             -
+    Total Requested Memory :                     120000.00 MB
+    Delta Memory :                               119994.00 MB
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   13 sec.
+    Turnaround time :                            27 sec.
+
+The output (if any) follows:
+
+Traceback (most recent call last):
+  File "COSA_main.py", line 9, in <module>
+    import sys, os, re, json, glob, time, pickle, datetime, feather
+ImportError: No module named feather

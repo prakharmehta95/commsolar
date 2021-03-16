@@ -1,13 +1,13 @@
-{   "exp_name": "com_2018_dm_100_testni",
+{   "exp_name": "com_2018_dm_1_testni",
     "simulation_parameters": {
-        "runs": 50,
+        "runs": 1,
         "start_year": 2010,
         "end_year": 2035,
-        "n_agents": 5000,
+        "n_agents": 2000,
         "n_peers": 20,
         "p_rewire": 0.10,
         "n_closest_neighbors" : 4,
-        "n_cores": 12
+        "n_cores": 6
     },
     "calibration_parameters":{
         "w_econ": [0.13],
@@ -21,7 +21,7 @@
         "awareness_minergie": [0.95]
     },
     "policy_parameters":{
-        "direct_market_th": 100000,
+        "direct_market_th": 1,
         "direct_market": true,
         "com_year":2018
     },

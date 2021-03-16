@@ -1,0 +1,73 @@
+Sender: LSF System <lsfadmin@eu-g1-046-3>
+Subject: Job 163833669: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-43> by user <anunezji> in cluster <euler> at Sun Feb 28 18:03:33 2021
+Job was executed on host(s) <9*eu-g1-046-3>, in queue <bigmem.24h>, as user <anunezji> in cluster <euler> at Sun Feb 28 18:03:57 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Sun Feb 28 18:03:57 2021
+Terminated at Mon Mar  1 00:19:09 2021
+Results reported at Mon Mar  1 00:19:09 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   134597.55 sec.
+    Max Memory :                                 76722 MB
+    Average Memory :                             70661.43 MB
+    Total Requested Memory :                     126000.00 MB
+    Delta Memory :                               49278.00 MB
+    Max Swap :                                   4916 MB
+    Max Processes :                              12
+    Max Threads :                                17
+    Run time :                                   22536 sec.
+    Turnaround time :                            22536 sec.
+
+The output (if any) follows:
+
+Importing data
+= Run exp 1 of 1 =
+com_2018_dm_100_testni
+17:04:04
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 121, in worker
+    result = (True, func(*args, **kwds))
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 47, in starmapstar
+    return list(itertools.starmap(args[0], args[1]))
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 190, in simulate_run
+    sim_model.step()
+  File "/cluster/home/anunezji/COSA_Model/SolarAdoptionModel.py", line 314, in step
+    self.schedule.step()
+  File "/cluster/home/anunezji/COSA_Tools/scheduler.py", line 53, in step
+    getattr(self._agents[agent_key], stage)()  # Run stage
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 353, in step_decision
+    self.update_combinations_available(self.model, combinations_dict)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 721, in update_combinations_available
+    c_d["tariff"] = self.assign_community_tariff(np.sum(c_d["demand"]), model.el_tariff_demands)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 793, in assign_community_tariff
+    com_tariff = sorted(list(el_tariff_demands["commercial"].keys()))[t_ix]
+IndexError: list index out of range
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "COSA_main.py", line 61, in <module>
+    exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, agents_info, distances, solar, demand)
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 152, in run_experiment
+    exp_results = p.starmap(simulate_run, run_inputs)
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 298, in starmap
+    return self._map_async(func, iterable, starmapstar, chunksize).get()
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 683, in get
+    raise self._value
+IndexError: list index out of range

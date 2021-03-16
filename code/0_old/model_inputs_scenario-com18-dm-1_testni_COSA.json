@@ -1,9 +1,9 @@
 {   "exp_name": "com_2018_dm_1_testni",
     "simulation_parameters": {
-        "runs": 50,
+        "runs": 1,
         "start_year": 2010,
         "end_year": 2035,
-        "n_agents": 5000,
+        "n_agents": 100,
         "n_peers": 20,
         "p_rewire": 0.10,
         "n_closest_neighbors" : 4,
