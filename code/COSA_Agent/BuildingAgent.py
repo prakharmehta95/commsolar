@@ -216,16 +216,32 @@ class BuildingAgent(Agent):
         # if self.model.sim_year >= self.model.com_allowed_year:
         #     pp_norm = 1 - 0.5 * (pp + ref_coms_dict["B145617_B145620_B145659"]["pp_com"]) / max_pp
         # else:
-        pp_norm = 1 - (pp / max_pp)
+        #pp_norm = 1 - (pp / max_pp)
 
-        # if self.model.av_pp_com == 0:
+        # Number of individual adopters
+        #n_ind = np.sum([ag.adopt_ind for ag in self.model.schedule.agents])
+        # Number of agents in communities
+        #n_com = np.sum([ag.adopt_com for ag in self.model.schedule.agents])
+        # Number of communities
+        #n_com = len(set([ag.com_name for ag in self.model.schedule.agents if ag.adopt_com == 1]))
+        
+        # if (n_ind+n_com) > 0:
+        #     w_i = n_ind / (n_ind+n_com)
+        #     w_c = n_com / (n_ind+n_com)
+        # else:
+        #     w_i = 1
+        #     w_c = 0
+        w_i = self.model.w_ind
+        w_c = self.model.w_com
 
-        #     # Compute normalized payback periods
-        #     pp_norm = 1 - (pp / max_pp)
+        if self.model.av_pp_com == 0:
 
-        # elif self.model.av_pp_com > 0:
+            # Compute normalized payback periods
+            pp_norm = 1 - (pp / max_pp)
 
-        #     pp_norm = 1 - 0.5 * (pp + self.model.av_pp_com) / max_pp
+        elif self.model.av_pp_com > 0:
+
+            pp_norm = 1 - (w_i * pp + w_c * self.model.av_pp_com) / max_pp
 
         return pp_norm
 
@@ -287,9 +303,9 @@ class BuildingAgent(Agent):
         # Block
         #neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_plot == self.bldg_plot) and (ag.unique_id != self.unique_id)])
         # Zone
-        #neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_zone == self.bldg_zone) and (ag.unique_id != self.unique_id)])
+        neighbors_list = np.array([ag for ag in all_agents if (ag.bldg_zone == self.bldg_zone) and (ag.unique_id != self.unique_id)])
         # No restriction
-        neighbors_list = np.array([ag for ag in all_agents if ag.unique_id != self.unique_id])
+        #neighbors_list = np.array([ag for ag in all_agents if ag.unique_id != self.unique_id])
 
         # If there are any neighbors (own agent counts as 1)
         if len(neighbors_list) > 0:
@@ -321,18 +337,18 @@ class BuildingAgent(Agent):
             # Create a list containing all the agents in the plot with the idea to adopt PV or that already have PV, who are not in community
             # Block
             #potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_plot == self.bldg_plot) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
-            # Plot
-            #potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_zone == self.bldg_zone) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            # Zone
+            potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_zone == self.bldg_zone) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
             # No restrictions
-            potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            #potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
 
             # Create a list of formed communities the agent could join
             # Block
             #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
-            # Plot
-            #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_zone==self.bldg_zone) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+            # Zone
+            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_zone==self.bldg_zone) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
             # No restrictions
-            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+            #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
 
             # Compute the number of community options
             if self.model.join_com == True:
@@ -779,18 +795,26 @@ class BuildingAgent(Agent):
         Returns:
             el_tariff = name of tariff (str)
         """
+
+        # Dict of suitable tarifs
+        td = {t:v for t,v in el_tariff_demands["commercial"].items() if v >= demand_yr}
+
+        if len(td) > 0:
+            com_tariff = min(td, key=td.get)
+        else:
+            com_tariff = max(el_tariff_demands["commercial"], key=el_tariff_demands["commercial"].get)
         
         # List max demands for each tariff category
-        t_ds = sorted(list(el_tariff_demands["commercial"].values()))
+        #t_ds = sorted(list(el_tariff_demands["commercial"].values()))
 
         # Find the index of the category whose demnad limit is higher than the annual demand of the building
-        try:
-            t_ix = next(ix for ix,v in enumerate(t_ds) if v > demand_yr)
-        except:
-            t_ix = len(t_ds)
+        #try:
+        #    t_ix = next(ix for ix,v in enumerate(t_ds) if v > demand_yr)
+        #except:
+        #    t_ix = len(t_ds)
 
         # Read the label of the tariff and return it
-        com_tariff = sorted(list(el_tariff_demands["commercial"].keys()))[t_ix]
+        #com_tariff = sorted(list(el_tariff_demands["commercial"].keys()))[t_ix]
 
         # If the community consumes more than 100 MWh/yr - it can sell/buy electricity in the wholesale electricity market. Then, assign the wholesale price
         if self.model.direct_market == True:
@@ -902,11 +926,11 @@ class BuildingAgent(Agent):
             c_export_dict[v] = c_dict[v]
 
         # Update average community payback period
-        # n_com = np.sum([ag.adopt_com for ag in self.model.schedule.agents])
-        # if n_com > 1:
-        #     self.model.av_pp_com = (self.model.av_pp_com * n_com + c_dict["pp_com"] * (n_com - 1)) / (n_com * (n_com -1))
-        # elif n_com == 1:
-        #     self.model.av_pp_com = c_dict["pp_com"]
+        n_com = np.sum([ag.adopt_com for ag in self.model.schedule.agents])
+        if n_com > 1:
+            self.model.av_pp_com = (self.model.av_pp_com * n_com + c_dict["pp_com"] * (n_com - 1)) / (n_com * (n_com -1))
+        elif n_com == 1:
+            self.model.av_pp_com = c_dict["pp_com"]
         
         self.model.datacollector.add_table_row("communities", c_export_dict)
     
