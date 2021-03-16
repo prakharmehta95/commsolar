@@ -77,6 +77,10 @@ class SolarAdoptionModel(Model):
         self.w_subplot = inputs["calibration_parameters"]["w_subplot"]
         self.threshold = inputs["calibration_parameters"]["threshold"]
 
+        # Define profitability attention weights
+        self.w_ind = inputs["calibration_parameters"]["w_ind"]
+        self.w_com = inputs["calibration_parameters"]["w_com"]
+
         # Determine threshold of losses agents accept
         self.reduction = inputs["calibration_parameters"]["reduction"]
 
