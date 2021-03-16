@@ -20,7 +20,7 @@ from matplotlib.lines import Line2D
 files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
-data_subfolder = 'code\\COSA_Outputs\\2_results\\202002_recal-2\\tests\\'
+data_subfolder = 'code\\COSA_Outputs\\2_results\\202002_recal-2\\pp_com\\average_pp_com_ncoms\\'
 #data_subfolder = 'code\\COSA_Outputs\\'
 input_subfolder = 'code\\COSA_Data\\'
 data_dir = files_dir[:files_dir.rfind('code')] + data_subfolder
@@ -373,7 +373,8 @@ for scenario in set(sc_results_analysed.index):
     c = plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values/1000
     ax_inst.plot(c+i, color="black", ls="--")
 
-    ax_inst.set_ylim(0,20)
+    #ax_inst.set_ylim(0,20)
+    ax_inst.set_ylim(0,)
     ax_inst.set_xlim(0,25)
 
     #ax_inst.plot(cal_data['inst_cum_ZH_wiedikon_cal'], color="k")
@@ -524,7 +525,8 @@ fig_blocks.savefig(files_dir +"\\fig_blocks.png", format="png", bbox_inches="tig
 #%% PLOT NUMBERS OF COMMUNITIES PER CATEGORY
 import seaborn as sns
 
-scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
+scs = [#"com_2018_no_dm", 
+"com_2018_dm_100"]#, "com_2018_dm_1"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -564,6 +566,7 @@ fig_cats.savefig(files_dir +"\\fig_stripplots.png", format="png", bbox_inches="t
 
 #%% PLOT EVOLUTION OF NUMBER OF COMMUNITIES
 scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
+scs = ["com_2018_dm_100"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -640,6 +643,7 @@ fig_comscr, axes_comscr = plt.subplots(3,3, figsize=(10,12), sharey=True, sharex
 plt.subplots_adjust(wspace=0, hspace=0)
 
 scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
+scs = ["com_2018_dm_100"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -695,6 +699,7 @@ fig_comsize, axes_comsize = plt.subplots(3,3, figsize=(10,12), sharey=True, shar
 plt.subplots_adjust(wspace=0, hspace=0)
 
 scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
+scs = ["com_2018_dm_100"]
 
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
@@ -1010,6 +1015,7 @@ from matplotlib.ticker import PercentFormatter
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
 scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
+scs = ["com_2018_dm_100"]
 
 labels_d = {"com_2018_no_dm":"COM", "com_2018_dm_100":"ZEV", "com_2018_dm_1":"ZEV+"}
 
@@ -1070,6 +1076,7 @@ import matplotlib.ticker as mtick
 cats = ["all_residential", "all_commercial", "mixed_use"]
 
 scs = ["com_2018_no_dm", "com_2018_dm_100", "com_2018_dm_1"]
+scs = ["com_2018_dm_100"]
 
 colors_d = {"all_residential":"darkorange", "all_commercial":"blue", "mixed_use":"green"}
 
@@ -1114,15 +1121,26 @@ for scenario in set(sc_results_analysed.index):
     x = range(len(set(plot_df["sim_year"])))
 
     # Plot confidence interval
-    ax_inst.fill_between(x,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values,plot_df["p95"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values, alpha=0.10)
+    #ax_inst.fill_between(x,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values,plot_df["p95"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values, alpha=0.10)
 
     # Plot median
-    ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values, label=scenario)
+    #ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_ind"].values+plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values, label=scenario)
 
-    #ax_inst.fill_between(x,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values, alpha=0.10)
+    # Plot confidence interval
+    ax_inst.fill_between(x,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_ind"].values,plot_df["p95"].loc[plot_df["variable"]=="inst_cum_ind"].values, alpha=0.20)
+
+    # Plot confidence interval
+    ax_inst.fill_between(x,plot_df["p05"].loc[plot_df["variable"]=="inst_cum_com"].values,plot_df["p95"].loc[plot_df["variable"]=="inst_cum_com"].values, color="red", alpha=0.20)
+
+    for r in range(50):
+        ax_inst.plot(plot_df.loc[plot_df["variable"]=="inst_cum_ind",r].values, color="blue",alpha=0.25)
+
+    for r in range(50):
+        ax_inst.plot(plot_df.loc[plot_df["variable"]=="inst_cum_com",r].values, color="red",alpha=0.25)
 
     # Plot median
-    #ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values, label=scenario)
+    ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_ind"].values, color="black", label=scenario, ls="--")
+    ax_inst.plot(plot_df["p50"].loc[plot_df["variable"]=="inst_cum_com"].values, color="black", label=scenario, ls="--")
 
 # Set Y-axis label
 ax_inst.set_ylabel("Cumulative installed capacity [kWp]")
@@ -1132,7 +1150,7 @@ d_yrs = 3
 ax_inst.set_xticks(np.arange(0,len(x),d_yrs))
 ax_inst.set_xticklabels(np.arange(min(model_df["sim_year"]),max(model_df["sim_year"])+1,d_yrs))
 
-#ax_inst.set_ylim(0,20000)
+ax_inst.set_ylim(0,)
 
 # Add legend
 ax_inst.legend(loc="upper left")

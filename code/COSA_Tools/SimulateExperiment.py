@@ -26,7 +26,7 @@ def import_parameters(files_dir):
     # Read all the JSON files in current directory
     # Note that changing the ending of the JSON file we can import experiment
     # input files for different purposes (e.g., "_cal.json" for calibration)
-    for inputs_file in glob.glob('*_COSA.json'):
+    for inputs_file in glob.glob('*_COSA_test.json'):
 
         # Save their content as input values for different experiments
         with open(inputs_file, "r") as myinputs:
