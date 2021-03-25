@@ -13,6 +13,7 @@ import numpy as np
 # Import classes and functions from python packages
 from mesa import Model
 from mesa.datacollection import DataCollector
+from mesa.space import MultiGrid
 
 # Import classes and functions from own scripts
 from COSA_Tools.scheduler import StagedActivation_random
@@ -46,6 +47,19 @@ class SolarAdoptionModel(Model):
         # Make inputs a variable of the model
         self.inputs = inputs
 
+        ## INITIALIZE SPATIAL GRID
+        # Width x Height = determines number of cells in the grid
+        # Torus = determines if grid borders wrap around (toroidal space)
+        # Note: added +1 to max normalized x_coord and y_coord in inputs
+        # [ ] figure out correspondence cell dimensions to meters
+        self.grid = MultiGrid(width=2184, height=2352, torus=False)
+
+        # Radius of eligibility
+        self.radius = inputs["simulation_parameters"]["radius"]
+
+        # Flag variable to use geospatial eligibility
+        self.geocom = inputs["simulation_parameters"]["geocom"]
+
         ## INITIALIZE SIMULATION PARAMETERS
         
         # Define number of agents
@@ -78,8 +92,8 @@ class SolarAdoptionModel(Model):
         self.threshold = inputs["calibration_parameters"]["threshold"]
 
         # Define profitability attention weights
-        self.w_ind = inputs["calibration_parameters"]["w_ind"]
-        self.w_com = inputs["calibration_parameters"]["w_com"]
+        self.w_ind = inputs["simulation_parameters"]["w_ind"]
+        self.w_com = inputs["simulation_parameters"]["w_com"]
 
         # Determine threshold of losses agents accept
         self.reduction = inputs["calibration_parameters"]["reduction"]
@@ -237,6 +251,14 @@ class SolarAdoptionModel(Model):
 
             # Add agent to model schedule
             self.schedule.add(ag)
+
+            # Read agent coordinates
+            # Based on normalized data from "Bldgs_4919_Coordinates.csv"
+            x_coord = agents_info[unique_id]["x_coord_norm"]
+            y_coord = agents_info[unique_id]["y_coord_norm"]
+
+            # Place agent in the grid
+            self.grid.place_agent(ag, (x_coord,y_coord))
 
         # Define data collection
         self.datacollector = DataCollector(

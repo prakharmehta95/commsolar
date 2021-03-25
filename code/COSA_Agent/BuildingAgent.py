@@ -158,6 +158,14 @@ class BuildingAgent(Agent):
         # If the agent has not adopted solar PV and not developed the intention before, then, update its attributes and evaluate whether it develops the intention in this step                        
         elif (self.adopt_com == 0) and (self.adopt_ind == 0) and (self.intention != 1):
 
+            # Only in the first step
+            # This comes here because self.pos is defined after creation
+            if self.model.step_ctr == 0:
+
+                # Determine agent neighbors within radius
+                # List up to nine lists with agents in each cell around agent
+                self.neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=True, radius=self.model.radius)
+
             # Evaluate the influence of peers
             self.peer_effect = self.check_peers(self.peers, self.model.schedule.agents)
 
@@ -213,24 +221,7 @@ class BuildingAgent(Agent):
         
         self.update_combinations_available(self.model, ref_coms_dict)
 
-        # if self.model.sim_year >= self.model.com_allowed_year:
-        #     pp_norm = 1 - 0.5 * (pp + ref_coms_dict["B145617_B145620_B145659"]["pp_com"]) / max_pp
-        # else:
-        #pp_norm = 1 - (pp / max_pp)
-
-        # Number of individual adopters
-        #n_ind = np.sum([ag.adopt_ind for ag in self.model.schedule.agents])
-        # Number of agents in communities
-        #n_com = np.sum([ag.adopt_com for ag in self.model.schedule.agents])
-        # Number of communities
-        #n_com = len(set([ag.com_name for ag in self.model.schedule.agents if ag.adopt_com == 1]))
-        
-        # if (n_ind+n_com) > 0:
-        #     w_i = n_ind / (n_ind+n_com)
-        #     w_c = n_com / (n_ind+n_com)
-        # else:
-        #     w_i = 1
-        #     w_c = 0
+        # Read weights for community and individual adoption profitability
         w_i = self.model.w_ind
         w_c = self.model.w_com
 
@@ -335,12 +326,16 @@ class BuildingAgent(Agent):
         if self.intention == 1 and self.pv_possible and self.adopt_com == 0:
 
             # Create a list containing all the agents in the plot with the idea to adopt PV or that already have PV, who are not in community
-            # Block
-            #potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_plot == self.bldg_plot) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
-            # Zone
-            potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_zone == self.bldg_zone) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
-            # No restrictions
-            #potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            if self.model.geocom == False:
+                # Block
+                #potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_plot == self.bldg_plot) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+                # Zone
+                potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_zone == self.bldg_zone) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+                # No restrictions
+                #potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+            else:
+                # Radius variation
+                potential_partners = [ag for ag in self.neighbors]
 
             # Create a list of formed communities the agent could join
             # Block
@@ -1578,4 +1573,3 @@ class BuildingAgent(Agent):
                     pv_sub = 0
 
         return pv_sub
-# %%
