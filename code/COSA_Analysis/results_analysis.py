@@ -20,11 +20,11 @@ from matplotlib.lines import Line2D
 files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
-data_subfolder = 'code\\COSA_Outputs\\2_results\\202002_recal-2\\pp_com\\average_pp_com_ncoms\\'
-#data_subfolder = 'code\\COSA_Outputs\\'
-input_subfolder = 'code\\COSA_Data\\'
-data_dir = files_dir[:files_dir.rfind('code')] + data_subfolder
-input_dir = files_dir[:files_dir.rfind('code')] + input_subfolder
+data_subfolder = 'code\\COSA_Outputs\\2_results\\202002_recal-2\\elegibility\\radius_30'
+#data_subfolder = 'code\\COSA_Outputs'
+input_subfolder = 'code\\COSA_Data'
+data_dir = os.path.join(files_dir[:files_dir.rfind('code')], data_subfolder)
+input_dir = os.path.join(files_dir[:files_dir.rfind('code')], input_subfolder)
 
 # Include agent files?
 ag_file = False
@@ -66,13 +66,13 @@ if ag_file:
 model_df["scenario_label"] = np.char.array(model_df["com_year"].values.astype(str))+ "_" + np.char.array(model_df["direct_market"].values.astype(str)) + "_" + np.char.array(model_df["direct_market_th"].values.astype(str))
 
 # Import agents info
-agents_info = pd.read_csv(input_dir+'buildings_info.csv', sep=",")
+agents_info = pd.read_csv(os.path.join(input_dir,'buildings_info.csv'), sep=",")
 
 # Make agent id the index
 agents_info = agents_info.set_index("bldg_name")
 
 # Import calibration data
-with open(input_dir+"cal_data.json", "r") as cal_file:
+with open(os.path.join(input_dir,"cal_data.json"), "r") as cal_file:
     cal_data = json.load(cal_file)
 
 #%% ANALYSE MODEL RESULTS PER VARIABLE
@@ -84,6 +84,7 @@ n_runs = len(set(model_df["run"]))
 
 sc_results = {}
 for sc_lab in list(set(model_df["scenario_label"])):
+    print(sc_lab)
     sc_results[sc_lab] = {}
 
     for var in vars:
@@ -118,7 +119,31 @@ for sc_lab in list(set(model_df["scenario_label"])):
     sc_results[sc_lab].rename(columns={"level_0":"variable", "level_1":"sim_year"}, inplace=True)
 
 sc_results_analysed = pd.concat(sc_results.values(), keys=sc_results.keys(), names=["scenario"]).reset_index(level=1, drop=True)
-
+#%%
+fig, ax = plt.subplots(1,1,figsize=(10,10))
+xcmax = max(agents_info["x_coord_norm"])
+ycmax = max(agents_info["y_coord_norm"])
+ax.scatter(agents_info["x_coord_norm"], agents_info["y_coord_norm"], alpha=0.1, marker="s", s=5)
+for ag in [10, 200, 1000]:
+    x0=agents_info["x_coord_norm"][ag]-5
+    y0=agents_info["y_coord_norm"][ag]-5
+    x1=agents_info["x_coord_norm"][ag]+5
+    y1=agents_info["y_coord_norm"][ag]+5
+    ax.plot([x0,x1],[y0,y0], color="red")
+    ax.plot([x0,x0],[y0,y1], color="red")
+    ax.plot([x1,x1],[y0,y1], color="red")
+    ax.plot([x0,x1],[y1,y1], color="red")
+for ag in [10, 200, 1000]:
+    x0=agents_info["x_coord_norm"][ag]-50
+    y0=agents_info["y_coord_norm"][ag]-50
+    x1=agents_info["x_coord_norm"][ag]+50
+    y1=agents_info["y_coord_norm"][ag]+50
+    ax.plot([x0,x1],[y0,y0], color="green")
+    ax.plot([x0,x0],[y0,y1], color="green")
+    ax.plot([x1,x1],[y0,y1], color="green")
+    ax.plot([x0,x1],[y1,y1], color="green")
+ax.set_ylabel("Y_coord_norm")
+ax.set_xlabel("X_coord_norm")
 #%% ANALYSE COMMUNITIES
 
 def classify(x):

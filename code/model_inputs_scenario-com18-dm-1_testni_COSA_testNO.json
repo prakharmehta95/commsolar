@@ -3,11 +3,15 @@
         "runs": 1,
         "start_year": 2010,
         "end_year": 2035,
-        "n_agents": 2000,
+        "n_agents": 100,
         "n_peers": 20,
         "p_rewire": 0.10,
         "n_closest_neighbors" : 4,
-        "n_cores": 6
+        "n_cores": 1,
+        "w_ind":0.9,
+        "w_com":0.1,
+        "radius":2,
+        "geocom":false
     },
     "calibration_parameters":{
         "w_econ": [0.13],
