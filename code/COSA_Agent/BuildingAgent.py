@@ -335,7 +335,7 @@ class BuildingAgent(Agent):
                 #potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
             else:
                 # Radius variation
-                potential_partners = [ag for ag in self.neighbors]
+                potential_partners = [ag for ag in self.neighbors if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
 
             # Create a list of formed communities the agent could join
             # Block
