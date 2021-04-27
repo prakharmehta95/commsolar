@@ -122,6 +122,10 @@ class SolarAdoptionModel(Model):
         self.fit_high = inputs["economic_parameters"]["fit_high"]
         self.fit_low = inputs["economic_parameters"]["fit_low"]
 
+        # Define the network costs for high and low electricity price hours
+        self.net_cost_high =  inputs["economic_parameters"]["net_cost_high"]
+        self.net_cost_low = inputs["economic_parameters"]["net_cost_low"]
+
         # Define the historical FIT per system size since 2010
         self.hist_fit = inputs["economic_parameters"]["hist_fit"]
 
@@ -139,6 +143,10 @@ class SolarAdoptionModel(Model):
         # Initialize policy cost of investment subsidies
         self.pol_cost_sub_ind = 0
         self.pol_cost_sub_com = 0
+
+        # Initialize prosumer tariff inflows
+        self.pt_ind = 0
+        self.pt_com = 0
 
         # Allow or not direct marketing of self-produced electricity
         self.direct_market = inputs["policy_parameters"]["direct_market"]
@@ -274,7 +282,9 @@ class SolarAdoptionModel(Model):
                 "pol_cost_sub_com":"pol_cost_sub_com",
                 "direct_market_th":"direct_market_th",
                 "direct_market":"direct_market",
-                "com_year":"com_allowed_year"
+                "com_year":"com_allowed_year",
+                "pt_ind":"pt_ind",
+                "pt_com":"pt_com"
             },
             
             # Define agent reporters that are not inputs and change over time
@@ -299,7 +309,7 @@ class SolarAdoptionModel(Model):
             tables = {
                 "communities": ["year", "community_id", "solar", "demand",
                     "SC", "SCR", "pv_size", "pv_size_added", "n_sm",
-                    "n_sm_added", "npv", "tariff", "pv_sub", "inv_new", "inv_old", "pp_com"],
+                    "n_sm_added", "npv", "tariff", "pv_sub", "inv_new", "inv_old", "pp_com","prosumer_tariff"],
             }
             )
                                     
@@ -338,6 +348,9 @@ class SolarAdoptionModel(Model):
         
         # Loop through all agents using the scheduler
         self.schedule.step()
+
+        # Collect prosumer tariff fees
+        self.collect_prosumer_tariff_fees()
         
         # Collect data at the beginning of the step
         self.datacollector.collect(self)
@@ -472,3 +485,23 @@ class SolarAdoptionModel(Model):
         #peers_list = self.random.sample(list(distances[unique_id]), k = n_peers)
         
         return peers_list
+
+    def collect_prosumer_tariff_fees(self):
+        """
+        Loops through all adopters and collects the annual fees from the prosumer tariff
+        """
+
+        # Create lists of agents with individual PV or in a community
+        ind_adopters = [ag for ag in self.schedule.agents if ag.adopt_ind == 1]
+        com_adopters = [ag for ag in self.schedule.agents if ag.adopt_com == 1] 
+
+        # Loop through individual adopters to collect prosumer tariff fees
+        for ag in ind_adopters:
+            self.pt_ind += ag.pt_fees
+        
+        # Loop through community adopters to collect prosumer tariff fees making sure not to charge the same community twice
+        com_paid = []
+        for ag in com_adopters:
+            if ag.com_name not in com_paid:
+                self.pt_com += ag.pt_fees
+                com_paid.append(ag.com_name)
