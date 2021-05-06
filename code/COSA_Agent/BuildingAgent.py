@@ -113,6 +113,9 @@ class BuildingAgent(Agent):
         # Define the name (str) of the community the agent is part of
         self.com_name = None
 
+        # Initialize annual prosumer tariff fees paid by the agent if adopter
+        self.pt_fees = 0
+
         # Define the agent's perceived profitability
         # Initialize to maximum payback period
         self.pp = 1
@@ -179,7 +182,7 @@ class BuildingAgent(Agent):
             self.ind_inv = self.sm_inv + self.compute_pv_inv(self.pv_size, self.ind_inv_sub, self.model.pv_price, self.model.pv_scale_alpha, self.model.pv_scale_beta)
 
             # Update lifetime cashflows for this year
-            self.lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, self.pv_size, self.lifetime_load_profile, self.model.deg_rate, self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="ind")
+            self.lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, self.pv_size, self.lifetime_load_profile, self.model.deg_rate, self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.net_cost_high, self.model.net_cost_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="ind")
 
             # Update the perceived profitability of solar PV
             self.pp = self.check_econ_attractiveness(self.ind_inv, self.lifetime_cashflows, self.model.discount_pp, self.model.max_pp, self.model.disc_rate)
@@ -333,17 +336,20 @@ class BuildingAgent(Agent):
                 potential_partners = [ag for ag in self.model.schedule.agents if ((ag.bldg_zone == self.bldg_zone) and ((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
                 # No restrictions
                 #potential_partners = [ag for ag in self.model.schedule.agents if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
+
+                # Create a list of formed communities the agent could join
+                # Block
+                #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+                # Zone
+                potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_zone==self.bldg_zone) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+                # No restrictions
+                #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
             else:
                 # Radius variation
                 potential_partners = [ag for ag in self.neighbors if (((ag.intention == 1) or (ag.adopt_ind == 1)) and (ag.adopt_com == 0) and (ag.unique_id != self.unique_id))]
 
-            # Create a list of formed communities the agent could join
-            # Block
-            #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_plot==self.bldg_plot) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
-            # Zone
-            potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.bldg_zone==self.bldg_zone) and (ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
-            # No restrictions
-            #potential_communities = list(set([ag.com_name for ag in self.model.schedule.agents if ((ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
+                # Create a list of communities the agent could join
+                potential_communities = list(set([ag.com_name for ag in self.neighbors if ((ag.adopt_com==1) and (ag.unique_id != self.unique_id))]))
 
             # Compute the number of community options
             if self.model.join_com == True:
@@ -396,7 +402,7 @@ class BuildingAgent(Agent):
                     elif npv_ind > npv_com:
                     
                         # Go for individual adoption
-                        self.consider_individual_adoption(self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
+                        self.consider_individual_adoption(self.lifetime_cashflows, self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
                 
                 # If there are no possible solar communities
                 else:
@@ -408,7 +414,7 @@ class BuildingAgent(Agent):
                     self.ind_npv = npv_ind
 
                     # Go for individual adoption
-                    self.consider_individual_adoption(self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
+                    self.consider_individual_adoption(self.lifetime_cashflows,self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
                         
             
             # If no agents in plot with intention and no individual solar yet
@@ -421,10 +427,10 @@ class BuildingAgent(Agent):
                 self.ind_npv = npv_ind
 
                 # Go for individual adoption
-                self.consider_individual_adoption(self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
+                self.consider_individual_adoption(self.lifetime_cashflows, self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
 
     
-    def consider_individual_adoption(self, ind_inv, npv_ind, ind_inv_sub, reduction, sim_year):
+    def consider_individual_adoption(self, ind_cf, ind_inv, npv_ind, ind_inv_sub, reduction, sim_year):
         """
         This method determines if the agent adopts solar PV as an individual.
 
@@ -466,6 +472,9 @@ class BuildingAgent(Agent):
 
             # Record the cost of the installation
             self.pv_installation_cost = ind_inv
+
+            # Update prosumer tariff fees paid
+            self.pt_fees = ind_cf["prosumer_tariff"][0]
 
     def consider_community_adoption(self, c_max_npv, c_max_npv_dict, reduction,sim_year):
         """
@@ -538,6 +547,9 @@ class BuildingAgent(Agent):
 
                     # Set cost of installation
                     com_ag.pv_installation_cost = c_max_npv_dict["inv_new"]
+                
+                # Update paid prosumer tariff fees
+                com_ag.pt_fees = c_max_npv_dict["prosumer_tariff"]
 
             # Save data about formed community
             self.save_formed_community(c_max_npv, c_max_npv_dict)
@@ -545,7 +557,7 @@ class BuildingAgent(Agent):
         # If other agents don't accept community, fall back to individual
         else:
 
-            self.consider_individual_adoption(self.ind_inv, self.ind_npv, self.ind_inv_sub, self.model.reduction, self.model.sim_year)     
+            self.consider_individual_adoption(self.lifetime_cashflows, self.ind_inv, self.ind_npv, self.ind_inv_sub, self.model.reduction, self.model.sim_year)     
         
     def define_agents_to_consider(self, potential_partners, potential_communities, uid, distances, n_closest_neighbors):
         """
@@ -774,13 +786,14 @@ class BuildingAgent(Agent):
                     c_d["inv_old"] = 0
 
                 # Compute NPV and pv_sub of the community
-                npv_c, pv_sub_c, inv_c_new, pp_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
+                npv_c, pv_sub_c, inv_c_new, pp_c, pt_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
 
                 # Store the economic parameters of the community
                 c_d["npv"] = npv_c
                 c_d["pv_sub"] = pv_sub_c
                 c_d["inv_new"] = inv_c_new
                 c_d["pp_com"] = pp_c
+                c_d["prosumer_tariff"] = pt_c
 
         # Loop through the communities below ratio and delete them from dict
         for c in coms_below_ratio:
@@ -923,7 +936,7 @@ class BuildingAgent(Agent):
         c_export_dict["SSR"] = c_export_dict["SC"] / c_export_dict["demand"]
 
         # Define PV size and profitability values
-        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old", "pp_com"]:
+        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old", "pp_com", "prosumer_tariff"]:
             c_export_dict[v] = c_dict[v]
 
         # Update average community payback period
@@ -1074,7 +1087,7 @@ class BuildingAgent(Agent):
 
         return lifetime_load_profile
 
-    def compute_lifetime_cashflows(self, ind_tariff, pv_size, lifetime_load_profile, deg_rate, PV_lifetime, sim_year, el_price, ratio_high_low, fit_high, fit_low, hist_fit, solar_split_fee, om_cost, sys = "ind", com_tariff = None):
+    def compute_lifetime_cashflows(self, ind_tariff, pv_size, lifetime_load_profile, deg_rate, PV_lifetime, sim_year, el_price, ratio_high_low, fit_high, fit_low, net_cost_high, net_cost_low, hist_fit, solar_split_fee, om_cost, sys = "ind", com_tariff = None, com_prior_PV=False):
         """
         This function computes the annual cashflows over the operational lifetime of the PV system in the building.
 
@@ -1082,6 +1095,7 @@ class BuildingAgent(Agent):
             lifetime_load_profile = description of annual energy balances over the operational lifetime of the PV installation of the buildign(dataframe with index = year of lifetime, columns = energy balances)
             sys = type of system (str) -> "ind" or "com"
             com_tariff = name of electricity tariff for community (str)
+            com_prior_PV = flag for community with existing PV (boolean)
 
         Returns
             lifetime_cashflows = monetary flows into and out of the project for each year of its operational lifetime (dataframe, index = yr,columns = cashflow category)
@@ -1096,6 +1110,8 @@ class BuildingAgent(Agent):
         POLICY CHANGES: Since 2018, installations above 100 kWp that had taken the federal FIT had the obligation to market their electricity directly (turning the FIT into a feed-in premium plus a management fee). Supposedly, all new PV installations >100 kWp that opted for the FIT would have to market directly but (all in all, the revenue would be guaranteed by the feed-in premum). These installations could not take the investment subsidy. But the waiting list is so long that I think no new installations would get the FIT. ASSUMPTION: After 2018, all installations take the investment subsidy.
         EWZ FIT (Stromrücklieferung) available since 2016.
         https://web.archive.org/web/20201229083051/https://www.ewz.ch/content/dam/ewz/Privatkunden/Solaranlagen/Solarstrom_fuer_Eigentuemer/verguetung_stromruecklieferung_zh_2016-20.pdf
+
+        Network costs based on: https://www.ewz.ch/de/private/strom/tarife/tarifuebersicht.html 
         """
         # FEED-IN TARIFF
 
@@ -1161,13 +1177,64 @@ class BuildingAgent(Agent):
         cf_y = {}
 
         # Check if load profile changes over the lifetime or not
-        if deg_rate != 0:
-            # TO-DO develop estimation that loops over installation lifetime
-            print('Error: code not ready for deg_rate != 0')
+        if (sys == "com") and (com_prior_PV == True):
+
+            for yr in range(PV_lifetime):
+
+                # Read avoided consumption from grid
+                sc_h = lifetime_load_profile["sc_high"][yr]
+                sc_l = lifetime_load_profile["sc_low"][yr]
+
+                # Read demand from grid before adoption
+                d_h = lifetime_load_profile["demand_high"][yr]
+                d_l = lifetime_load_profile["demand_low"][yr]
+
+                # Read year excess solar
+                ex_pv_h = lifetime_load_profile["excess_solar_high"][yr]
+                ex_pv_l = lifetime_load_profile["excess_solar_low"][yr]
+
+                # Compute network costs
+                cf_y["prosumer_tariff"] = np.sum(ex_pv_h) * net_cost_high + np.sum(ex_pv_l) * net_cost_low
+
+                # Compute O&M costs
+                cf_y["O&M"] = np.sum(lifetime_load_profile["solar"][yr]) * om_cost
+
+                # Compute the cost of individual metering
+                cf_y["split"] = np.sum((sc_h + sc_l)) * solar_split_fee
+
+                if (sys == "com") and (com_tariff == "wholesale"):
+
+                    # Compute gains from direct marketing
+                    cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][yr],el_p_com))
+
+                    # Compute savings as difference between electricity bill
+                    cf_y["savings"] = np.sum(d_h)*el_p_h + np.sum(d_l)*el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][yr],el_p_com))
+
+                else:
+                    
+                    # Compute revenues from feeding solar electricity to grid
+                    cf_y["FIT"] = np.sum(ex_pv_h) * fit_h + np.sum(ex_pv_l) * fit_l
+
+                    # Compute net-demands in high and low elec prices periods
+                    net_d_h = lifetime_load_profile["net_demand_high"][yr]
+                    net_d_l = lifetime_load_profile["net_demand_high"][yr]
+
+                    # Savings from avoided consumption from grid *with old tariff* and from moving to a cheaper electricity tariff because now a single bigger consumer
+                    cf_y["savings"] = np.sum(sc_h)*el_p_h + np.sum(sc_l)*el_p_l + np.sum(net_d_h) * (el_p_h - el_p_com_h) + np.sum(net_d_l) * (el_p_l - el_p_com_l)
+
+                # Compute net cashflows to the agent
+                cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"] - cf_y["prosumer_tariff"])
+                cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["split"] - cf_y["O&M"])
+
+                # Store results in return dataframe
+                if yr == 0:
+                    lifetime_cashflows = pd.DataFrame(cf_y, index=[0])
+                else:
+                    lifetime_cashflows = lifetime_cashflows.append(cf_y, ignore_index=True)
             
         else:
 
-            # Without degradation, all years have the same profile so we just take the first one and copy the results over the lifetime of the system.
+            # Without degradation or prior PV, all years have the same profile so we just take the first one and copy the results over the lifetime of the system.
 
             # Read avoided consumption from grid (i.e. self-consumption)
             sc_h = lifetime_load_profile["sc_high"][0]
@@ -1178,6 +1245,13 @@ class BuildingAgent(Agent):
             d_l = lifetime_load_profile["demand_low"][0]
 
             if (sys == "com") and (com_tariff == "wholesale"):
+
+                # Read year excess solar
+                ex_pv_h = lifetime_load_profile["excess_solar_high"][0]
+                ex_pv_l = lifetime_load_profile["excess_solar_low"][0]
+
+                # Compute network costs
+                cf_y["prosumer_tariff"] = np.sum(ex_pv_h) * net_cost_high + np.sum(ex_pv_l) * net_cost_low
 
                 # Compute gains from direct marketing
                 cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][0],el_p_com))
@@ -1196,6 +1270,9 @@ class BuildingAgent(Agent):
                 
                 # Compute revenues from feeding solar electricity to the grid
                 cf_y["FIT"] = np.sum(ex_pv_h) * fit_h + np.sum(ex_pv_l) * fit_l
+
+                # Compute network costs
+                cf_y["prosumer_tariff"] = np.sum(ex_pv_h) * net_cost_high + np.sum(ex_pv_l) * net_cost_low
 
                 # Compute the savings from self-consuming solar electricity
                 if sys == "ind":
@@ -1220,11 +1297,11 @@ class BuildingAgent(Agent):
 
             # Compute net cashflows to the agent
             if sys == "ind":
-                cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["O&M"])
+                cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["O&M"] - cf_y["prosumer_tariff"])
                 cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["O&M"])
 
             elif sys == "com":
-                cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"])
+                cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"] - cf_y["prosumer_tariff"])
                 cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["split"] - cf_y["O&M"])
 
             # Store results in return dataframe
@@ -1446,7 +1523,7 @@ class BuildingAgent(Agent):
         lifetime_load_profile = self.compute_lifetime_load_profile(solar, demand, self.model.pv_lifetime, self.model.deg_rate, self.model.hour_price, com_prior_PV)
 
         # Compute the cashflows of the installation throughout its lifetime
-        lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, pv_size, lifetime_load_profile, self.model.deg_rate,self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="com", com_tariff=com_tariff)
+        lifetime_cashflows = self.compute_lifetime_cashflows(self.el_tariff, pv_size, lifetime_load_profile, self.model.deg_rate,self.model.pv_lifetime, self.model.sim_year, self.model.el_price, self.model.ratio_high_low, self.model.fit_high, self.model.fit_low, self.model.net_cost_high, self.model.net_cost_low, self.model.hist_fit, self.model.solar_split_fee,self.model.om_cost, sys="com", com_tariff=com_tariff, com_prior_PV=com_prior_PV)
 
         # Compute the investment subsidy
         pv_sub = self.compute_pv_sub(pv_size, self.model.sim_year, self.model.base_d, self.model.pot_30_d, self.model.pot_100_d, self.model.pot_100_plus_d)
@@ -1475,7 +1552,10 @@ class BuildingAgent(Agent):
         # Compute the community's simple pay-back period
         pp_com = self.compute_simple_pp(inv, lifetime_cashflows, self.model.max_pp)
 
-        return npv_com, pv_sub, inv_new, pp_com
+        # Export prosumer tariff fees
+        pt_com = lifetime_cashflows["prosumer_tariff"].values[0]
+
+        return npv_com, pv_sub, inv_new, pp_com, pt_com
     
     def compute_pv_sub(self, pv_size, sim_year, base_d, pot_30_d, pot_100_d, pot_100_plus_d):
         """
