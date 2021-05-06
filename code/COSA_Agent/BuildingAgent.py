@@ -589,12 +589,18 @@ class BuildingAgent(Agent):
         # Check if more options to consider than limit
         if len(agents_to_consider) > n_closest_neighbors:
 
-            # Create dataframe with only the agents in the list
-            #d_df = self.distances[self.distances[uid].isin(potential_partners)]
+            if self.model.closest_potential_partners == True:
 
-            # List the n_closest_neighbors 
-            #agents_to_consider = [ag for ag in agents_to_consider if ag.unique_id in d_df.sort_values(by = ['dist_' + uid]).iloc[:n_closest_neighbors].index]
-            agents_to_consider = self.random.sample(agents_to_consider,n_closest_neighbors)
+                # Create dataframe with only the agents in the list
+                d_df = self.distances[self.distances[uid].isin(potential_partners)]
+
+                # List the n_closest_neighbors 
+                agents_to_consider = [ag for ag in agents_to_consider if ag.unique_id in d_df.sort_values(by = ['dist_' + uid]).iloc[:n_closest_neighbors].index]
+
+            else:
+
+                # Pick potential partners to consider at random
+                agents_to_consider = self.random.sample(agents_to_consider,n_closest_neighbors)
 
         return agents_to_consider
 

@@ -82,6 +82,9 @@ class SolarAdoptionModel(Model):
         # Define initial year as first simulated year
         self.sim_year = self.start_year
 
+        # Define if potential partners (both agents and communities) are selected based on geographical proximity (True) or at random (False)
+        self.closest_potential_partners = inputs["simulation_parameters"]["closest_potential_partners"]
+
         ## INITIALIZE CALIBRATION / SCENARIO PARAMETERS
 
         # Define ideation step weighting parameters and threshold
