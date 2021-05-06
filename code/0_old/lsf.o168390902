@@ -1,0 +1,115 @@
+Sender: LSF System <lsfadmin@eu-g1-049-3>
+Subject: Job 168390902: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-31> by user <anunezji> in cluster <euler> at Thu Apr  1 15:28:25 2021
+Job was executed on host(s) <10*eu-g1-049-3>, in queue <bigmem.120h>, as user <anunezji> in cluster <euler> at Thu Apr  1 15:28:40 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Thu Apr  1 15:28:40 2021
+Terminated at Thu Apr  1 18:32:45 2021
+Results reported at Thu Apr  1 18:32:45 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   89395.34 sec.
+    Max Memory :                                 113282 MB
+    Average Memory :                             107930.98 MB
+    Total Requested Memory :                     120000.00 MB
+    Delta Memory :                               6718.00 MB
+    Max Swap :                                   -
+    Max Processes :                              15
+    Max Threads :                                20
+    Run time :                                   11074 sec.
+    Turnaround time :                            11060 sec.
+
+The output (if any) follows:
+
+Importing data
+= Run exp 1 of 1 =
+ZEV_r100PT
+13:28:48
+Randomseed:  1936609080
+Community formed!
+Randomseed:  -247347986
+Community formed!
+Randomseed:  -1802520833
+Community formed!
+Randomseed:  -1719146663
+Community formed!
+Randomseed:  2002096676
+Community formed!
+Randomseed:  -1206395838
+Community formed!
+Randomseed:  -1159671325
+Community formed!
+Randomseed:  -35204194
+Community formed!
+Randomseed:  900009197
+Community formed!
+Randomseed:  -415371531
+Community formed!
+Randomseed:  1846573783
+Community formed!
+Randomseed:  -1523257964
+Community formed!
+Randomseed:  578140008
+Community formed!
+Randomseed:  -1178352934
+Community formed!
+Randomseed:  1083994222
+Community formed!
+Randomseed:  558083796
+Community formed!
+Randomseed:  2072207644
+Community formed!
+Randomseed:  -1297464737
+Community formed!
+Randomseed:  -898371798
+Community formed!
+Randomseed:  494203063
+Community formed!
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 121, in worker
+    result = (True, func(*args, **kwds))
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 47, in starmapstar
+    return list(itertools.starmap(args[0], args[1]))
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 190, in simulate_run
+    sim_model.step()
+  File "/cluster/home/anunezji/COSA_Model/SolarAdoptionModel.py", line 350, in step
+    self.schedule.step()
+  File "/cluster/home/anunezji/COSA_Tools/scheduler.py", line 53, in step
+    getattr(self._agents[agent_key], stage)()  # Run stage
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 395, in step_decision
+    self.consider_community_adoption(c_max_npv,combinations_dict[c_max_npv], self.model.reduction, self.model.sim_year)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 552, in consider_community_adoption
+    self.save_formed_community(c_max_npv, c_max_npv_dict)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 940, in save_formed_community
+    self.model.datacollector.add_table_row("communities", c_export_dict)
+  File "/cluster/home/anunezji/.local/lib/python3.7/site-packages/mesa/datacollection.py", line 192, in add_table_row
+    raise Exception("Could not insert row with missing column")
+Exception: Could not insert row with missing column
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "COSA_main.py", line 61, in <module>
+    exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, agents_info, distances, solar, demand)
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 152, in run_experiment
+    exp_results = p.starmap(simulate_run, run_inputs)
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 298, in starmap
+    return self._map_async(func, iterable, starmapstar, chunksize).get()
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 683, in get
+    raise self._value
+Exception: Could not insert row with missing column

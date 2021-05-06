@@ -1,0 +1,96 @@
+Sender: LSF System <lsfadmin@eu-g1-049-4>
+Subject: Job 168199129: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-07> by user <anunezji> in cluster <euler> at Wed Mar 31 18:04:19 2021
+Job was executed on host(s) <10*eu-g1-049-4>, in queue <bigmem.120h>, as user <anunezji> in cluster <euler> at Wed Mar 31 18:04:44 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Wed Mar 31 18:04:44 2021
+Terminated at Wed Mar 31 18:55:40 2021
+Results reported at Wed Mar 31 18:55:40 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   23809.81 sec.
+    Max Memory :                                 109431 MB
+    Average Memory :                             102231.96 MB
+    Total Requested Memory :                     120000.00 MB
+    Delta Memory :                               10569.00 MB
+    Max Swap :                                   -
+    Max Processes :                              15
+    Max Threads :                                20
+    Run time :                                   3074 sec.
+    Turnaround time :                            3081 sec.
+
+The output (if any) follows:
+
+Importing data
+= Run exp 1 of 1 =
+ZEV_r100PT
+16:04:52
+Randomseed:  2072207644
+Randomseed:  -1802520833
+Randomseed:  578140008
+Randomseed:  558083796
+Randomseed:  -861333008
+Randomseed:  1846573783
+Randomseed:  -415371531
+Randomseed:  -1178352934
+Randomseed:  1936609080
+Randomseed:  -1297464737
+Randomseed:  1083994222
+Randomseed:  900009197
+Randomseed:  -1206395838
+Randomseed:  -898371798
+Randomseed:  -35204194
+Randomseed:  2002096676
+Randomseed:  1692109359
+Randomseed:  -41776951
+Randomseed:  -106295498
+Randomseed:  -247347986
+Randomseed:  1328554912
+Randomseed:  -1719146663
+Randomseed:  -1159671325
+Randomseed:  494203063
+Randomseed:  -1523257964
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 121, in worker
+    result = (True, func(*args, **kwds))
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 47, in starmapstar
+    return list(itertools.starmap(args[0], args[1]))
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 190, in simulate_run
+    sim_model.step()
+  File "/cluster/home/anunezji/COSA_Model/SolarAdoptionModel.py", line 350, in step
+    self.schedule.step()
+  File "/cluster/home/anunezji/COSA_Tools/scheduler.py", line 53, in step
+    getattr(self._agents[agent_key], stage)()  # Run stage
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 427, in step_decision
+    self.consider_individual_adoption(self.lifetime_cashflows, self.ind_inv, npv_ind, self.ind_inv_sub, self.model.reduction, self.model.sim_year)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 474, in consider_individual_adoption
+    self.pt_fees = lifetime_cashflows["prosumer_tariff"]
+NameError: name 'lifetime_cashflows' is not defined
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "COSA_main.py", line 61, in <module>
+    exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, agents_info, distances, solar, demand)
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 152, in run_experiment
+    exp_results = p.starmap(simulate_run, run_inputs)
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 298, in starmap
+    return self._map_async(func, iterable, starmapstar, chunksize).get()
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 683, in get
+    raise self._value
+NameError: name 'lifetime_cashflows' is not defined

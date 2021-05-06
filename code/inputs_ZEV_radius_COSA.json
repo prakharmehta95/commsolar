@@ -10,7 +10,7 @@
         "n_cores": 10,
         "w_ind":0.9,
         "w_com":0.1,
-        "radius":30,
+        "radius":50,
         "geocom":true
     },
     "calibration_parameters":{

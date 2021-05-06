@@ -1,0 +1,41 @@
+Sender: LSF System <lsfadmin@eu-g1-021-2>
+Subject: Job 170189763: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-43> by user <anunezji> in cluster <euler> at Tue Apr 20 09:56:51 2021
+Job was executed on host(s) <10*eu-g1-021-2>, in queue <bigmem.120h>, as user <anunezji> in cluster <euler> at Tue Apr 20 09:57:11 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Tue Apr 20 09:57:11 2021
+Terminated at Thu Apr 22 09:57:30 2021
+Results reported at Thu Apr 22 09:57:30 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+TERM_RUNLIMIT: job killed after reaching LSF run time limit.
+Exited with exit code 140.
+
+Resource usage summary:
+
+    CPU time :                                   1724879.00 sec.
+    Max Memory :                                 118290 MB
+    Average Memory :                             114729.29 MB
+    Total Requested Memory :                     120000.00 MB
+    Delta Memory :                               1710.00 MB
+    Max Swap :                                   1798 MB
+    Max Processes :                              15
+    Max Threads :                                20
+    Run time :                                   172841 sec.
+    Turnaround time :                            172839 sec.
+
+The output (if any) follows:
+
+Importing data
+= Run exp 1 of 3 =
+ZEV_virtual
+07:57:17
+User defined signal 2
