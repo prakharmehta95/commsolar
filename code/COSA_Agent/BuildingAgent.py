@@ -1,9 +1,11 @@
 #%% AGENT code
 import pandas as pd
 import numpy as np
-import itertools
+import itertools, copy
 
 from mesa import Agent
+
+from COSA_Tools.CommunityGridBuilder import distance_between_two_agents, distance_matrix, create_new_community_grid, add_agent_to_community_grid
 
 class BuildingAgent(Agent):
     """
@@ -113,6 +115,15 @@ class BuildingAgent(Agent):
         # Define the name (str) of the community the agent is part of
         self.com_name = None
 
+        # Keep track of year (int) agent connected to community grid
+        self.com_year = 0
+
+        # Define community grid dictionary if agent in community
+        self.com_grid_dict = None
+
+        # Store community grid legnth when the agent joined
+        self.com_grid_length_joined = 0
+
         # Initialize annual prosumer tariff fees paid by the agent if adopter
         self.pt_fees = 0
 
@@ -219,10 +230,6 @@ class BuildingAgent(Agent):
         else:
             # Compute simple payback period per year simulated
             pp = self.compute_simple_pp(ind_inv, lifetime_cashflows, max_pp)
-
-        ref_coms_dict = {"B145617_B145620_B145659":{"members":[ag for ag in self.model.schedule.agents if ag.unique_id in ["B145617","B145620","B145659"]]}}
-        
-        self.update_combinations_available(self.model, ref_coms_dict)
 
         # Read weights for community and individual adoption profitability
         w_i = self.model.w_ind
@@ -532,6 +539,14 @@ class BuildingAgent(Agent):
 
                 # Record the name of the community
                 com_ag.com_name = c_max_npv
+
+                # Record the community grid
+                com_ag.com_grid_dict = c_max_npv_dict["grid"]
+
+                # Record year agent joins the community if new and com_grid
+                if com_ag.com_year == 0:
+                    com_ag.com_year = self.model.sim_year
+                    com_ag.com_grid_length_joined = np.sum(list(c_max_npv_dict["grid"].values()))
                 
                 # Record agent's variables in info dataframe
                 com_ag.reason_adoption = "Comm>Ind"
@@ -665,9 +680,18 @@ class BuildingAgent(Agent):
 
             # Store community in dictionary
             coms_dict[com_name]["members"] = com_members
+
+            # Create new community grid
+            coms_dict[com_name]["grid"] = create_new_community_grid(com_members)
+
+            # Record what are the new community grid branches
+            coms_dict[com_name]["new_grid"] = coms_dict[com_name]["grid"]
         
         # Add the agent to existing communities available
         for ag_in_com in ags_in_com:
+            
+            # Deepcopy the dicionary of the old community grid
+            old_grid = copy.deepcopy(ag_in_com.com_grid_dict)
 
             # Create the name of the new community
             com_name = '_'.join([ag_in_com.com_name,self.unique_id])
@@ -675,11 +699,19 @@ class BuildingAgent(Agent):
             # Create a dictionary for storing this community parameters
             coms_dict[com_name] = {}
 
-            # List members
-            com_members = [ag for ag in self.model.schedule.agents if ag.unique_id in com_name.split("_")]
-
             # Store community in dictionary
-            coms_dict[com_name]["members"] = com_members
+            coms_dict[com_name]["members"] = [ag for ag in self.model.schedule.agents if ag.unique_id in com_name.split("_")]
+
+            # Update community grid dictionary (remove last one because self)
+            com_prior_members = [ag for ag in self.model.schedule.agents if ag.unique_id in com_name.split("_")[:-1]]
+
+            # Create new community grid and store it
+            new_grid = add_agent_to_community_grid(self,com_prior_members,old_grid)
+
+            coms_dict[com_name]["grid"] = copy.deepcopy(new_grid)
+
+            # Record what are the new community grid branches
+            coms_dict[com_name]["new_grid"] = {k:v for k,v in new_grid.items() if k not in old_grid.keys()}
 
         return coms_dict
 
@@ -770,12 +802,12 @@ class BuildingAgent(Agent):
 
                     # For agents that join the community now with existing PV, compute the current value of their invesmtent wiht a linear depretiation process and add them up
                     c_d["present_inv_ind"] = np.sum([(
-                        ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
+                        ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / model.pv_lifetime))
                         for ag in members_ind_pv])
                     
                     # For agents that join the community as part of an existing community, compute the current value of the existing community PV with a linear depretiation process and add them up
                     c_d["present_inv_com"] = np.sum(list(set([(
-                        ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / self.model.pv_lifetime))
+                        ag.pv_installation_cost * (1 - (model.sim_year - ag.pv_installation_year) / model.pv_lifetime))
                         for ag in members_com_pv])))
                     # Explanation: each agent already in a community has stored the year when they installed on their rooftops pv_installation_year and how much they invested in it in pv_installation_cost (which could be individually, if they joined being grid prosumers, or could be the new investment in the commmunity if they joined as grid consumers). For the agents that joined the community as grid consumers, the stored pv_installation_cost is the inv_new (this is, the cost of adding new PV and smart meters) of the whole community. Since these agents store the same pv_installation_year and pv_installation_cost, using set() removes duplicated values and ensures we only count them once.
                     # WARNING: these removes duplicates of pv_installation_costs NOT based on agents part of the same community. There is a risk of under counting if e.g., there are members from two communities who installed the same PV size in the same year.
@@ -784,6 +816,41 @@ class BuildingAgent(Agent):
 
                 else:
                     c_d["inv_old"] = 0
+
+                # COMMUNITY GRID COST
+
+                # If this is a new community grid
+                if c_d["grid"] == c_d["new_grid"]:
+
+                    # Grid cost is total length times cost per meter
+                    grid_c = np.sum(list(c_d["grid"].values())) * model.grid_cost
+
+                # If there was an existing community, depreciate old cost
+                else:
+                    
+                    # New leg cost
+                    new_leg = np.sum(list(c_d["new_grid"].values())) * model.grid_cost
+
+                    # Depreciated costs
+
+                    # Create a year-grid length dictionary with unique years
+                    yl = sorted(set([(ag.com_year,ag.com_grid_length_joined) for ag in members]))
+                    
+                    # Replace grid length with grid length addition
+                    old_grid_cost = 0
+                    for ix, tup in enumerate(yl):
+                        if ix == 0:
+                            # Depreciated cost of initial com grid
+                            old_grid_cost = tup[1] * model.grid_cost * (1 - (model.sim_year - tup[0]) / model.pv_lifetime)
+                        else:
+                            # Depreciated cost of grid extension
+                            old_grid_cost += (tup[1] - yl[ix-1][1]) * model.grid_cost * (1 - (model.sim_year - tup[0]) / model.pv_lifetime)
+
+                    # Total grid cost
+                    grid_c = new_leg + old_grid_cost
+
+                # Save grid cost in the dictionary before computing NPV
+                c_d["grid_cost"] = grid_c
 
                 # Compute NPV and pv_sub of the community
                 npv_c, pv_sub_c, inv_c_new, pp_c, pt_c = self.calculate_com_npv(model.inputs, c_d, model.sim_year)
@@ -1516,6 +1583,8 @@ class BuildingAgent(Agent):
             # Define community's generation potential
             solar = c_dict["solar_prior"]
             com_prior_PV = True
+        
+        # Estimate grid costs
 
         # NON-COMMUNITY SPECIFIC
 
@@ -1544,7 +1613,7 @@ class BuildingAgent(Agent):
         inv_old = c_dict["inv_old"]
 
         # Total investment
-        inv = inv_new + inv_old
+        inv = inv_new + inv_old + c_dict["grid_cost"]
 
         # Compute the community's NPV
         npv_com = self.compute_npv(inv, lifetime_cashflows, self.model.disc_rate, self.model.sim_year)
