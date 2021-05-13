@@ -1,6 +1,6 @@
-{   "exp_name": "ZEV_r100PT_test",
+{   "exp_name": "ref-zone",
     "simulation_parameters": {
-        "runs": 1,
+        "runs": 50,
         "start_year": 2010,
         "end_year": 2035,
         "n_agents": 5000,
@@ -11,7 +11,8 @@
         "w_ind":0.9,
         "w_com":0.1,
         "radius":100,
-        "geocom":true
+        "geocom":false,
+        "closest_potential_partners":false
     },
     "calibration_parameters":{
         "w_econ": [0.13],
@@ -27,9 +28,11 @@
     "policy_parameters":{
         "direct_market_th": 100000,
         "direct_market": true,
-        "com_year":2018
+        "com_year":2018,
+        "pt_year":2100
     },
     "economic_parameters":{
+        "grid_cost": 300,
         "net_cost_high":0.1249,
         "net_cost_low":0.0625,
         "min_ratio_sd": 0.1,
