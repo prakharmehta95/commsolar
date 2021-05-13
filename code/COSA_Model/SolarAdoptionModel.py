@@ -326,6 +326,15 @@ class SolarAdoptionModel(Model):
         if self.sim_year >= self.com_allowed_year:
             self.com_allowed = True
 
+        # Introduce prosumer tariff
+        if self.sim_year >= self.pt_year:
+            # Define the network costs for high and low electricity price hours
+            self.net_cost_high =  self.inputs["economic_parameters"]["net_cost_high"]
+            self.net_cost_low = self.inputs["economic_parameters"]["net_cost_low"]
+        else:
+            self.net_cost_low = 0
+            self.net_cost_high = 0
+
         # Update PV price
         if self.sim_year < 2020 :
             self.pv_price = self.inputs["economic_parameters"]["hist_pv_prices"][str(self.sim_year)]
