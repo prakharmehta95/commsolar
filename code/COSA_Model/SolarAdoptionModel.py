@@ -125,10 +125,6 @@ class SolarAdoptionModel(Model):
         self.fit_high = inputs["economic_parameters"]["fit_high"]
         self.fit_low = inputs["economic_parameters"]["fit_low"]
 
-        # Define the network costs for high and low electricity price hours
-        self.net_cost_high =  inputs["economic_parameters"]["net_cost_high"]
-        self.net_cost_low = inputs["economic_parameters"]["net_cost_low"]
-
         # Define the historical FIT per system size since 2010
         self.hist_fit = inputs["economic_parameters"]["hist_fit"]
 
@@ -224,6 +220,12 @@ class SolarAdoptionModel(Model):
 
         # Define surcharge for smart metering within communities
         self.solar_split_fee = inputs["economic_parameters"]["ewz_solarsplit_fee"]
+
+        # Define community grid investment costs [CHF/m]
+        self.grid_cost = inputs["economic_parameters"]["grid_cost"]
+
+        # Define year of introduction of prosumer tariff
+        self.pt_year = inputs["policy_parameters"]["pt_year"]
 
         ## DEFINE AGENTS VARIABLES
 
