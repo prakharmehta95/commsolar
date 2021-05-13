@@ -1,0 +1,154 @@
+Sender: LSF System <lsfadmin@eu-g1-002-3>
+Subject: Job 171774284: <python COSA_main.py> in cluster <euler> Exited
+
+Job <python COSA_main.py> was submitted from host <eu-login-18> by user <anunezji> in cluster <euler> at Sun May  9 12:58:34 2021
+Job was executed on host(s) <10*eu-g1-002-3>, in queue <bigmem.120h>, as user <anunezji> in cluster <euler> at Sun May  9 12:58:42 2021
+</cluster/home/anunezji> was used as the home directory.
+</cluster/home/anunezji> was used as the working directory.
+Started at Sun May  9 12:58:42 2021
+Terminated at Sun May  9 14:34:41 2021
+Results reported at Sun May  9 14:34:41 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python COSA_main.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   41511.32 sec.
+    Max Memory :                                 111242 MB
+    Average Memory :                             104970.58 MB
+    Total Requested Memory :                     120000.00 MB
+    Delta Memory :                               8758.00 MB
+    Max Swap :                                   -
+    Max Processes :                              15
+    Max Threads :                                20
+    Run time :                                   5787 sec.
+    Turnaround time :                            5767 sec.
+
+The output (if any) follows:
+
+Importing data
+= Run exp 1 of 2 =
+ref-zone
+10:58:49
+Randomseed:  -485203102
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  -275078972
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  1973638764
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  -2057604218
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  -606933433
+Community formed!
+Community formed!
+Randomseed:  -1587713022
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  340000967
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  -338101881
+Community formed!
+Randomseed:  379125397
+Community formed!
+Community formed!
+Randomseed:  -1112863197
+Community formed!
+Community formed!
+Randomseed:  972839627
+Community formed!
+Community formed!
+Randomseed:  -1061421388
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  2008210571
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  1867266810
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  1846573783
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  149221280
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Community formed!
+Randomseed:  -1405548424
+Community formed!
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 121, in worker
+    result = (True, func(*args, **kwds))
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 47, in starmapstar
+    return list(itertools.starmap(args[0], args[1]))
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 190, in simulate_run
+    sim_model.step()
+  File "/cluster/home/anunezji/COSA_Model/SolarAdoptionModel.py", line 364, in step
+    self.schedule.step()
+  File "/cluster/home/anunezji/COSA_Tools/scheduler.py", line 53, in step
+    getattr(self._agents[agent_key], stage)()  # Run stage
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 374, in step_decision
+    combinations_dict = self.define_possible_coms(agents_to_consider)
+  File "/cluster/home/anunezji/COSA_Agent/BuildingAgent.py", line 703, in define_possible_coms
+    new_grid = add_agent_to_community_grid(self,com_prior_members,ag_in_com.com_grid_dict)
+  File "/cluster/home/anunezji/COSA_Tools/CommunityGridBuilder.py", line 35, in add_agent_to_community_grid
+    na_distances = {(agent.name,ca.name):distance_between_two_agents(agent,ca) for ca in com_agents}
+  File "/cluster/home/anunezji/COSA_Tools/CommunityGridBuilder.py", line 35, in <dictcomp>
+    na_distances = {(agent.name,ca.name):distance_between_two_agents(agent,ca) for ca in com_agents}
+AttributeError: 'BuildingAgent' object has no attribute 'name'
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "COSA_main.py", line 61, in <module>
+    exp_results = run_experiment(sc_inputs, BuildingAgent,         SolarAdoptionModel, agents_info, distances, solar, demand)
+  File "/cluster/home/anunezji/COSA_Tools/SimulateExperiment.py", line 152, in run_experiment
+    exp_results = p.starmap(simulate_run, run_inputs)
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 298, in starmap
+    return self._map_async(func, iterable, starmapstar, chunksize).get()
+  File "/cluster/apps/python/3.7.1/x86_64/lib64/python3.7/multiprocessing/pool.py", line 683, in get
+    raise self._value
+AttributeError: 'BuildingAgent' object has no attribute 'name'
