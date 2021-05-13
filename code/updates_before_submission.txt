@@ -1,9 +1,10 @@
 18. Code debugging and extension for final results simulation
-[ ] revise prosumer tariff reporting
-[ ] add behind-the-meter grid extension costs
+[x] revise prosumer tariff reporting
+[x] add behind-the-meter grid extension costs
 [ ] add tracking variable of policy subsidies for btm grid extension costs
 [ ] add tracking variable for deficit of grid costs due to self-consumption
 [ ] speed up code avoiding uses of distance dataframe (e.g., when selecting potential communities)
+[x] add starting date (2021) for prosumer tariff
 
 ==NOT FOR NOW==
 4. Compute distances within model to allow scenarios with different distances
