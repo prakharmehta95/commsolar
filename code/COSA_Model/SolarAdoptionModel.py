@@ -314,7 +314,7 @@ class SolarAdoptionModel(Model):
             tables = {
                 "communities": ["year", "community_id", "solar", "demand",
                     "SC", "SCR", "pv_size", "pv_size_added", "n_sm",
-                    "n_sm_added", "npv", "tariff", "pv_sub", "inv_new", "inv_old", "pp_com","prosumer_tariff"],
+                    "n_sm_added", "npv", "tariff", "pv_sub", "inv_new", "inv_old", "pp_com","prosumer_tariff","grid_cost","grid_length"],
             }
             )
                                     

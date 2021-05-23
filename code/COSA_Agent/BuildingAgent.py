@@ -862,6 +862,9 @@ class BuildingAgent(Agent):
                 c_d["pp_com"] = pp_c
                 c_d["prosumer_tariff"] = pt_c
 
+                print("investment new",inv_c_new)
+                print("grid_cost",grid_c)
+
         # Loop through the communities below ratio and delete them from dict
         for c in coms_below_ratio:
             del combinations_dict[c]
@@ -1002,8 +1005,11 @@ class BuildingAgent(Agent):
         # Define community self-sufficiency ratio
         c_export_dict["SSR"] = c_export_dict["SC"] / c_export_dict["demand"]
 
+        # Store grid length
+        c_export_dict["grid_length"] = np.sum(list(c_dict["grid"].values()))
+
         # Define PV size and profitability values
-        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old", "pp_com", "prosumer_tariff"]:
+        for v in ["pv_size", "pv_size_added", "n_sm", "n_sm_added", "npv", "tariff", "npv", "pv_sub", "inv_new", "inv_old", "pp_com", "prosumer_tariff","grid_cost"]:
             c_export_dict[v] = c_dict[v]
 
         # Update average community payback period
