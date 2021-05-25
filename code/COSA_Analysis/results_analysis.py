@@ -20,7 +20,7 @@ from matplotlib.lines import Line2D
 files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
-data_subfolder = 'code\\COSA_Outputs\\2_results\\202002_recal-2\\elegibility\\radius_30'
+data_subfolder = 'code\\COSA_Outputs\\2_results\\202105_new_scenarios'
 #data_subfolder = 'code\\COSA_Outputs'
 input_subfolder = 'code\\COSA_Data'
 data_dir = os.path.join(files_dir[:files_dir.rfind('code')], data_subfolder)
@@ -45,7 +45,7 @@ for key, val in out_dict.items():
     for input_file in glob.glob(join(data_dir,'*'+key+'.feather')):
 
         # Create a label from the name of the experiment that created the data
-        label = "_".join(input_file.split("\\")[-1].split("_")[1:5])
+        label = input_file.split("\\")[-1].split("_")[1]
         print(label)
 
         # Read data and store it in the container dictionary
@@ -64,6 +64,8 @@ if ag_file:
 
 # Create a scenario label
 model_df["scenario_label"] = np.char.array(model_df["com_year"].values.astype(str))+ "_" + np.char.array(model_df["direct_market"].values.astype(str)) + "_" + np.char.array(model_df["direct_market_th"].values.astype(str))
+model_df["input_label"] = model_df.index.get_level_values(0)
+communities_df["input_label"] = communities_df.index.get_level_values(0)
 
 # Import agents info
 agents_info = pd.read_csv(os.path.join(input_dir,'buildings_info.csv'), sep=",")
@@ -83,7 +85,7 @@ n_ticks =  len(set(model_df["sim_year"]))
 n_runs = len(set(model_df["run"]))
 
 sc_results = {}
-for sc_lab in list(set(model_df["scenario_label"])):
+for sc_lab in list(set(model_df["input_label"])):
     print(sc_lab)
     sc_results[sc_lab] = {}
 
@@ -92,7 +94,7 @@ for sc_lab in list(set(model_df["scenario_label"])):
         index=range(n_ticks), columns=range(n_runs))
         
         for run in range(n_runs):
-            cond = (model_df["scenario_label"]==sc_lab) & (model_df["run"]==run)
+            cond = (model_df["input_label"]==sc_lab) & (model_df["run"]==run)
             
             sc_results[sc_lab][var][run] = model_df[var].loc[cond].values
 
@@ -193,29 +195,11 @@ communities_df["community_block_ratio_com"] = np.array([communities_df["n_member
 
 #%% SUMMARY OF RESULTS
 
-#labels_d = {"2050_False_100000":"IND", "2018_False_100000":"COM", "2018_True_100000":"ZEV", "2018_True_1":"ZEV+"}
-def assign_label(k):
-    
-    com_yr, dm_flag, dm_threshold = k.split("_")
-    
-    if int(com_yr) > 2035:
-        return "IND"
-    elif dm_flag == 'False':
-        return "COM"
-    elif (dm_flag != 'False') and (dm_threshold == '100000'):
-        return "ZEV"
-    elif (dm_flag != 'False') and (dm_threshold == '100000'):
-        return "ZEV+"
-    else:
-        return "Unknown"
-
-labels_d = {k:assign_label(k) for k in set(sc_results_analysed.index)}
-
 variables = ["inst_cum_com", "inst_cum_ind", "n_com", "n_ind", "pol_cost_sub_com", "pol_cost_sub_ind"]
 
 output = {}
 
-for sc in labels_d.keys():
+for sc in set(sc_results_analysed.index):
 
     data_sc = sc_results_analysed.loc[sc]
 
@@ -238,13 +222,21 @@ for sc in labels_d.keys():
 
 output_df = pd.DataFrame(output)
 #%% EXPORT SUMMARY OF RESULTS
-output_df.to_csv(files_dir +"\\results_table.csv", sep=";")
+output_df.to_csv(files_dir +"\\results_table_new_scenarios.csv", sep=";")
 
+#%% ADDITIONAL ANALYSIS
+fig, ax = plt.subplots(1,1)
+ax.boxplot([communities_df["inv_new"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))]+communities_df["inv_old"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))] for sc in ["ref-zone","gs-zone","ref-radius","gs-radius"]],positions=[0,1,2,3])
+for ix in range(4):
+    sc = ["ref-zone","gs-zone","ref-radius","gs-radius"][ix]
+    av = np.median(communities_df["inv_new"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))]+communities_df["inv_old"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))])
+    ax.annotate(s=str(round(av/1000,0)),xy=(ix,av),ha="center", va="center")
+ax.set_xticklabels(["ref-zone","gs-zone","ref-radius","gs-radius"])
+ax.set_ylabel("inv_new + inv_old")
+ax.set_title("Last year communities")
 #%% PLOT BUBBLE GRAPH WITH HISTOGRAMS
 # Color dictionary
-color_d = {"2050_False_100000":(213/255,94/255,0.), "2018_False_100000":(230/255,159/255,0.), "2018_True_100000":(86/255,180/255,233/255), "2018_True_1":(0.,114/255,178/255)}
-
-labels_d = {"2050_False_100000":"IND", "2018_False_100000":"COM", "2018_True_100000":"ZEV", "2018_True_1":"ZEV+"}
+color_d = {"ref-zone":(213/255,94/255,0.), "pt-zone":(230/255,159/255,0.), "gs-zone":(86/255,180/255,233/255), "ptgs-zone":(0.,114/255,178/255)}
 
 def scatter_hist(x, y, ax, ax_histx, ax_histy, sc, color_d):
 
@@ -253,28 +245,17 @@ def scatter_hist(x, y, ax, ax_histx, ax_histy, sc, color_d):
     ax_histy.tick_params(axis="y", labelleft=False)
 
     # the scatter plot:
-    bubbles = ax.scatter(x,y,alpha=0.5,label=labels_d[sc],color=color_d[sc])
+    bubbles = ax.scatter(x,y,alpha=0.5,label=sc,color=color_d[sc])
 
     # plot the median values in scatter plot:
     ax.scatter(np.median(x[0]), np.median(y[0]), color=color_d[sc],alpha=0.5, edgecolor="k", zorder=100)
 
     # annotate median
-    if sc == "2018_True_100000":
-        # ZEV
-        ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*0.2, np.median(y[0])*2.25), arrowprops=dict(arrowstyle="->"))
-    elif sc == "2050_False_100000":
-        # IND
-        ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*1.7, np.median(y[0])*0.6), arrowprops=dict(arrowstyle="->"))
-    elif sc == "2018_False_100000":
-        # COM
-        ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*1, np.median(y[0])*0.3), arrowprops=dict(arrowstyle="->"))
-    elif sc == "2018_True_1":
-        # ZEV+
-        ax.annotate(labels_d[sc]+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*1, np.median(y[0])*3), arrowprops=dict(arrowstyle="->"))
+    #ax.annotate(sc+" median", xy=(np.median(x[0]), np.median(y[0])), xytext=(np.median(x[0])*0.2, np.median(y[0])*2.25), arrowprops=dict(arrowstyle="->"))
 
     # Set axes limits
-    ax.set_xlim(0,10.5)
-    ax.set_ylim(0,54)
+    ax.set_xlim(0,5)
+    ax.set_ylim(0,20)
 
     # Set axes labels
     ax.set_xlabel("Total policy cost [million CHF]")
@@ -288,8 +269,8 @@ def scatter_hist(x, y, ax, ax_histx, ax_histy, sc, color_d):
     ax_histy.hist(y[0], bins=np.arange(0,54,2), orientation='horizontal', histtype="step", color=color_d[sc])
 
     # set histograms limits
-    ax_histx.set_ylim(0,20)
-    ax_histy.set_xlim(0,20)
+    #ax_histx.set_ylim(0,20)
+    #ax_histy.set_xlim(0,20)
 
     # set histograms labels
     ax_histx.set_ylabel("Frequency [%]")
@@ -314,7 +295,6 @@ ax = fig_bubhist.add_subplot(gs[1, 0])
 ax_histx = fig_bubhist.add_subplot(gs[0, 0], sharex=ax)
 ax_histy = fig_bubhist.add_subplot(gs[1, 1], sharey=ax)
 
-#for scenario in ["2050_False_100000", "2018_False_100000", "2018_True_100000", "2018_True_1"]:
 for scenario in set(sc_results_analysed.index):
 
     sc_df = sc_results_analysed.loc[scenario]
@@ -338,10 +318,6 @@ fig_bubhist.savefig(files_dir +"\\fig_bubhist.svg", format="svg")
 fig_bubhist.savefig(files_dir +"\\fig_bubhist.png", format="png", bbox_inches="tight", dpi=210)
 #%% PLOT INSTALLATIONS
 
-color_d = {"2050_False_100000":(213/255,94/255,0.), "2018_False_100000":(86/255,180/255,233/255), "2018_True_100000":(230/255,159/255,0.), "2018_True_1":"purple"}
-
-labels_d = {"2050_False_100000":"IND", "2018_False_100000":"COM", "2018_True_100000":"ZEV", "2018_True_1":"ZEV+"}
-
 # Define vars to plot
 plotvars = ["inst_cum_ind", "inst_cum_com"]
 
@@ -353,21 +329,21 @@ fig_inst, axes_inst = plt.subplots(2,2, figsize=(6.5,6.5), sharex=True, sharey=T
 for scenario in set(sc_results_analysed.index):
 
     # Select axes
-    if scenario == "2050_False_100000":
+    if scenario == "ref-zone":
         ax_inst = axes_inst[0,0]
         
         # Set Y-axis label
         ax_inst.set_ylabel("Cumulative installed capacity [MWp]")
 
-    elif scenario == "2018_False_100000":
+    elif scenario == "pt-zone":
         ax_inst = axes_inst[0,1]
-    elif scenario == "2018_True_100000":
+    elif scenario == "gs-zone":
         ax_inst = axes_inst[1,0]
 
         # Set Y-axis label
         ax_inst.set_ylabel("Cumulative installed capacity [MWp]")
 
-    elif scenario == "2018_True_1":
+    elif scenario == "ptgs-zone":
         ax_inst = axes_inst[1,1]
 
     # Select data
@@ -405,7 +381,7 @@ for scenario in set(sc_results_analysed.index):
     #ax_inst.plot(cal_data['inst_cum_ZH_wiedikon_cal'], color="k")
 
     # Add scenario title
-    ax_inst.set_title(labels_d[scenario])
+    ax_inst.set_title(scenario)
 
 # Add legend
 axes_inst[1,0].legend(["Individual", "Community", "Total"], loc="center", bbox_to_anchor=(1.1, -0.2), ncol=3)
