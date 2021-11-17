@@ -227,6 +227,16 @@ class SolarAdoptionModel(Model):
         # Define year of introduction of prosumer tariff
         self.pt_year = inputs["policy_parameters"]["pt_year"]
 
+        # Define network use fees
+        self.fee_h = inputs["economic_parameters"]["fee_h"]
+        self.fee_l = inputs["economic_parameters"]["fee_l"]
+
+        # Define value added tax
+        self.vat = inputs["economic_parameters"]["vat"]
+
+        # Define municipal and national electricity taxes
+        self.mn_taxes = inputs["economic_parameters"]["mn_taxes"]
+
         ## DEFINE AGENTS VARIABLES
 
         # Create a dataframe to store communities formed
