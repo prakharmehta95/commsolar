@@ -1233,7 +1233,9 @@ class BuildingAgent(Agent):
             # Check if the community will market the electricity directly
             if com_tariff == "wholesale":
 
-                el_p_com = self.model.hour_to_average * self.model.wholesale_el_price
+                el_whole = [x * self.model.wholesale_el_price for x in self.model.hour_to_average]
+
+                el_p_com = [(el_whole[ix] + self.model.fix_fee + self.model.fee_h) * (1 + self.model.vat) if it == 'high' else (el_whole[ix] + self.model.fix_fee + self.model.fee_l) * (1 + self.model.vat) for ix,it in enumerate(self.model.hour_price)]
             
             else:
 
@@ -1252,48 +1254,48 @@ class BuildingAgent(Agent):
         # Check if load profile changes over the lifetime or not
         if (sys == "com") and (com_prior_PV == True):
 
-            for yr in range(PV_lifetime):
+            for yr in range(PV_lifetime - 1):
 
                 # Read avoided consumption from grid
-                sc_h = lifetime_load_profile["sc_high"][yr]
-                sc_l = lifetime_load_profile["sc_low"][yr]
+                sc_h_sum = np.sum(lifetime_load_profile["sc_high"][yr])
+                sc_l_sum = np.sum(lifetime_load_profile["sc_low"][yr])
 
                 # Read demand from grid before adoption
-                d_h = lifetime_load_profile["demand_high"][yr]
-                d_l = lifetime_load_profile["demand_low"][yr]
+                d_h_sum = np.sum(lifetime_load_profile["demand_high"][yr])
+                d_l_sum = np.sum(lifetime_load_profile["demand_low"][yr])
 
                 # Read year excess solar
-                ex_pv_h = lifetime_load_profile["excess_solar_high"][yr]
-                ex_pv_l = lifetime_load_profile["excess_solar_low"][yr]
+                ex_pv_h_sum = np.sum(lifetime_load_profile["excess_solar_high"][yr])
+                ex_pv_l_sum = np.sum(lifetime_load_profile["excess_solar_low"][yr])
 
                 # Compute network costs
-                cf_y["prosumer_tariff"] = np.sum(ex_pv_h) * net_cost_high + np.sum(ex_pv_l) * net_cost_low
+                cf_y["prosumer_tariff"] = ex_pv_h_sum * net_cost_high + ex_pv_l_sum * net_cost_low
 
                 # Compute O&M costs
                 cf_y["O&M"] = np.sum(lifetime_load_profile["solar"][yr]) * om_cost
 
                 # Compute the cost of individual metering
-                cf_y["split"] = np.sum((sc_h + sc_l)) * solar_split_fee
+                cf_y["split"] = (sc_h_sum + sc_l_sum) * solar_split_fee
 
                 if (sys == "com") and (com_tariff == "wholesale"):
 
                     # Compute gains from direct marketing
-                    cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][yr],el_p_com))
+                    cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][yr],el_whole))
 
                     # Compute savings as difference between electricity bill
-                    cf_y["savings"] = np.sum(d_h)*el_p_h + np.sum(d_l)*el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][yr],el_p_com))
+                    cf_y["savings"] = d_h_sum*el_p_h + d_l_sum*el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][yr],el_p_com))
 
                 else:
                     
                     # Compute revenues from feeding solar electricity to grid
-                    cf_y["FIT"] = np.sum(ex_pv_h) * fit_h + np.sum(ex_pv_l) * fit_l
+                    cf_y["FIT"] = ex_pv_h_sum * fit_h + ex_pv_l_sum * fit_l
 
                     # Compute net-demands in high and low elec prices periods
-                    net_d_h = lifetime_load_profile["net_demand_high"][yr]
-                    net_d_l = lifetime_load_profile["net_demand_high"][yr]
+                    net_d_h_sum = np.sum(lifetime_load_profile["net_demand_high"][yr])
+                    net_d_l_sum = np.sum(lifetime_load_profile["net_demand_high"][yr])
 
                     # Savings from avoided consumption from grid *with old tariff* and from moving to a cheaper electricity tariff because now a single bigger consumer
-                    cf_y["savings"] = np.sum(sc_h)*el_p_h + np.sum(sc_l)*el_p_l + np.sum(net_d_h) * (el_p_h - el_p_com_h) + np.sum(net_d_l) * (el_p_l - el_p_com_l)
+                    cf_y["savings"] = sc_h_sum*el_p_h + sc_l_sum*el_p_l + net_d_h_sum * (el_p_h - el_p_com_h) + net_d_l_sum * (el_p_l - el_p_com_l)
 
                 # Compute net cashflows to the agent
                 cf_y["net_cf"] = (cf_y["FIT"] + cf_y["savings"] - cf_y["split"]- cf_y["O&M"] - cf_y["prosumer_tariff"])
@@ -1310,60 +1312,60 @@ class BuildingAgent(Agent):
             # Without degradation or prior PV, all years have the same profile so we just take the first one and copy the results over the lifetime of the system.
 
             # Read avoided consumption from grid (i.e. self-consumption)
-            sc_h = lifetime_load_profile["sc_high"][0]
-            sc_l = lifetime_load_profile["sc_low"][0]
+            sc_h_sum = np.sum(lifetime_load_profile["sc_high"][0])
+            sc_l_sum = np.sum(lifetime_load_profile["sc_low"][0])
 
             # Read demand from grid before adoption
-            d_h = lifetime_load_profile["demand_high"][0]
-            d_l = lifetime_load_profile["demand_low"][0]
+            d_h_sum = np.sum(lifetime_load_profile["demand_high"][0])
+            d_l_sum = np.sum(lifetime_load_profile["demand_low"][0])
 
             if (sys == "com") and (com_tariff == "wholesale"):
 
                 # Read year excess solar
-                ex_pv_h = lifetime_load_profile["excess_solar_high"][0]
-                ex_pv_l = lifetime_load_profile["excess_solar_low"][0]
+                ex_pv_h_sum = np.sum(lifetime_load_profile["excess_solar_high"][0])
+                ex_pv_l_sum = np.sum(lifetime_load_profile["excess_solar_low"][0])
 
                 # Compute network costs
-                cf_y["prosumer_tariff"] = np.sum(ex_pv_h) * net_cost_high + np.sum(ex_pv_l) * net_cost_low
+                cf_y["prosumer_tariff"] = ex_pv_h_sum * net_cost_high + ex_pv_l_sum * net_cost_low
 
                 # Compute gains from direct marketing
-                cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][0],el_p_com))
+                cf_y["FIT"] = np.sum(np.multiply(lifetime_load_profile["excess_solar"][0],el_whole))
 
                 # Compute savings as the difference between electricity bill
-                cf_y["savings"] = np.sum(d_h)*el_p_h + np.sum(d_l)*el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][0],el_p_com))
+                cf_y["savings"] = d_h_sum*el_p_h + d_l_sum*el_p_l - np.sum(np.multiply(lifetime_load_profile["net_demand"][0],el_p_com))
 
                 # Compute the cost of individual metering
-                cf_y["split"] = np.sum((sc_h + sc_l)) * solar_split_fee
+                cf_y["split"] = (sc_h_sum + sc_l_sum) * solar_split_fee
 
             else:
 
                 # Read year excess solar
-                ex_pv_h = lifetime_load_profile["excess_solar_high"][0]
-                ex_pv_l = lifetime_load_profile["excess_solar_low"][0]
+                ex_pv_h_sum = np.sum(lifetime_load_profile["excess_solar_high"][0])
+                ex_pv_l_sum = np.sum(lifetime_load_profile["excess_solar_low"][0])
                 
                 # Compute revenues from feeding solar electricity to the grid
-                cf_y["FIT"] = np.sum(ex_pv_h) * fit_h + np.sum(ex_pv_l) * fit_l
+                cf_y["FIT"] = ex_pv_h_sum * fit_h + ex_pv_l_sum * fit_l
 
                 # Compute network costs
-                cf_y["prosumer_tariff"] = np.sum(ex_pv_h) * net_cost_high + np.sum(ex_pv_l) * net_cost_low
+                cf_y["prosumer_tariff"] = ex_pv_h_sum * net_cost_high + ex_pv_l_sum * net_cost_low
 
                 # Compute the savings from self-consuming solar electricity
                 if sys == "ind":
 
                     # Savings only from avoided consumption from grid
-                    cf_y["savings"] = np.sum(sc_h)*el_p_h + np.sum(sc_l)*el_p_l
+                    cf_y["savings"] = sc_h_sum*el_p_h + sc_l_sum*el_p_l
 
                 elif sys == "com":
 
                     # Compute net-demands in high and low elec prices periods
-                    net_d_h = lifetime_load_profile["net_demand_high"][0]
-                    net_d_l = lifetime_load_profile["net_demand_high"][0]
+                    net_d_h_sum = np.sum(lifetime_load_profile["net_demand_high"][0])
+                    net_d_l_sum = np.sum(lifetime_load_profile["net_demand_high"][0])
 
                     # Savings from avoided consumption from grid *with old tariff* and from moving to a cheaper electricity tariff because now a single bigger consumer
-                    cf_y["savings"] = np.sum(sc_h)*el_p_h + np.sum(sc_l)*el_p_l + np.sum(net_d_h) * (el_p_h - el_p_com_h) + np.sum(net_d_l) * (el_p_l - el_p_com_l)
+                    cf_y["savings"] = sc_h_sum*el_p_h + sc_l_sum*el_p_l + net_d_h_sum * (el_p_h - el_p_com_h) + net_d_l_sum * (el_p_l - el_p_com_l)
                 
                     # Compute the cost of individual metering
-                    cf_y["split"] = np.sum((sc_h + sc_l)) * solar_split_fee
+                    cf_y["split"] = (sc_h_sum + sc_l_sum) * solar_split_fee
 
             # Compute O&M costs
             cf_y["O&M"] = np.sum(lifetime_load_profile["solar"][0]) * om_cost
