@@ -21,7 +21,7 @@ files_dir = os.path.dirname(__file__)
 
 # Set directory with data files
 data_subfolder = 'code\\COSA_Outputs\\2_results\\202105_new_scenarios'
-#data_subfolder = 'code\\COSA_Outputs'
+data_subfolder = 'code\\COSA_Outputs\\2_results'
 input_subfolder = 'code\\COSA_Data'
 data_dir = os.path.join(files_dir[:files_dir.rfind('code')], data_subfolder)
 input_dir = os.path.join(files_dir[:files_dir.rfind('code')], input_subfolder)
@@ -225,15 +225,72 @@ output_df = pd.DataFrame(output)
 output_df.to_csv(files_dir +"\\results_table_new_scenarios.csv", sep=";")
 
 #%% ADDITIONAL ANALYSIS
+# %%
+fig, axes = plt.subplots(2,4,figsize=(12,6),sharex=True,sharey="row")
+for sc in set(communities_df["input_label"]):
+    #c = {"ref":0,"gs":1,"pt":2,"ptgs":3}[sc.split("-")[0]]
+    c = {'ref10k':0}[sc.split("-")[0]]
+    if sc.split("-")[1] == "zone":
+        ax = axes[0,c]
+    else:
+        ax = axes[1,c]
+    median_gl = []
+    p5_gl = []
+    p95_gl = []
+    for yr in range(0,26,1):
+        gl = communities_df.loc[(communities_df["input_label"]==sc) & (communities_df["year"]==yr),"grid_length"].values
+        
+        if len(gl) > 0:
+            median_gl.append(np.median(gl))
+            p5_gl.append(np.percentile(gl,5))
+            p95_gl.append(np.percentile(gl,95))
+        else:
+            median_gl.append(np.nan)
+            p5_gl.append(np.nan)
+            p95_gl.append(np.nan)
+    
+    ax.plot(p5_gl,color="darkgray",ls="--")
+    ax.plot(median_gl)
+    ax.plot(p95_gl,color="darkgray",ls="--")
+
+    if c == 1:
+        ax.set_ylim(0,)
+    ax.set_xlim(0,25)
+    ax.set_xticks(list(range(0,26,5)))
+    ax.set_xticklabels(list(range(2010,2036,5)))
+
+    ax.annotate(sc,xy=(0.5,0.95),xycoords="axes fraction",ha="center",va="top")
+    if c == 0:
+        ax.set_ylabel("Grid length [m]")
+    
+    plt.subplots_adjust(wspace=0, hspace=0)
+# %%
+scs = ["ref-radius","ref10k-radius"]
+
 fig, ax = plt.subplots(1,1)
-ax.boxplot([communities_df["inv_new"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))]+communities_df["inv_old"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))] for sc in ["ref-zone","gs-zone","ref-radius","gs-radius"]],positions=[0,1,2,3])
-for ix in range(4):
-    sc = ["ref-zone","gs-zone","ref-radius","gs-radius"][ix]
-    av = np.median(communities_df["inv_new"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))]+communities_df["inv_old"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))])
-    ax.annotate(s=str(round(av/1000,0)),xy=(ix,av),ha="center", va="center")
-ax.set_xticklabels(["ref-zone","gs-zone","ref-radius","gs-radius"])
-ax.set_ylabel("inv_new + inv_old")
+
+year = max(communities_df["year"])
+
+#data = [communities_df["inv_new"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))]+communities_df["inv_old"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==max(communities_df["year"]))] for sc in scs]
+#data = [communities_df["grid_cost"].loc[(communities_df["input_label"]==sc)&(communities_df["year"]==year)] for sc in scs]
+data = [[len(communities_df.loc[(communities_df["input_label"]==sc)&(communities_df["year"]==year)&(communities_df["run"]==run)]) for run in range(50)] for sc in scs]
+
+#ax.boxplot(data,positions=[x for x in range(0,len(scs),1)])
+
+ax.hist(data[0],histtype="step",color="darkgreen",bins=range(15))
+ax.hist(data[1],histtype="step",color="red",bins=range(15))
+
+for ix in range(len(scs)):
+
+    av = np.median(data[ix])
+
+    #ax.annotate(s=str(round(av/1000,0)),xy=(ix+0.1,av),ha="left", va="center")
+    #ax.annotate(s=str(round(av,0)),xy=(ix+0.1,av),ha="left", va="center")
+
+#ax.set_xticklabels(scs)
+ax.set_ylabel("Number of communities")
 ax.set_title("Last year communities")
+
 #%% PLOT BUBBLE GRAPH WITH HISTOGRAMS
 # Color dictionary
 color_d = {"ref-zone":(213/255,94/255,0.), "pt-zone":(230/255,159/255,0.), "gs-zone":(86/255,180/255,233/255), "ptgs-zone":(0.,114/255,178/255)}
