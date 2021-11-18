@@ -862,9 +862,6 @@ class BuildingAgent(Agent):
                 c_d["pp_com"] = pp_c
                 c_d["prosumer_tariff"] = pt_c
 
-                print("investment new",inv_c_new)
-                print("grid_cost",grid_c)
-
         # Loop through the communities below ratio and delete them from dict
         for c in coms_below_ratio:
             del combinations_dict[c]
@@ -1235,7 +1232,7 @@ class BuildingAgent(Agent):
 
                 el_whole = [x * self.model.wholesale_el_price for x in self.model.hour_to_average]
 
-                el_p_com = [(el_whole[ix] + self.model.fix_fee + self.model.fee_h) * (1 + self.model.vat) if it == 'high' else (el_whole[ix] + self.model.fix_fee + self.model.fee_l) * (1 + self.model.vat) for ix,it in enumerate(self.model.hour_price)]
+                el_p_com = [(el_whole[ix] + self.model.mn_taxes + self.model.fee_h) * (1 + self.model.vat) if it == 'high' else (el_whole[ix] + self.model.mn_taxes + self.model.fee_l) * (1 + self.model.vat) for ix,it in enumerate(self.model.hour_price)]
             
             else:
 
@@ -1380,10 +1377,7 @@ class BuildingAgent(Agent):
                 cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["split"] - cf_y["O&M"])
 
             # Store results in return dataframe
-            lifetime_cashflows = pd.DataFrame(cf_y, index=[0])
-
-            # Make results the same for all lifetime
-            lifetime_cashflows = lifetime_cashflows.append([cf_y] * PV_lifetime, ignore_index=True)
+            lifetime_cashflows = pd.DataFrame({k:[v]*PV_lifetime for k,v in cf_y.items()})
     
         return lifetime_cashflows
 

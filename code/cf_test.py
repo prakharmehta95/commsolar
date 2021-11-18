@@ -132,8 +132,8 @@ ind_tariff = "COSA_R1"
 pv_size = 487
 deg_rate = 0
 PV_lifetime = 25
-sim_year = 10
-el_price = el_prices.loc[el_prices['sim_year']==sim_year,ag_tariff].to_list()[0]
+sim_year = 2020
+el_price = el_prices.loc[el_prices['year']==sim_year,ag_tariff].to_list()[0]
 ratio_high_low = 1.6875
 fit_high = 0.085
 fit_low = 0.0445
@@ -151,6 +151,7 @@ om_cost = 0.06
 wholesale_el_price = 0.047
 
 sys = "com"
+sys = "ind"
 com_tariff = "wholesale"
 com_prior_PV = False
 #%%
@@ -494,9 +495,6 @@ else:
         cf_y["net_cf_nofit"] = (cf_y["savings"] - cf_y["split"] - cf_y["O&M"])
 
     # Store results in return dataframe
-    lifetime_cashflows = pd.DataFrame(cf_y, index=[0])
-
-    # Make results the same for all lifetime
-    lifetime_cashflows = lifetime_cashflows.append([cf_y] * PV_lifetime, ignore_index=True)
+    lifetime_cashflows = pd.DataFrame({k:[v]*PV_lifetime for k,v in cf_y.items()})
 # %%
 # Depending on the electricity tariff used, things look very very different. Comparing a 0.3 CHF/kWh to a 0.1 CHF/kWh could mean going from positive no negative NPV
